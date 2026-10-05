@@ -1,0 +1,797 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>SecureDocs — Sign In</title>
+
+    <style>
+
+        /* =========================
+           RESET
+        ========================== */
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            min-height: 100vh;
+
+            font-family:
+                Inter,
+                -apple-system,
+                BlinkMacSystemFont,
+                "Segoe UI",
+                sans-serif;
+
+            background: #f5f5f3;
+            color: #111214;
+
+            display: grid;
+            place-items: center;
+
+            overflow: hidden;
+        }
+
+        button,
+        input {
+            font: inherit;
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+
+        /* =========================
+           BACKGROUND
+        ========================== */
+
+        .background {
+            position: fixed;
+            inset: 0;
+
+            overflow: hidden;
+
+            pointer-events: none;
+        }
+
+        .orb {
+            position: absolute;
+
+            border-radius: 50%;
+
+            filter: blur(80px);
+
+            opacity: .4;
+        }
+
+        .orb.one {
+            width: 420px;
+            height: 420px;
+
+            background: #ffffff;
+
+            top: -180px;
+            left: -130px;
+
+            animation: floatOne 9s ease-in-out infinite;
+        }
+
+        .orb.two {
+            width: 360px;
+            height: 360px;
+
+            background: #dededb;
+
+            bottom: -160px;
+            right: -100px;
+
+            animation: floatTwo 11s ease-in-out infinite;
+        }
+
+
+        /* =========================
+           PAGE
+        ========================== */
+
+        .page {
+            width: min(430px, 92%);
+
+            position: relative;
+            z-index: 2;
+
+            animation:
+                pageIn .8s
+                cubic-bezier(.2,.8,.2,1)
+                both;
+        }
+
+
+        /* =========================
+           BRAND
+        ========================== */
+
+        .brand {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            gap: 11px;
+
+            margin-bottom: 28px;
+        }
+
+        .brand-icon {
+            width: 40px;
+            height: 40px;
+
+            border-radius: 13px;
+
+            background: #111214;
+            color: #fff;
+
+            display: grid;
+            place-items: center;
+
+            font-size: 15px;
+            font-weight: 850;
+
+            box-shadow:
+                0 12px 30px rgba(0,0,0,.15);
+
+            position: relative;
+            overflow: hidden;
+        }
+
+        .brand-icon::after {
+            content: "";
+
+            position: absolute;
+
+            width: 90px;
+            height: 18px;
+
+            background: rgba(255,255,255,.28);
+
+            transform:
+                translateX(-100px)
+                rotate(-45deg);
+
+            animation:
+                shine 4s
+                ease-in-out
+                infinite;
+        }
+
+        .brand-name strong {
+            display: block;
+
+            font-size: 14px;
+
+            letter-spacing: -.02em;
+        }
+
+        .brand-name span {
+            display: block;
+
+            margin-top: 2px;
+
+            font-size: 10px;
+
+            color: #85888d;
+        }
+
+
+        /* =========================
+           LOGIN CARD
+        ========================== */
+
+        .card {
+            padding: 38px;
+
+            background:
+                rgba(255,255,255,.72);
+
+            border:
+                1px solid
+                rgba(255,255,255,.9);
+
+            border-radius: 28px;
+
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+
+            box-shadow:
+                0 35px 100px rgba(0,0,0,.10),
+                inset 0 1px 0 rgba(255,255,255,.9);
+        }
+
+
+        /* =========================
+           TEXT
+        ========================== */
+
+        .eyebrow {
+            font-size: 10px;
+
+            font-weight: 800;
+
+            letter-spacing: .18em;
+
+            color: #85888e;
+
+            margin-bottom: 10px;
+        }
+
+        h1 {
+            font-size: 38px;
+
+            letter-spacing: -.06em;
+
+            line-height: 1;
+
+            margin-bottom: 10px;
+        }
+
+        .description {
+            color: #777b82;
+
+            font-size: 13px;
+
+            line-height: 1.7;
+
+            max-width: 340px;
+        }
+
+
+        /* =========================
+           FORM
+        ========================== */
+
+        form {
+            margin-top: 30px;
+        }
+
+        .field {
+            margin-bottom: 18px;
+        }
+
+        .field label {
+            display: block;
+
+            font-size: 11px;
+
+            font-weight: 750;
+
+            margin-bottom: 8px;
+        }
+
+        .input-wrapper {
+            position: relative;
+        }
+
+        .input-icon {
+            position: absolute;
+
+            left: 14px;
+            top: 50%;
+
+            transform: translateY(-50%);
+
+            color: #969aa0;
+
+            font-size: 14px;
+        }
+
+        input {
+            width: 100%;
+
+            height: 50px;
+
+            border:
+                1px solid
+                rgba(17,18,20,.09);
+
+            background:
+                rgba(248,248,248,.75);
+
+            border-radius: 13px;
+
+            outline: none;
+
+            padding:
+                0 15px
+                0 42px;
+
+            color: #111214;
+
+            font-size: 12px;
+
+            transition:
+                .25s ease;
+        }
+
+        input::placeholder {
+            color: #a3a6ab;
+        }
+
+        input:focus {
+            background: #fff;
+
+            border-color: #111214;
+
+            box-shadow:
+                0 0 0 4px
+                rgba(17,18,20,.05);
+
+            transform:
+                translateY(-1px);
+        }
+
+
+        /* =========================
+           OPTIONS
+        ========================== */
+
+        .options {
+            display: flex;
+
+            justify-content: space-between;
+            align-items: center;
+
+            margin:
+                2px 0
+                22px;
+
+            font-size: 10px;
+        }
+
+        .remember {
+            display: flex;
+
+            align-items: center;
+
+            gap: 7px;
+
+            color: #777b82;
+        }
+
+        .remember input {
+            width: 13px;
+            height: 13px;
+
+            padding: 0;
+
+            accent-color: #111214;
+
+            box-shadow: none;
+
+            transform: none;
+        }
+
+        .forgot {
+            color: #555960;
+
+            font-weight: 650;
+        }
+
+
+        /* =========================
+           BUTTON
+        ========================== */
+
+        .login-button {
+            width: 100%;
+
+            height: 51px;
+
+            border: none;
+
+            border-radius: 13px;
+
+            background: #111214;
+
+            color: white;
+
+            font-size: 12px;
+
+            font-weight: 750;
+
+            cursor: pointer;
+
+            display: flex;
+
+            align-items: center;
+            justify-content: center;
+
+            gap: 12px;
+
+            box-shadow:
+                0 14px 28px
+                rgba(0,0,0,.14);
+
+            transition:
+                transform .25s ease,
+                box-shadow .25s ease;
+        }
+
+        .login-button span {
+            font-size: 16px;
+
+            transition:
+                transform .25s ease;
+        }
+
+        .login-button:hover {
+            transform:
+                translateY(-2px);
+
+            box-shadow:
+                0 19px 35px
+                rgba(0,0,0,.18);
+        }
+
+        .login-button:hover span {
+            transform:
+                translateX(4px);
+        }
+
+        .login-button:active {
+            transform:
+                translateY(0);
+        }
+
+
+        /* =========================
+           SECURITY NOTE
+        ========================== */
+
+        .security {
+            margin-top: 22px;
+
+            padding: 12px 14px;
+
+            border-radius: 12px;
+
+            background:
+                rgba(245,245,243,.75);
+
+            border:
+                1px solid
+                rgba(0,0,0,.055);
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 9px;
+
+            color: #858990;
+
+            font-size: 9px;
+
+            line-height: 1.5;
+        }
+
+        .security-dot {
+            width: 7px;
+            height: 7px;
+
+            flex: 0 0 7px;
+
+            border-radius: 50%;
+
+            background: #1d9b61;
+
+            box-shadow:
+                0 0 0 5px
+                rgba(29,155,97,.07);
+        }
+
+
+        /* =========================
+           FOOTER
+        ========================== */
+
+        .footer {
+            text-align: center;
+
+            color: #999da3;
+
+            font-size: 9px;
+
+            margin-top: 17px;
+        }
+
+
+        /* =========================
+           ANIMATIONS
+        ========================== */
+
+        @keyframes pageIn {
+
+            from {
+                opacity: 0;
+                transform:
+                    translateY(22px)
+                    scale(.98);
+            }
+
+            to {
+                opacity: 1;
+                transform:
+                    translateY(0)
+                    scale(1);
+            }
+        }
+
+        @keyframes floatOne {
+
+            0%,100% {
+                transform: translate(0,0);
+            }
+
+            50% {
+                transform:
+                    translate(30px,20px);
+            }
+        }
+
+        @keyframes floatTwo {
+
+            0%,100% {
+                transform: translate(0,0);
+            }
+
+            50% {
+                transform:
+                    translate(-25px,-25px);
+            }
+        }
+
+        @keyframes shine {
+
+            0%,60% {
+                transform:
+                    translateX(-100px)
+                    rotate(-45deg);
+            }
+
+            100% {
+                transform:
+                    translateX(150px)
+                    rotate(-45deg);
+            }
+        }
+
+
+        /* =========================
+           MOBILE
+        ========================== */
+
+        @media(max-width:500px) {
+
+            .card {
+                padding: 28px 22px;
+                border-radius: 23px;
+            }
+
+            h1 {
+                font-size: 34px;
+            }
+
+        }
+
+
+        /* =========================
+           REDUCED MOTION
+        ========================== */
+
+        @media(prefers-reduced-motion: reduce) {
+
+            *,
+            *::before,
+            *::after {
+                animation-duration: .01ms !important;
+                animation-iteration-count: 1 !important;
+            }
+
+        }
+
+    </style>
+</head>
+
+
+<body>
+
+
+    <!-- Background -->
+    <div class="background">
+
+        <div class="orb one"></div>
+        <div class="orb two"></div>
+
+    </div>
+
+
+
+    <!-- Login Page -->
+    <main class="page">
+
+
+        <!-- Brand -->
+        <div class="brand">
+
+            <div class="brand-icon">
+                S
+            </div>
+
+            <div class="brand-name">
+
+                <strong>
+                    SecureDocs
+                </strong>
+
+                <span>
+                    AI Document Portal
+                </span>
+
+            </div>
+
+        </div>
+
+
+
+        <!-- Card -->
+        <section class="card">
+
+
+            <div class="eyebrow">
+                SECURE INTERNAL ACCESS
+            </div>
+
+
+            <h1>
+                Welcome back.
+            </h1>
+
+
+            <p class="description">
+                Sign in to securely access your private documents
+                and AI-powered knowledge workspace.
+            </p>
+
+
+
+            <!-- Form -->
+            <form>
+
+
+                <!-- Email -->
+                <div class="field">
+
+                    <label for="email">
+                        Email address
+                    </label>
+
+                    <div class="input-wrapper">
+
+                        <span class="input-icon">
+                            @
+                        </span>
+
+                        <input
+                            id="email"
+                            type="email"
+                            placeholder="you@company.com"
+                            autocomplete="email"
+                            required
+                        >
+
+                    </div>
+
+                </div>
+
+
+
+                <!-- Password -->
+                <div class="field">
+
+                    <label for="password">
+                        Password
+                    </label>
+
+                    <div class="input-wrapper">
+
+                        <span class="input-icon">
+                            •
+                        </span>
+
+                        <input
+                            id="password"
+                            type="password"
+                            placeholder="Enter your password"
+                            autocomplete="current-password"
+                            required
+                        >
+
+                    </div>
+
+                </div>
+
+
+
+                <!-- Options -->
+                <div class="options">
+
+                    <label class="remember">
+
+                        <input
+                            type="checkbox"
+                        >
+
+                        Remember me
+
+                    </label>
+
+
+                    <a
+                        href="#"
+                        class="forgot"
+                    >
+                        Forgot password?
+                    </a>
+
+                </div>
+
+
+
+              <!-- Login -->
+            <button
+               type="button"
+               class="login-button"
+               onclick="window.location.href='dashboard.html'"
+>
+               Sign in
+
+               <span>
+                 →
+               </span>
+            </button>
+            </form>
+
+
+
+            <!-- Security -->
+            <div class="security">
+
+                <span class="security-dot"></span>
+
+                Your workspace is protected with
+                role-based access and secure document handling.
+
+            </div>
+
+
+        </section>
+
+
+
+        <!-- Footer -->
+        <div class="footer">
+
+            SecureDocs © 2026 · Private knowledge. Intelligent access.
+
+        </div>
+
+
+    </main>
+
+</body>
+</html>

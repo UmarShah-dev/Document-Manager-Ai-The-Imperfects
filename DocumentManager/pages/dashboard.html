@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard — SecureDocs</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background: #f6f6f3;
+            color: #111;
+            min-height: 100vh;
+        }
+
+        .app {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* SIDEBAR */
+
+        .sidebar {
+            width: 250px;
+            background: #111;
+            color: white;
+            padding: 28px 18px;
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 0 10px;
+            margin-bottom: 55px;
+        }
+
+        .brand-mark {
+            width: 38px;
+            height: 38px;
+            border: 1px solid rgba(255,255,255,.25);
+            border-radius: 12px;
+            display: grid;
+            place-items: center;
+            font-size: 14px;
+            font-weight: 700;
+            background: #1d1d1d;
+        }
+
+        .brand-name {
+            font-size: 16px;
+            font-weight: 600;
+            letter-spacing: -.3px;
+        }
+
+        .nav-label {
+            color: #777;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            padding: 0 12px;
+            margin-bottom: 12px;
+        }
+
+        .nav {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .nav a {
+            text-decoration: none;
+            color: #999;
+            padding: 13px 12px;
+            border-radius: 11px;
+            font-size: 14px;
+            transition: .25s ease;
+        }
+
+        .nav a:hover,
+        .nav a.active {
+            color: white;
+            background: #202020;
+        }
+
+        .sidebar-bottom {
+            margin-top: auto;
+        }
+
+        .user-mini {
+            border-top: 1px solid #292929;
+            padding-top: 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .avatar {
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            background: #e8e8e5;
+            color: #111;
+            display: grid;
+            place-items: center;
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .user-info strong {
+            display: block;
+            font-size: 12px;
+        }
+
+        .user-info span {
+            color: #777;
+            font-size: 10px;
+        }
+
+        /* MAIN */
+
+        .main {
+            margin-left: 250px;
+            width: calc(100% - 250px);
+            padding: 38px 45px;
+        }
+
+        .topbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 45px;
+        }
+
+        .welcome small {
+            color: #888;
+            font-size: 12px;
+        }
+
+        .welcome h1 {
+            margin-top: 6px;
+            font-size: 30px;
+            letter-spacing: -1.5px;
+            font-weight: 600;
+        }
+
+        .upload-btn {
+            text-decoration: none;
+            color: white;
+            background: #111;
+            padding: 13px 19px;
+            border-radius: 11px;
+            font-size: 13px;
+            transition: .25s ease;
+        }
+
+        .upload-btn:hover {
+            transform: translateY(-2px);
+            background: #292929;
+        }
+
+        /* STATS */
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+            margin-bottom: 28px;
+        }
+
+        .stat-card {
+            background: white;
+            border: 1px solid #e8e8e4;
+            border-radius: 18px;
+            padding: 23px;
+            transition: .3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 12px 30px rgba(0,0,0,.06);
+        }
+
+        .stat-card span {
+            color: #888;
+            font-size: 12px;
+        }
+
+        .stat-card h2 {
+            font-size: 29px;
+            margin-top: 13px;
+            letter-spacing: -1px;
+        }
+
+        /* CONTENT */
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr;
+            gap: 18px;
+        }
+
+        .panel {
+            background: white;
+            border: 1px solid #e8e8e4;
+            border-radius: 20px;
+            padding: 25px;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 22px;
+        }
+
+        .panel-header h3 {
+            font-size: 15px;
+            font-weight: 600;
+        }
+
+        .panel-header a {
+            font-size: 11px;
+            color: #777;
+            text-decoration: none;
+        }
+
+        /* DOCUMENTS */
+
+        .document {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .document:last-child {
+            border-bottom: none;
+        }
+
+        .doc-left {
+            display: flex;
+            align-items: center;
+            gap: 13px;
+        }
+
+        .doc-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 11px;
+            background: #f1f1ee;
+            display: grid;
+            place-items: center;
+            font-size: 14px;
+        }
+
+        .doc-name {
+            font-size: 13px;
+            font-weight: 600;
+        }
+
+        .doc-meta {
+            font-size: 10px;
+            color: #999;
+            margin-top: 4px;
+        }
+
+        .status {
+            font-size: 10px;
+            padding: 6px 9px;
+            border-radius: 20px;
+            background: #f2f2ef;
+            color: #666;
+        }
+
+        /* AI CARD */
+
+        .ai-card {
+            background: #111;
+            color: white;
+            border-radius: 20px;
+            padding: 27px;
+            min-height: 250px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .ai-card::after {
+            content: "";
+            position: absolute;
+            width: 180px;
+            height: 180px;
+            border: 1px solid rgba(255,255,255,.08);
+            border-radius: 50%;
+            right: -70px;
+            bottom: -70px;
+        }
+
+        .ai-label {
+            color: #888;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+        }
+
+        .ai-card h2 {
+            margin-top: 14px;
+            font-size: 24px;
+            line-height: 1.15;
+            letter-spacing: -.8px;
+        }
+
+        .ai-card p {
+            color: #999;
+            font-size: 12px;
+            line-height: 1.7;
+            margin-top: 12px;
+            max-width: 300px;
+        }
+
+        .chat-btn {
+            display: inline-block;
+            margin-top: 24px;
+            color: #111;
+            background: white;
+            padding: 11px 16px;
+            border-radius: 9px;
+            text-decoration: none;
+            font-size: 12px;
+            transition: .25s ease;
+        }
+
+        .chat-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        /* ANIMATION */
+
+        .main {
+            animation: appear .7s ease both;
+        }
+
+        .stat-card,
+        .panel,
+        .ai-card {
+            animation: rise .7s ease both;
+        }
+
+        .stat-card:nth-child(2) {
+            animation-delay: .08s;
+        }
+
+        .stat-card:nth-child(3) {
+            animation-delay: .16s;
+        }
+
+        @keyframes appear {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes rise {
+            from {
+                opacity: 0;
+                transform: translateY(14px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* RESPONSIVE */
+
+        @media (max-width: 900px) {
+
+            .sidebar {
+                width: 75px;
+                padding: 25px 10px;
+            }
+
+            .brand-name,
+            .nav-label,
+            .nav a span,
+            .user-info {
+                display: none;
+            }
+
+            .brand {
+                justify-content: center;
+                padding: 0;
+            }
+
+            .nav a {
+                text-align: center;
+            }
+
+            .main {
+                margin-left: 75px;
+                width: calc(100% - 75px);
+                padding: 28px;
+            }
+
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 650px) {
+
+            .stats {
+                grid-template-columns: 1fr;
+            }
+
+            .main {
+                padding: 20px;
+            }
+
+            .topbar {
+                align-items: flex-start;
+                gap: 15px;
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="app">
+
+    <!-- SIDEBAR -->
+
+    <aside class="sidebar">
+
+        <div class="brand">
+            <div class="brand-mark">S</div>
+            <div class="brand-name">SecureDocs</div>
+        </div>
+
+        <div class="nav-label">Workspace</div>
+
+        <nav class="nav">
+            <a href="dashboard.html" class="active">
+                ◉ <span>Overview</span>
+            </a>
+
+            <a href="documents.html">
+                ▣ <span>Documents</span>
+            </a>
+
+            <a href="assistant.html">
+                ✦ <span>AI Assistant</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-bottom">
+            <div class="user-mini">
+                <div class="avatar">WS</div>
+
+                <div class="user-info">
+                    <strong>Workspace User</strong>
+                    <span>Secure account</span>
+                </div>
+            </div>
+        </div>
+
+    </aside>
+
+
+    <!-- MAIN -->
+
+    <main class="main">
+
+        <div class="topbar">
+
+            <div class="welcome">
+                <small>SECURE WORKSPACE</small>
+                <h1>Your workspace.</h1>
+            </div>
+
+            <a href="documents.html" class="upload-btn">
+                + Upload document
+            </a>
+
+        </div>
+
+
+        <!-- STATS -->
+
+        <section class="stats">
+
+            <div class="stat-card">
+                <span>Total documents</span>
+                <h2>12</h2>
+            </div>
+
+            <div class="stat-card">
+                <span>Indexed documents</span>
+                <h2>10</h2>
+            </div>
+
+            <div class="stat-card">
+                <span>AI queries</span>
+                <h2>38</h2>
+            </div>
+
+        </section>
+
+
+        <!-- CONTENT -->
+
+        <section class="content-grid">
+
+            <div class="panel">
+
+                <div class="panel-header">
+                    <h3>Recent documents</h3>
+                    <a href="#">View all →</a>
+                </div>
+
+                <div class="document">
+
+                    <div class="doc-left">
+                        <div class="doc-icon">PDF</div>
+
+                        <div>
+                            <div class="doc-name">
+                                Company Policy.pdf
+                            </div>
+
+                            <div class="doc-meta">
+                                2.4 MB · 5 minutes ago
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="status">
+                        Indexed
+                    </div>
+
+                </div>
+
+
+                <div class="document">
+
+                    <div class="doc-left">
+                        <div class="doc-icon">DOC</div>
+
+                        <div>
+                            <div class="doc-name">
+                                Employee Handbook.docx
+                            </div>
+
+                            <div class="doc-meta">
+                                1.8 MB · 1 hour ago
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="status">
+                        Indexed
+                    </div>
+
+                </div>
+
+
+                <div class="document">
+
+                    <div class="doc-left">
+                        <div class="doc-icon">PDF</div>
+
+                        <div>
+                            <div class="doc-name">
+                                Security Guidelines.pdf
+                            </div>
+
+                            <div class="doc-meta">
+                                4.1 MB · Yesterday
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="status">
+                        Processing
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <!-- AI -->
+
+            <div class="ai-card">
+
+                <div class="ai-label">
+                    AI Assistant
+                </div>
+
+                <h2>
+                    Ask your<br>
+                    documents.
+                </h2>
+
+                <p>
+                    Search your private knowledge base and
+                    get answers grounded in your uploaded
+                    documents.
+                </p>
+
+                <a href="assistant.html" class="chat-btn">
+                    Open AI Assistant →
+                </a>
+
+            </div>
+
+        </section>
+
+    </main>
+
+</div>
+
+</body>
+</html>

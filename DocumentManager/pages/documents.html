@@ -1,0 +1,1243 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+
+    <title>Documents — SecureDocs</title>
+
+
+
+    <style>
+
+        * {
+
+            margin: 0;
+
+            padding: 0;
+
+            box-sizing: border-box;
+
+        }
+
+
+
+        body {
+
+            font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+            background: #f6f6f3;
+
+            color: #111;
+
+            min-height: 100vh;
+
+        }
+
+
+
+        .app {
+
+            display: flex;
+
+            min-height: 100vh;
+
+        }
+
+
+
+        /* SIDEBAR */
+
+
+
+        .sidebar {
+
+            width: 250px;
+
+            background: #111;
+
+            color: white;
+
+            padding: 28px 18px;
+
+            position: fixed;
+
+            inset: 0 auto 0 0;
+
+            display: flex;
+
+            flex-direction: column;
+
+        }
+
+
+
+        .brand {
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 12px;
+
+            padding: 0 10px;
+
+            margin-bottom: 55px;
+
+        }
+
+
+
+        .brand-mark {
+
+            width: 38px;
+
+            height: 38px;
+
+            border: 1px solid rgba(255,255,255,.2);
+
+            border-radius: 12px;
+
+            display: grid;
+
+            place-items: center;
+
+            font-size: 14px;
+
+            font-weight: 700;
+
+            background: #1d1d1d;
+
+        }
+
+
+
+        .brand-name {
+
+            font-size: 16px;
+
+            font-weight: 600;
+
+        }
+
+
+
+        .nav-label {
+
+            color: #777;
+
+            font-size: 10px;
+
+            text-transform: uppercase;
+
+            letter-spacing: 1.5px;
+
+            padding: 0 12px;
+
+            margin-bottom: 12px;
+
+        }
+
+
+
+        .nav {
+
+            display: flex;
+
+            flex-direction: column;
+
+            gap: 6px;
+
+        }
+
+
+
+        .nav a {
+
+            text-decoration: none;
+
+            color: #999;
+
+            padding: 13px 12px;
+
+            border-radius: 11px;
+
+            font-size: 14px;
+
+            transition: .25s ease;
+
+        }
+
+
+
+        .nav a:hover,
+
+        .nav a.active {
+
+            color: white;
+
+            background: #202020;
+
+        }
+
+
+
+        .sidebar-bottom {
+
+            margin-top: auto;
+
+        }
+
+
+
+        .user-mini {
+
+            border-top: 1px solid #292929;
+
+            padding-top: 18px;
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 10px;
+
+        }
+
+
+
+        .avatar {
+
+            width: 34px;
+
+            height: 34px;
+
+            border-radius: 50%;
+
+            background: #e8e8e5;
+
+            color: #111;
+
+            display: grid;
+
+            place-items: center;
+
+            font-size: 12px;
+
+            font-weight: 700;
+
+        }
+
+
+
+        .user-info strong {
+
+            display: block;
+
+            font-size: 12px;
+
+        }
+
+
+
+        .user-info span {
+
+            color: #777;
+
+            font-size: 10px;
+
+        }
+
+
+
+        /* MAIN */
+
+
+
+        .main {
+
+            margin-left: 250px;
+
+            width: calc(100% - 250px);
+
+            padding: 38px 45px;
+
+            animation: pageIn .6s ease both;
+
+        }
+
+
+
+        .topbar {
+
+            display: flex;
+
+            justify-content: space-between;
+
+            align-items: flex-start;
+
+            margin-bottom: 32px;
+
+        }
+
+
+
+        .heading small {
+
+            color: #888;
+
+            font-size: 10px;
+
+            letter-spacing: 1.5px;
+
+        }
+
+
+
+        .heading h1 {
+
+            margin-top: 7px;
+
+            font-size: 31px;
+
+            letter-spacing: -1.5px;
+
+            font-weight: 600;
+
+        }
+
+
+
+        .heading p {
+
+            margin-top: 8px;
+
+            color: #888;
+
+            font-size: 12px;
+
+        }
+
+
+
+        .back {
+
+            text-decoration: none;
+
+            color: #777;
+
+            font-size: 12px;
+
+            padding: 10px 14px;
+
+            border: 1px solid #ddd;
+
+            border-radius: 10px;
+
+            background: white;
+
+        }
+
+
+
+        /* UPLOAD */
+
+
+
+        .upload-zone {
+
+            background: white;
+
+            border: 1.5px dashed #cfcfc9;
+
+            border-radius: 20px;
+
+            min-height: 240px;
+
+            display: flex;
+
+            flex-direction: column;
+
+            justify-content: center;
+
+            align-items: center;
+
+            text-align: center;
+
+            padding: 30px;
+
+            transition: .3s ease;
+
+            cursor: pointer;
+
+        }
+
+
+
+        .upload-zone:hover {
+
+            border-color: #111;
+
+            transform: translateY(-2px);
+
+            box-shadow: 0 15px 35px rgba(0,0,0,.05);
+
+        }
+
+
+
+        .upload-icon {
+
+            width: 54px;
+
+            height: 54px;
+
+            border-radius: 16px;
+
+            background: #111;
+
+            color: white;
+
+            display: grid;
+
+            place-items: center;
+
+            font-size: 22px;
+
+            margin-bottom: 17px;
+
+        }
+
+
+
+        .upload-zone h2 {
+
+            font-size: 17px;
+
+            font-weight: 600;
+
+        }
+
+
+
+        .upload-zone p {
+
+            color: #999;
+
+            font-size: 12px;
+
+            margin-top: 8px;
+
+        }
+
+
+
+        .browse {
+
+            display: inline-block;
+
+            margin-top: 19px;
+
+            background: #111;
+
+            color: white;
+
+            padding: 11px 18px;
+
+            border-radius: 10px;
+
+            font-size: 12px;
+
+        }
+
+
+
+        #fileInput {
+
+            display: none;
+
+        }
+
+
+
+        /* TOOLBAR */
+
+
+
+        .toolbar {
+
+            display: flex;
+
+            justify-content: space-between;
+
+            align-items: center;
+
+            margin: 32px 0 15px;
+
+        }
+
+
+
+        .toolbar h2 {
+
+            font-size: 16px;
+
+        }
+
+
+
+        .search {
+
+            background: white;
+
+            border: 1px solid #e4e4df;
+
+            border-radius: 10px;
+
+            padding: 10px 13px;
+
+            width: 220px;
+
+            outline: none;
+
+            font-size: 12px;
+
+        }
+
+
+
+        .search:focus {
+
+            border-color: #999;
+
+        }
+
+
+
+        /* DOCUMENT LIST */
+
+
+
+        .documents {
+
+            background: white;
+
+            border: 1px solid #e7e7e2;
+
+            border-radius: 18px;
+
+            overflow: hidden;
+
+        }
+
+
+
+        .document {
+
+            display: flex;
+
+            justify-content: space-between;
+
+            align-items: center;
+
+            padding: 17px 20px;
+
+            border-bottom: 1px solid #eee;
+
+            transition: .2s ease;
+
+        }
+
+
+
+        .document:last-child {
+
+            border-bottom: none;
+
+        }
+
+
+
+        .document:hover {
+
+            background: #fafaf8;
+
+        }
+
+
+
+        .doc-left {
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 14px;
+
+        }
+
+
+
+        .doc-icon {
+
+            width: 43px;
+
+            height: 43px;
+
+            border-radius: 12px;
+
+            background: #f1f1ee;
+
+            display: grid;
+
+            place-items: center;
+
+            font-size: 10px;
+
+            font-weight: 700;
+
+        }
+
+
+
+        .doc-name {
+
+            font-size: 13px;
+
+            font-weight: 600;
+
+        }
+
+
+
+        .doc-meta {
+
+            color: #999;
+
+            font-size: 10px;
+
+            margin-top: 5px;
+
+        }
+
+
+
+        .status {
+
+            padding: 6px 10px;
+
+            border-radius: 20px;
+
+            background: #f2f2ef;
+
+            color: #777;
+
+            font-size: 10px;
+
+        }
+
+
+
+        /* ANIMATION */
+
+
+
+        @keyframes pageIn {
+
+            from {
+
+                opacity: 0;
+
+                transform: translateY(12px);
+
+            }
+
+
+
+            to {
+
+                opacity: 1;
+
+                transform: translateY(0);
+
+            }
+
+        }
+
+
+
+        /* RESPONSIVE */
+
+
+
+        @media (max-width: 900px) {
+
+
+
+            .sidebar {
+
+                width: 75px;
+
+                padding: 25px 10px;
+
+            }
+
+
+
+            .brand-name,
+
+            .nav-label,
+
+            .nav a span,
+
+            .user-info {
+
+                display: none;
+
+            }
+
+
+
+            .brand {
+
+                justify-content: center;
+
+                padding: 0;
+
+            }
+
+
+
+            .nav a {
+
+                text-align: center;
+
+            }
+
+
+
+            .main {
+
+                margin-left: 75px;
+
+                width: calc(100% - 75px);
+
+                padding: 28px;
+
+            }
+
+        }
+
+
+
+        @media (max-width: 650px) {
+
+
+
+            .main {
+
+                padding: 20px;
+
+            }
+
+
+
+            .topbar {
+
+                flex-direction: column;
+
+                gap: 15px;
+
+            }
+
+
+
+            .toolbar {
+
+                flex-direction: column;
+
+                align-items: stretch;
+
+                gap: 12px;
+
+            }
+
+
+
+            .search {
+
+                width: 100%;
+
+            }
+
+
+
+            .document {
+
+                gap: 15px;
+
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+
+<body>
+
+
+
+<div class="app">
+
+
+
+    <!-- SIDEBAR -->
+
+
+
+    <aside class="sidebar">
+
+
+
+        <div class="brand">
+
+            <div class="brand-mark">S</div>
+
+            <div class="brand-name">SecureDocs</div>
+
+        </div>
+
+
+
+        <div class="nav-label">Workspace</div>
+
+
+
+        <nav class="nav">
+
+
+
+            <a href="dashboard.html">
+
+                ◉ <span>Overview</span>
+
+            </a>
+
+
+
+            <a href="documents.html" class="active">
+
+                ▣ <span>Documents</span>
+
+            </a>
+
+
+
+            <a href="assistant.html">
+
+                ✦ <span>AI Assistant</span>
+
+            </a>
+
+
+
+        </nav>
+
+
+
+        <div class="sidebar-bottom">
+
+
+
+            <div class="user-mini">
+
+
+
+                <div class="avatar">WS</div>
+
+
+
+                <div class="user-info">
+
+                    <strong>Workspace User</strong>
+
+                    <span>Secure account</span>
+
+                </div>
+
+
+
+            </div>
+
+
+
+        </div>
+
+
+
+    </aside>
+
+
+
+
+
+    <!-- MAIN -->
+
+
+
+    <main class="main">
+
+
+
+        <div class="topbar">
+
+
+
+            <div class="heading">
+
+
+
+                <small>KNOWLEDGE BASE</small>
+
+
+
+                <h1>Documents.</h1>
+
+
+
+                <p>
+
+                    Upload and manage the documents used by your AI assistant.
+
+                </p>
+
+
+
+            </div>
+
+
+
+            <a href="dashboard.html" class="back">
+
+                ← Dashboard
+
+            </a>
+
+
+
+        </div>
+
+
+
+
+
+        <!-- UPLOAD AREA -->
+
+
+
+        <label class="upload-zone" for="fileInput">
+
+
+
+            <div class="upload-icon">
+
+                ↑
+
+            </div>
+
+
+
+            <h2>
+
+                Drop your documents here
+
+            </h2>
+
+
+
+            <p>
+
+                PDF, DOCX, TXT and other supported files
+
+            </p>
+
+
+
+            <span class="browse">
+
+                Browse files
+
+            </span>
+
+
+
+            <input
+
+                type="file"
+
+                id="fileInput"
+
+                multiple
+
+                accept=".pdf,.doc,.docx,.txt"
+
+            >
+
+
+
+        </label>
+
+
+
+
+
+        <!-- DOCUMENTS -->
+
+
+
+        <div class="toolbar">
+
+
+
+            <h2>
+
+                Your documents
+
+            </h2>
+
+
+
+            <input
+
+                type="search"
+
+                class="search"
+
+                placeholder="Search documents..."
+
+            >
+
+
+
+        </div>
+
+
+
+
+
+        <div class="documents">
+
+
+
+
+
+        </div>
+
+
+
+    </main>
+
+
+
+</div>
+
+
+
+<script>
+
+const fileInput = document.getElementById("fileInput");
+
+const documentsList = document.querySelector(".documents");
+
+
+
+fileInput.addEventListener("change", function () {
+
+
+
+    const files = Array.from(this.files);
+
+
+
+    if (files.length === 0) return;
+
+
+
+    files.forEach(file => {
+
+
+
+        const extension = file.name
+
+            .split(".")
+
+            .pop()
+
+            .toUpperCase();
+
+
+
+        const size = formatSize(file.size);
+
+
+
+        const item = document.createElement("div");
+
+        item.className = "document";
+
+
+
+        item.innerHTML = `
+
+            <div class="doc-left">
+
+
+
+                <div class="doc-icon">
+
+                    ${extension}
+
+                </div>
+
+
+
+                <div>
+
+                    <div class="doc-name">
+
+                        ${file.name}
+
+                    </div>
+
+
+
+                    <div class="doc-meta">
+
+                        ${size} · Uploading...
+
+                    </div>
+
+                </div>
+
+
+
+            </div>
+
+
+
+            <div class="status">
+
+                Uploading
+
+            </div>
+
+        `;
+
+
+
+        documentsList.prepend(item);
+
+
+
+
+
+        // Processing
+
+        setTimeout(() => {
+
+
+
+            item.querySelector(".doc-meta").textContent =
+
+                `${size} · Processing document...`;
+
+
+
+            item.querySelector(".status").textContent =
+
+                "Processing";
+
+
+
+        }, 1200);
+
+
+
+
+
+        // Indexed
+
+        setTimeout(() => {
+
+
+
+            item.querySelector(".doc-meta").textContent =
+
+                `${size} · Just now`;
+
+
+
+            item.querySelector(".status").textContent =
+
+                "Indexed";
+
+
+
+        }, 3000);
+
+
+
+    });
+
+
+
+    // Reset input so the same file can be selected again
+
+    fileInput.value = "";
+
+
+
+});
+
+
+
+
+
+function formatSize(bytes) {
+
+
+
+    if (bytes < 1024) {
+
+        return bytes + " B";
+
+    }
+
+
+
+    if (bytes < 1024 * 1024) {
+
+        return (bytes / 1024).toFixed(1) + " KB";
+
+    }
+
+
+
+    return (bytes / (1024 * 1024)).toFixed(1) + " MB";
+
+}
+
+</script>
+
+</body>
+
+</html>

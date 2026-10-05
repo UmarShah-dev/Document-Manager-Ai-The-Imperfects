@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>SecureDocs — AI Document Portal</title>
+
+    <style>
+        /* =========================
+           RESET
+        ========================== */
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: Inter, -apple-system, BlinkMacSystemFont,
+                "Segoe UI", sans-serif;
+
+            background: #f5f5f3;
+            color: #111214;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        a {
+            text-decoration: none;
+            color: inherit;
+        }
+
+        button,
+        input {
+            font: inherit;
+        }
+
+
+        /* =========================
+           BACKGROUND
+        ========================== */
+
+        .background {
+            position: fixed;
+            inset: 0;
+            overflow: hidden;
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .glow {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(90px);
+            opacity: 0.35;
+        }
+
+        .glow-one {
+            width: 420px;
+            height: 420px;
+            background: #ffffff;
+            top: -180px;
+            left: -100px;
+            animation: floating 9s ease-in-out infinite;
+        }
+
+        .glow-two {
+            width: 350px;
+            height: 350px;
+            background: #dcdcdc;
+            bottom: -160px;
+            right: -100px;
+            animation: floating 11s ease-in-out infinite reverse;
+        }
+
+
+        /* =========================
+           NAVBAR
+        ========================== */
+
+        .navbar {
+            width: min(1180px, 92%);
+            margin: 0 auto;
+            padding: 26px 0;
+
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+
+            animation: fadeDown 0.8s ease forwards;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 11px;
+        }
+
+        .brand-icon {
+            width: 40px;
+            height: 40px;
+
+            border-radius: 13px;
+
+            background: #111214;
+            color: white;
+
+            display: grid;
+            place-items: center;
+
+            font-size: 16px;
+            font-weight: 800;
+
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+
+            position: relative;
+            overflow: hidden;
+        }
+
+        .brand-icon::after {
+            content: "";
+
+            position: absolute;
+            width: 80px;
+            height: 20px;
+
+            background: rgba(255,255,255,0.3);
+
+            transform: rotate(-45deg) translateX(-100px);
+
+            animation: shine 4s ease-in-out infinite;
+        }
+
+        .brand-text strong {
+            display: block;
+            font-size: 14px;
+            letter-spacing: -0.02em;
+        }
+
+        .brand-text span {
+            display: block;
+            margin-top: 2px;
+
+            font-size: 10px;
+            color: #85888d;
+        }
+
+        .nav-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+
+            font-size: 10px;
+            color: #777b82;
+
+            padding: 9px 13px;
+
+            border: 1px solid rgba(0,0,0,0.08);
+            border-radius: 999px;
+
+            background: rgba(255,255,255,0.55);
+            backdrop-filter: blur(15px);
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+
+            background: #21a366;
+            border-radius: 50%;
+
+            box-shadow: 0 0 0 5px rgba(33,163,102,0.08);
+
+            animation: pulse 2s infinite;
+        }
+
+
+        /* =========================
+           HERO
+        ========================== */
+
+        .hero {
+            width: min(1180px, 92%);
+            min-height: calc(100vh - 90px);
+
+            margin: 0 auto;
+
+            display: grid;
+            grid-template-columns: 1.05fr 0.95fr;
+
+            align-items: center;
+            gap: 70px;
+        }
+
+        .hero-content {
+            animation: fadeUp 0.9s 0.15s ease both;
+        }
+
+        .eyebrow {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 0.18em;
+
+            color: #777b82;
+
+            margin-bottom: 18px;
+        }
+
+        .eyebrow-line {
+            width: 22px;
+            height: 1px;
+            background: #111214;
+        }
+
+        .hero h1 {
+            font-size: clamp(52px, 6vw, 82px);
+            line-height: 0.95;
+
+            letter-spacing: -0.07em;
+
+            max-width: 720px;
+        }
+
+        .hero h1 span {
+            color: #8b8e94;
+        }
+
+        .hero-description {
+            max-width: 540px;
+
+            margin-top: 27px;
+
+            color: #70747b;
+
+            font-size: 15px;
+            line-height: 1.8;
+        }
+
+        .hero-actions {
+            display: flex;
+            gap: 12px;
+
+            margin-top: 32px;
+        }
+
+        .primary-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+
+            padding: 14px 19px;
+
+            border-radius: 13px;
+
+            background: #111214;
+            color: white;
+
+            font-size: 12px;
+            font-weight: 750;
+
+            box-shadow: 0 15px 30px rgba(0,0,0,0.13);
+
+            transition:
+                transform 0.25s ease,
+                box-shadow 0.25s ease;
+        }
+
+        .primary-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 20px 38px rgba(0,0,0,0.18);
+        }
+
+        .secondary-button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+
+            padding: 14px 19px;
+
+            border-radius: 13px;
+
+            background: rgba(255,255,255,0.65);
+
+            border: 1px solid rgba(0,0,0,0.08);
+
+            font-size: 12px;
+            font-weight: 700;
+
+            transition:
+                transform 0.25s ease,
+                background 0.25s ease;
+        }
+
+        .secondary-button:hover {
+            transform: translateY(-3px);
+            background: white;
+        }
+
+
+        /* =========================
+           AI VISUAL
+        ========================== */
+
+        .hero-visual {
+            display: grid;
+            place-items: center;
+
+            animation: fadeUp 1s 0.3s ease both;
+        }
+
+        .ai-orbit {
+            width: min(390px, 75vw);
+            aspect-ratio: 1;
+
+            border-radius: 50%;
+
+            border: 1px solid rgba(17,18,20,0.09);
+
+            position: relative;
+
+            display: grid;
+            place-items: center;
+
+            animation: float 7s ease-in-out infinite;
+        }
+
+        .ai-orbit::before {
+            content: "";
+
+            position: absolute;
+
+            width: 72%;
+            height: 72%;
+
+            border-radius: 50%;
+
+            border: 1px solid rgba(17,18,20,0.08);
+
+            animation: rotate 18s linear infinite;
+        }
+
+        .ai-orbit::after {
+            content: "";
+
+            position: absolute;
+
+            width: 48%;
+            height: 48%;
+
+            border-radius: 50%;
+
+            border: 1px solid rgba(17,18,20,0.07);
+
+            animation: rotateReverse 13s linear infinite;
+        }
+
+        .ai-core {
+            width: 110px;
+            height: 110px;
+
+            border-radius: 30px;
+
+            background: #111214;
+            color: white;
+
+            display: grid;
+            place-items: center;
+
+            font-size: 22px;
+            font-weight: 850;
+            letter-spacing: -0.04em;
+
+            box-shadow:
+                0 25px 70px rgba(0,0,0,0.20),
+                0 0 80px rgba(0,0,0,0.06);
+
+            position: relative;
+            z-index: 2;
+
+            animation: corePulse 4s ease-in-out infinite;
+        }
+
+        .orbit-dot {
+            position: absolute;
+
+            width: 10px;
+            height: 10px;
+
+            background: #111214;
+
+            border-radius: 50%;
+
+            top: 15%;
+            right: 17%;
+
+            box-shadow: 0 0 0 7px rgba(17,18,20,0.05);
+
+            animation: orbitMove 5s linear infinite;
+        }
+
+
+        /* =========================
+           FEATURES
+        ========================== */
+
+        .features {
+            width: min(1180px, 92%);
+            margin: 0 auto 80px;
+
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+
+        .feature {
+            padding: 25px;
+
+            border-radius: 20px;
+
+            background: rgba(255,255,255,0.58);
+
+            border: 1px solid rgba(0,0,0,0.07);
+
+            backdrop-filter: blur(18px);
+
+            transition:
+                transform 0.3s ease,
+                background 0.3s ease,
+                box-shadow 0.3s ease;
+        }
+
+        .feature:hover {
+            transform: translateY(-7px);
+
+            background: rgba(255,255,255,0.85);
+
+            box-shadow: 0 25px 50px rgba(0,0,0,0.07);
+        }
+
+        .feature-number {
+            font-size: 10px;
+            font-weight: 800;
+            color: #969aa0;
+
+            letter-spacing: 0.15em;
+        }
+
+        .feature h3 {
+            margin-top: 22px;
+
+            font-size: 18px;
+            letter-spacing: -0.03em;
+        }
+
+        .feature p {
+            margin-top: 9px;
+
+            font-size: 12px;
+            line-height: 1.7;
+
+            color: #777b82;
+        }
+
+
+        /* =========================
+           FOOTER
+        ========================== */
+
+        footer {
+            width: min(1180px, 92%);
+            margin: 0 auto;
+
+            padding: 25px 0 35px;
+
+            border-top: 1px solid rgba(0,0,0,0.07);
+
+            display: flex;
+            justify-content: space-between;
+
+            font-size: 10px;
+            color: #999da3;
+        }
+
+
+        /* =========================
+           ANIMATIONS
+        ========================== */
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(25px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeDown {
+            from {
+                opacity: 0;
+                transform: translateY(-15px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes floating {
+            0%,100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-18px);
+            }
+        }
+
+        @keyframes float {
+            0%,100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-12px);
+            }
+        }
+
+        @keyframes rotate {
+            from {
+                transform: rotate(0);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        @keyframes rotateReverse {
+            from {
+                transform: rotate(360deg);
+            }
+
+            to {
+                transform: rotate(0);
+            }
+        }
+
+        @keyframes corePulse {
+            0%,100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.04);
+            }
+        }
+
+        @keyframes pulse {
+            0%,100% {
+                box-shadow: 0 0 0 5px rgba(33,163,102,0.08);
+            }
+
+            50% {
+                box-shadow: 0 0 0 9px rgba(33,163,102,0.02);
+            }
+        }
+
+        @keyframes shine {
+            0% {
+                transform: rotate(-45deg) translateX(-100px);
+            }
+
+            60%,100% {
+                transform: rotate(-45deg) translateX(160px);
+            }
+        }
+
+        @keyframes orbitMove {
+            from {
+                transform: rotate(0deg) translateX(165px) rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg) translateX(165px) rotate(-360deg);
+            }
+        }
+
+
+        /* =========================
+           RESPONSIVE
+        ========================== */
+
+        @media (max-width: 850px) {
+
+            .hero {
+                grid-template-columns: 1fr;
+                gap: 50px;
+
+                padding-top: 55px;
+                padding-bottom: 70px;
+            }
+
+            .hero-content {
+                text-align: center;
+            }
+
+            .eyebrow {
+                justify-content: center;
+            }
+
+            .hero-description {
+                margin-left: auto;
+                margin-right: auto;
+            }
+
+            .hero-actions {
+                justify-content: center;
+            }
+
+            .hero-visual {
+                order: -1;
+            }
+
+            .ai-orbit {
+                width: 280px;
+            }
+
+            .ai-core {
+                width: 85px;
+                height: 85px;
+                border-radius: 23px;
+                font-size: 18px;
+            }
+
+            .features {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 550px) {
+
+            .navbar {
+                padding-top: 18px;
+            }
+
+            .nav-status {
+                display: none;
+            }
+
+            .hero h1 {
+                font-size: 50px;
+            }
+
+            .hero-actions {
+                flex-direction: column;
+            }
+
+            .primary-button,
+            .secondary-button {
+                width: 100%;
+            }
+
+            footer {
+                flex-direction: column;
+                gap: 8px;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                scroll-behavior: auto !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Background -->
+    <div class="background">
+        <div class="glow glow-one"></div>
+        <div class="glow glow-two"></div>
+    </div>
+
+
+    <!-- Navigation -->
+    <header class="navbar">
+
+        <a href="#" class="brand">
+
+            <div class="brand-icon">
+                S
+            </div>
+
+            <div class="brand-text">
+                <strong>SecureDocs</strong>
+                <span>AI Document Portal</span>
+            </div>
+
+        </a>
+
+
+        <div class="nav-status">
+            <span class="status-dot"></span>
+            Secure workspace
+        </div>
+
+    </header>
+
+
+    <!-- Hero -->
+    <main>
+
+        <section class="hero">
+
+            <div class="hero-content">
+
+                <div class="eyebrow">
+                    <span class="eyebrow-line"></span>
+                    AI-POWERED DOCUMENT SEARCH
+                </div>
+
+
+                <h1>
+                    Your documents.
+                    <span>Understood.</span>
+                </h1>
+
+
+                <p class="hero-description">
+                    A secure internal workspace where teams can upload
+                    private documents, search their knowledge base and
+                    ask AI questions — without exposing sensitive data.
+                </p>
+
+
+                <div class="hero-actions">
+
+                    <a href="login.html" class="primary-button">
+                     Enter workspace
+                     <span>→</span>
+                    </a>
+                    <a href="#features" class="secondary-button">
+                        Explore platform
+                    </a>
+
+                </div>
+
+            </div>
+
+
+            <!-- Animated AI visual -->
+            <div class="hero-visual">
+
+                <div class="ai-orbit">
+
+                    <div class="orbit-dot"></div>
+
+                    <div class="ai-core">
+                        AI
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- Features -->
+        <section class="features" id="features">
+
+            <article class="feature">
+
+                <span class="feature-number">
+                    01 / SEARCH
+                </span>
+
+                <h3>
+                    Find information instantly.
+                </h3>
+
+                <p>
+                    Search across your authorized documents
+                    instead of manually opening files one by one.
+                </p>
+
+            </article>
+
+
+            <article class="feature">
+
+                <span class="feature-number">
+                    02 / AI
+                </span>
+
+                <h3>
+                    Ask your knowledge base.
+                </h3>
+
+                <p>
+                    Ask natural-language questions and receive
+                    answers grounded in your organization's documents.
+                </p>
+
+            </article>
+
+
+            <article class="feature">
+
+                <span class="feature-number">
+                    03 / SECURITY
+                </span>
+
+                <h3>
+                    Privacy comes first.
+                </h3>
+
+                <p>
+                    Role-based access and protected documents keep
+                    sensitive company information inside the workspace.
+                </p>
+
+            </article>
+
+        </section>
+
+    </main>
+
+
+    <!-- Footer -->
+    <footer>
+
+        <span>
+            SecureDocs © 2026
+        </span>
+
+        <span>
+            Private knowledge. Intelligent access.
+        </span>
+
+    </footer>
+
+</body>
+</html>
