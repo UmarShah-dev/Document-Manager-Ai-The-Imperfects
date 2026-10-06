@@ -1,206 +1,224 @@
 <!DOCTYPE html>
-
 <html lang="en">
 
 <head>
-
     <meta charset="UTF-8">
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-
-
     <title>Documents — SecureDocs</title>
-
-
 
     <style>
 
         * {
-
             margin: 0;
-
             padding: 0;
-
             box-sizing: border-box;
-
         }
 
+        :root {
+            --bg: #050816;
+            --panel: rgba(13, 18, 38, 0.72);
+            --border: rgba(255,255,255,.09);
 
+            --text: #f5f7ff;
+            --muted: #8991ad;
+
+            --blue: #4f8cff;
+            --violet: #8b5cf6;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
 
         body {
+            font-family: Inter, -apple-system, BlinkMacSystemFont,
+                "Segoe UI", sans-serif;
 
-            font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            background:
+                radial-gradient(
+                    circle at 75% 5%,
+                    rgba(79,140,255,.14),
+                    transparent 28%
+                ),
+                radial-gradient(
+                    circle at 15% 85%,
+                    rgba(139,92,246,.11),
+                    transparent 30%
+                ),
+                var(--bg);
 
-            background: #f6f6f3;
-
-            color: #111;
+            color: var(--text);
 
             min-height: 100vh;
 
+            overflow-x: hidden;
         }
 
+
+        /* =========================
+           BACKGROUND GRID
+        ========================== */
+
+        body::before {
+            content: "";
+
+            position: fixed;
+            inset: 0;
+
+            pointer-events: none;
+
+            background-image:
+                linear-gradient(
+                    rgba(255,255,255,.025) 1px,
+                    transparent 1px
+                ),
+                linear-gradient(
+                    90deg,
+                    rgba(255,255,255,.025) 1px,
+                    transparent 1px
+                );
+
+            background-size: 55px 55px;
+
+            mask-image:
+                linear-gradient(
+                    to bottom,
+                    black,
+                    transparent 92%
+                );
+        }
 
 
         .app {
-
             display: flex;
-
             min-height: 100vh;
-
         }
 
 
-
-        /* SIDEBAR */
-
-
+        /* =========================
+           SIDEBAR
+        ========================== */
 
         .sidebar {
+            width: 255px;
 
-            width: 250px;
+            background: rgba(5, 8, 22, .82);
 
-            background: #111;
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
 
-            color: white;
+            border-right: 1px solid var(--border);
 
-            padding: 28px 18px;
+            padding: 25px 17px;
 
             position: fixed;
 
             inset: 0 auto 0 0;
 
             display: flex;
-
             flex-direction: column;
 
+            z-index: 20;
         }
 
 
-
         .brand {
-
             display: flex;
-
             align-items: center;
 
             gap: 12px;
 
-            padding: 0 10px;
+            padding: 5px 10px;
 
-            margin-bottom: 55px;
-
+            margin-bottom: 52px;
         }
-
 
 
         .brand-mark {
+            width: 40px;
+            height: 40px;
 
-            width: 38px;
-
-            height: 38px;
-
-            border: 1px solid rgba(255,255,255,.2);
+            display: grid;
+            place-items: center;
 
             border-radius: 12px;
 
-            display: grid;
-
-            place-items: center;
-
             font-size: 14px;
+            font-weight: 800;
 
-            font-weight: 700;
+            color: white;
 
-            background: #1d1d1d;
+            background:
+                linear-gradient(
+                    135deg,
+                    var(--blue),
+                    var(--violet)
+                );
 
+            box-shadow:
+                0 0 25px rgba(79,140,255,.28);
+
+            position: relative;
         }
 
+
+        .brand-mark::after {
+            content: "";
+
+            position: absolute;
+
+            inset: 1px;
+
+            border-radius: 11px;
+
+            border: 1px solid rgba(255,255,255,.25);
+        }
 
 
         .brand-name {
-
             font-size: 16px;
 
-            font-weight: 600;
+            font-weight: 700;
 
+            letter-spacing: -.4px;
         }
 
 
-
         .nav-label {
-
-            color: #777;
+            color: #626b87;
 
             font-size: 10px;
 
             text-transform: uppercase;
 
-            letter-spacing: 1.5px;
+            letter-spacing: 1.7px;
 
             padding: 0 12px;
 
             margin-bottom: 12px;
-
         }
 
 
-
         .nav {
-
             display: flex;
 
             flex-direction: column;
 
-            gap: 6px;
-
+            gap: 7px;
         }
-
 
 
         .nav a {
-
             text-decoration: none;
 
-            color: #999;
+            color: #7f88a4;
 
-            padding: 13px 12px;
+            padding: 13px;
 
-            border-radius: 11px;
+            border-radius: 12px;
 
-            font-size: 14px;
-
-            transition: .25s ease;
-
-        }
-
-
-
-        .nav a:hover,
-
-        .nav a.active {
-
-            color: white;
-
-            background: #202020;
-
-        }
-
-
-
-        .sidebar-bottom {
-
-            margin-top: auto;
-
-        }
-
-
-
-        .user-mini {
-
-            border-top: 1px solid #292929;
-
-            padding-top: 18px;
+            font-size: 13px;
 
             display: flex;
 
@@ -208,157 +226,208 @@
 
             gap: 10px;
 
+            border: 1px solid transparent;
+
+            transition:
+                transform .25s ease,
+                background .25s ease,
+                color .25s ease,
+                border .25s ease;
         }
 
+
+        .nav a:hover {
+            color: white;
+
+            background: rgba(255,255,255,.045);
+
+            border-color: rgba(255,255,255,.07);
+
+            transform: translateX(3px);
+        }
+
+
+        .nav a.active {
+            color: white;
+
+            background:
+                linear-gradient(
+                    90deg,
+                    rgba(79,140,255,.15),
+                    rgba(139,92,246,.10)
+                );
+
+            border-color: rgba(79,140,255,.20);
+
+            box-shadow:
+                inset 3px 0 0 var(--blue),
+                0 8px 25px rgba(0,0,0,.12);
+        }
+
+
+        .nav a span {
+            flex: 1;
+        }
+
+
+        .sidebar-bottom {
+            margin-top: auto;
+        }
+
+
+        .user-mini {
+            border-top: 1px solid var(--border);
+
+            padding: 18px 8px 4px;
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 11px;
+        }
 
 
         .avatar {
-
-            width: 34px;
-
-            height: 34px;
+            width: 36px;
+            height: 36px;
 
             border-radius: 50%;
 
-            background: #e8e8e5;
-
-            color: #111;
-
             display: grid;
-
             place-items: center;
 
-            font-size: 12px;
+            font-size: 11px;
+            font-weight: 800;
 
-            font-weight: 700;
+            color: white;
 
+            background:
+                linear-gradient(
+                    135deg,
+                    #1d4ed8,
+                    #7c3aed
+                );
+
+            box-shadow:
+                0 0 20px rgba(79,140,255,.18);
         }
-
 
 
         .user-info strong {
-
             display: block;
 
             font-size: 12px;
-
         }
-
 
 
         .user-info span {
-
-            color: #777;
+            color: #626b87;
 
             font-size: 10px;
-
         }
 
 
-
-        /* MAIN */
-
-
+        /* =========================
+           MAIN
+        ========================== */
 
         .main {
+            margin-left: 255px;
 
-            margin-left: 250px;
+            width: calc(100% - 255px);
 
-            width: calc(100% - 250px);
+            padding: 40px 48px;
 
-            padding: 38px 45px;
-
-            animation: pageIn .6s ease both;
-
+            animation: pageIn .7s ease both;
         }
-
 
 
         .topbar {
-
             display: flex;
 
             justify-content: space-between;
 
             align-items: flex-start;
 
-            margin-bottom: 32px;
-
+            margin-bottom: 30px;
         }
-
 
 
         .heading small {
-
-            color: #888;
+            color: #69738f;
 
             font-size: 10px;
 
-            letter-spacing: 1.5px;
+            letter-spacing: 1.7px;
 
+            font-weight: 600;
         }
-
 
 
         .heading h1 {
-
             margin-top: 7px;
 
-            font-size: 31px;
+            font-size: 34px;
 
-            letter-spacing: -1.5px;
+            letter-spacing: -1.7px;
 
-            font-weight: 600;
-
+            font-weight: 650;
         }
-
 
 
         .heading p {
+            margin-top: 9px;
 
-            margin-top: 8px;
-
-            color: #888;
+            color: #7d87a3;
 
             font-size: 12px;
-
         }
-
 
 
         .back {
-
             text-decoration: none;
 
-            color: #777;
+            color: #a2abc2;
 
-            font-size: 12px;
+            font-size: 11px;
 
             padding: 10px 14px;
 
-            border: 1px solid #ddd;
+            border: 1px solid var(--border);
 
             border-radius: 10px;
 
-            background: white;
+            background: rgba(255,255,255,.035);
 
+            backdrop-filter: blur(10px);
+
+            transition:
+                transform .25s ease,
+                background .25s ease,
+                color .25s ease;
         }
 
 
+        .back:hover {
+            color: white;
 
-        /* UPLOAD */
+            background: rgba(255,255,255,.07);
+
+            transform: translateY(-2px);
+        }
 
 
+        /* =========================
+           UPLOAD ZONE
+        ========================== */
 
         .upload-zone {
+            min-height: 245px;
 
-            background: white;
+            position: relative;
 
-            border: 1.5px dashed #cfcfc9;
-
-            border-radius: 20px;
-
-            min-height: 240px;
+            overflow: hidden;
 
             display: flex;
 
@@ -372,106 +441,212 @@
 
             padding: 30px;
 
-            transition: .3s ease;
-
             cursor: pointer;
 
+            border-radius: 22px;
+
+            background:
+                radial-gradient(
+                    circle at 50% 0%,
+                    rgba(79,140,255,.12),
+                    transparent 45%
+                ),
+                linear-gradient(
+                    145deg,
+                    rgba(17,24,47,.85),
+                    rgba(8,12,27,.78)
+                );
+
+            border: 1px dashed rgba(100,125,190,.30);
+
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+
+            box-shadow:
+                0 20px 60px rgba(0,0,0,.18);
+
+            transition:
+                transform .3s ease,
+                border-color .3s ease,
+                box-shadow .3s ease;
         }
 
+
+        .upload-zone::before {
+            content: "";
+
+            position: absolute;
+
+            width: 260px;
+            height: 260px;
+
+            border-radius: 50%;
+
+            background:
+                radial-gradient(
+                    circle,
+                    rgba(79,140,255,.16),
+                    transparent 65%
+                );
+
+            filter: blur(10px);
+
+            top: -160px;
+
+            left: 50%;
+
+            transform: translateX(-50%);
+
+            pointer-events: none;
+
+            transition: .4s ease;
+        }
 
 
         .upload-zone:hover {
+            transform: translateY(-4px);
 
-            border-color: #111;
+            border-color: rgba(79,140,255,.55);
 
-            transform: translateY(-2px);
-
-            box-shadow: 0 15px 35px rgba(0,0,0,.05);
-
+            box-shadow:
+                0 25px 70px rgba(0,0,0,.25),
+                0 0 45px rgba(79,140,255,.06);
         }
 
+
+        .upload-zone:hover::before {
+            transform:
+                translateX(-50%)
+                scale(1.2);
+        }
 
 
         .upload-icon {
+            width: 58px;
+            height: 58px;
 
-            width: 54px;
-
-            height: 54px;
-
-            border-radius: 16px;
-
-            background: #111;
-
-            color: white;
+            border-radius: 17px;
 
             display: grid;
-
             place-items: center;
 
             font-size: 22px;
+            font-weight: 500;
+
+            color: white;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    var(--blue),
+                    var(--violet)
+                );
+
+            border: 1px solid rgba(255,255,255,.16);
+
+            box-shadow:
+                0 12px 35px rgba(79,140,255,.25);
 
             margin-bottom: 17px;
 
+            position: relative;
+            z-index: 2;
+
+            animation: uploadFloat 3s ease-in-out infinite;
         }
 
 
+        .upload-icon::after {
+            content: "";
+
+            position: absolute;
+
+            inset: -7px;
+
+            border-radius: 21px;
+
+            border: 1px solid rgba(79,140,255,.14);
+
+            animation: iconRing 2.5s ease-in-out infinite;
+        }
+
 
         .upload-zone h2 {
-
             font-size: 17px;
 
             font-weight: 600;
 
+            position: relative;
+            z-index: 2;
         }
-
 
 
         .upload-zone p {
+            color: #78829e;
 
-            color: #999;
-
-            font-size: 12px;
+            font-size: 11px;
 
             margin-top: 8px;
 
+            position: relative;
+            z-index: 2;
         }
 
 
-
         .browse {
-
             display: inline-block;
 
             margin-top: 19px;
 
-            background: #111;
-
             color: white;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    var(--blue),
+                    var(--violet)
+                );
 
             padding: 11px 18px;
 
             border-radius: 10px;
 
-            font-size: 12px;
+            font-size: 11px;
 
+            font-weight: 600;
+
+            border: 1px solid rgba(255,255,255,.12);
+
+            box-shadow:
+                0 10px 25px rgba(79,140,255,.18);
+
+            position: relative;
+            z-index: 2;
+
+            transition:
+                transform .25s ease,
+                box-shadow .25s ease;
         }
 
+
+        .upload-zone:hover .browse {
+            transform: translateY(-2px);
+
+            box-shadow:
+                0 14px 30px rgba(79,140,255,.28);
+        }
 
 
         #fileInput {
-
             display: none;
-
         }
 
 
-
-        /* TOOLBAR */
-
-
+        /* =========================
+           TOOLBAR
+        ========================== */
 
         .toolbar {
-
             display: flex;
 
             justify-content: space-between;
@@ -479,67 +654,87 @@
             align-items: center;
 
             margin: 32px 0 15px;
-
         }
-
 
 
         .toolbar h2 {
-
             font-size: 16px;
 
+            letter-spacing: -.3px;
         }
-
 
 
         .search {
+            width: 230px;
 
-            background: white;
-
-            border: 1px solid #e4e4df;
-
-            border-radius: 10px;
-
-            padding: 10px 13px;
-
-            width: 220px;
+            padding: 11px 14px;
 
             outline: none;
 
-            font-size: 12px;
+            color: white;
 
+            font-size: 11px;
+
+            border-radius: 11px;
+
+            border: 1px solid var(--border);
+
+            background: rgba(255,255,255,.035);
+
+            backdrop-filter: blur(10px);
+
+            transition:
+                border-color .25s ease,
+                box-shadow .25s ease,
+                background .25s ease;
         }
 
+
+        .search::placeholder {
+            color: #626b87;
+        }
 
 
         .search:focus {
+            border-color: rgba(79,140,255,.45);
 
-            border-color: #999;
+            background: rgba(79,140,255,.045);
 
+            box-shadow:
+                0 0 0 3px rgba(79,140,255,.08),
+                0 8px 25px rgba(0,0,0,.15);
         }
 
 
-
-        /* DOCUMENT LIST */
-
-
+        /* =========================
+           DOCUMENT LIST
+        ========================== */
 
         .documents {
+            min-height: 80px;
 
-            background: white;
+            background:
+                linear-gradient(
+                    145deg,
+                    rgba(17,24,47,.82),
+                    rgba(8,12,27,.76)
+                );
 
-            border: 1px solid #e7e7e2;
+            border: 1px solid var(--border);
 
-            border-radius: 18px;
+            border-radius: 19px;
 
             overflow: hidden;
 
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+
+            box-shadow:
+                0 20px 60px rgba(0,0,0,.18);
         }
 
 
-
         .document {
-
             display: flex;
 
             justify-content: space-between;
@@ -548,240 +743,306 @@
 
             padding: 17px 20px;
 
-            border-bottom: 1px solid #eee;
+            border-bottom: 1px solid rgba(255,255,255,.055);
 
-            transition: .2s ease;
-
+            transition:
+                background .25s ease,
+                padding .25s ease;
         }
-
 
 
         .document:last-child {
-
             border-bottom: none;
-
         }
-
 
 
         .document:hover {
+            background: rgba(255,255,255,.025);
 
-            background: #fafaf8;
-
+            padding-left: 24px;
         }
 
 
-
         .doc-left {
-
             display: flex;
 
             align-items: center;
 
             gap: 14px;
-
         }
 
 
-
         .doc-icon {
-
             width: 43px;
-
             height: 43px;
 
             border-radius: 12px;
 
-            background: #f1f1ee;
-
             display: grid;
-
             place-items: center;
 
-            font-size: 10px;
+            font-size: 9px;
 
-            font-weight: 700;
+            font-weight: 800;
 
+            color: #aebeff;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    rgba(79,140,255,.12),
+                    rgba(139,92,246,.12)
+                );
+
+            border: 1px solid rgba(79,140,255,.12);
+
+            transition:
+                transform .25s ease,
+                box-shadow .25s ease;
         }
 
 
+        .document:hover .doc-icon {
+            transform: scale(1.05);
+
+            box-shadow:
+                0 8px 20px rgba(79,140,255,.10);
+        }
+
 
         .doc-name {
-
             font-size: 13px;
 
             font-weight: 600;
 
+            color: #eef1ff;
         }
 
 
-
         .doc-meta {
-
-            color: #999;
+            color: #66708d;
 
             font-size: 10px;
 
             margin-top: 5px;
-
         }
 
 
-
         .status {
-
             padding: 6px 10px;
 
             border-radius: 20px;
 
-            background: #f2f2ef;
+            background: rgba(79,140,255,.08);
 
-            color: #777;
+            border: 1px solid rgba(79,140,255,.12);
 
-            font-size: 10px;
+            color: #91a9ff;
 
+            font-size: 9px;
+
+            transition: .25s ease;
         }
 
 
+        .document:hover .status {
+            background: rgba(79,140,255,.13);
+        }
 
-        /* ANIMATION */
+
+        /* EMPTY STATE */
+
+        .documents:empty::after {
+            content: "No documents uploaded yet";
+
+            display: block;
+
+            text-align: center;
+
+            padding: 38px 20px;
+
+            color: #626b87;
+
+            font-size: 11px;
+
+            letter-spacing: .2px;
+        }
 
 
+        /* =========================
+           ANIMATIONS
+        ========================== */
 
         @keyframes pageIn {
 
             from {
-
                 opacity: 0;
-
-                transform: translateY(12px);
-
+                transform: translateY(14px);
             }
 
-
-
             to {
-
                 opacity: 1;
-
                 transform: translateY(0);
-
             }
 
         }
 
 
+        @keyframes uploadFloat {
 
-        /* RESPONSIVE */
+            0%, 100% {
+                transform: translateY(0);
+            }
+
+            50% {
+                transform: translateY(-5px);
+            }
+
+        }
 
 
+        @keyframes iconRing {
+
+            0%, 100% {
+                opacity: .25;
+                transform: scale(.96);
+            }
+
+            50% {
+                opacity: .65;
+                transform: scale(1.06);
+            }
+
+        }
+
+
+        /* =========================
+           RESPONSIVE
+        ========================== */
 
         @media (max-width: 900px) {
 
-
-
             .sidebar {
-
-                width: 75px;
+                width: 78px;
 
                 padding: 25px 10px;
-
             }
-
 
 
             .brand-name,
-
             .nav-label,
-
             .nav a span,
-
             .user-info {
-
                 display: none;
-
             }
-
 
 
             .brand {
-
                 justify-content: center;
 
                 padding: 0;
-
             }
-
 
 
             .nav a {
-
-                text-align: center;
-
+                justify-content: center;
             }
-
 
 
             .main {
+                margin-left: 78px;
 
-                margin-left: 75px;
+                width: calc(100% - 78px);
 
-                width: calc(100% - 75px);
-
-                padding: 28px;
-
+                padding: 30px;
             }
 
         }
-
 
 
         @media (max-width: 650px) {
 
-
-
             .main {
-
                 padding: 20px;
-
             }
-
 
 
             .topbar {
-
                 flex-direction: column;
 
                 gap: 15px;
-
             }
 
 
+            .back {
+                width: 100%;
+
+                text-align: center;
+            }
+
 
             .toolbar {
-
                 flex-direction: column;
 
                 align-items: stretch;
 
                 gap: 12px;
-
             }
-
 
 
             .search {
-
                 width: 100%;
-
             }
 
 
+            .document {
+                gap: 15px;
+            }
+
+        }
+
+
+        @media (max-width: 480px) {
+
+            .main {
+                padding: 17px;
+            }
+
+
+            .upload-zone {
+                min-height: 220px;
+
+                padding: 20px;
+            }
+
+
+            .documents {
+                border-radius: 15px;
+            }
+
 
             .document {
+                padding: 15px;
+            }
 
-                gap: 15px;
 
+            .status {
+                display: none;
+            }
+
+        }
+
+
+        @media (prefers-reduced-motion: reduce) {
+
+            *,
+            *::before,
+            *::after {
+                animation-duration: .01ms !important;
+
+                animation-iteration-count: 1 !important;
+
+                transition-duration: .01ms !important;
             }
 
         }
@@ -791,303 +1052,201 @@
 </head>
 
 
-
 <body>
-
 
 
 <div class="app">
 
 
-
     <!-- SIDEBAR -->
-
-
 
     <aside class="sidebar">
 
-
-
         <div class="brand">
 
-            <div class="brand-mark">S</div>
+            <div class="brand-mark">
+                S
+            </div>
 
-            <div class="brand-name">SecureDocs</div>
+            <div class="brand-name">
+                SecureDocs
+            </div>
 
         </div>
 
 
-
-        <div class="nav-label">Workspace</div>
-
+        <div class="nav-label">
+            Workspace
+        </div>
 
 
         <nav class="nav">
 
-
-
             <a href="dashboard.html">
-
                 ◉ <span>Overview</span>
-
             </a>
-
 
 
             <a href="documents.html" class="active">
-
                 ▣ <span>Documents</span>
-
             </a>
-
 
 
             <a href="assistant.html">
-
                 ✦ <span>AI Assistant</span>
-
             </a>
-
-
 
         </nav>
 
 
-
         <div class="sidebar-bottom">
-
-
 
             <div class="user-mini">
 
-
-
-                <div class="avatar">WS</div>
-
+                <div class="avatar">
+                    WS
+                </div>
 
 
                 <div class="user-info">
 
-                    <strong>Workspace User</strong>
+                    <strong>
+                        Workspace User
+                    </strong>
 
-                    <span>Secure account</span>
+                    <span>
+                        Secure account
+                    </span>
 
                 </div>
 
-
-
             </div>
 
-
-
         </div>
-
-
 
     </aside>
 
 
-
-
-
     <!-- MAIN -->
 
-
-
     <main class="main">
-
 
 
         <div class="topbar">
 
 
-
             <div class="heading">
 
+                <small>
+                    KNOWLEDGE BASE
+                </small>
 
 
-                <small>KNOWLEDGE BASE</small>
-
-
-
-                <h1>Documents.</h1>
-
+                <h1>
+                    Documents.
+                </h1>
 
 
                 <p>
-
                     Upload and manage the documents used by your AI assistant.
-
                 </p>
-
-
 
             </div>
 
 
-
             <a href="dashboard.html" class="back">
-
                 ← Dashboard
-
             </a>
-
-
 
         </div>
 
 
-
-
-
         <!-- UPLOAD AREA -->
-
-
 
         <label class="upload-zone" for="fileInput">
 
 
-
             <div class="upload-icon">
-
                 ↑
-
             </div>
 
 
-
             <h2>
-
                 Drop your documents here
-
             </h2>
 
 
-
             <p>
-
                 PDF, DOCX, TXT and other supported files
-
             </p>
 
 
-
             <span class="browse">
-
                 Browse files
-
             </span>
 
 
-
             <input
-
                 type="file"
-
                 id="fileInput"
-
                 multiple
-
                 accept=".pdf,.doc,.docx,.txt"
-
             >
-
 
 
         </label>
 
 
-
-
-
         <!-- DOCUMENTS -->
-
-
 
         <div class="toolbar">
 
-
-
             <h2>
-
                 Your documents
-
             </h2>
 
 
-
             <input
-
                 type="search"
-
                 class="search"
-
                 placeholder="Search documents..."
-
             >
 
-
-
         </div>
 
 
-
-
-
-        <div class="documents">
-
-
-
-
-
-        </div>
-
+        <div class="documents"></div>
 
 
     </main>
 
 
-
 </div>
-
 
 
 <script>
 
 const fileInput = document.getElementById("fileInput");
-
 const documentsList = document.querySelector(".documents");
-
+const searchInput = document.querySelector(".search");
 
 
 fileInput.addEventListener("change", function () {
 
-
-
     const files = Array.from(this.files);
-
-
 
     if (files.length === 0) return;
 
 
-
     files.forEach(file => {
 
-
-
         const extension = file.name
-
             .split(".")
-
             .pop()
-
             .toUpperCase();
 
 
-
         const size = formatSize(file.size);
-
 
 
         const item = document.createElement("div");
@@ -1095,141 +1254,110 @@ fileInput.addEventListener("change", function () {
         item.className = "document";
 
 
-
         item.innerHTML = `
 
             <div class="doc-left">
 
-
-
                 <div class="doc-icon">
-
                     ${extension}
-
                 </div>
-
-
 
                 <div>
 
                     <div class="doc-name">
-
                         ${file.name}
-
                     </div>
 
-
-
                     <div class="doc-meta">
-
                         ${size} · Uploading...
-
                     </div>
 
                 </div>
 
-
-
             </div>
 
 
-
             <div class="status">
-
                 Uploading
-
             </div>
 
         `;
 
 
-
         documentsList.prepend(item);
 
 
-
-
-
-        // Processing
+        /* PROCESSING */
 
         setTimeout(() => {
 
-
-
             item.querySelector(".doc-meta").textContent =
-
                 `${size} · Processing document...`;
 
-
-
             item.querySelector(".status").textContent =
-
                 "Processing";
-
-
 
         }, 1200);
 
 
-
-
-
-        // Indexed
+        /* INDEXED */
 
         setTimeout(() => {
 
-
-
             item.querySelector(".doc-meta").textContent =
-
                 `${size} · Just now`;
 
-
-
             item.querySelector(".status").textContent =
-
                 "Indexed";
 
-
-
         }, 3000);
-
-
 
     });
 
 
-
-    // Reset input so the same file can be selected again
+    /* Allow same file to be selected again */
 
     fileInput.value = "";
-
-
 
 });
 
 
+/* SEARCH */
 
+searchInput.addEventListener("input", function () {
+
+    const query = this.value.toLowerCase().trim();
+
+    const documents = document.querySelectorAll(".document");
+
+    documents.forEach(document => {
+
+        const name =
+            document
+                .querySelector(".doc-name")
+                .textContent
+                .toLowerCase();
+
+        document.style.display =
+            name.includes(query)
+                ? "flex"
+                : "none";
+
+    });
+
+});
 
 
 function formatSize(bytes) {
 
-
-
     if (bytes < 1024) {
-
         return bytes + " B";
-
     }
-
 
 
     if (bytes < 1024 * 1024) {
-
         return (bytes / 1024).toFixed(1) + " KB";
-
     }
-
 
 
     return (bytes / (1024 * 1024)).toFixed(1) + " MB";
@@ -1237,6 +1365,7 @@ function formatSize(bytes) {
 }
 
 </script>
+
 
 </body>
 
