@@ -2,27 +2,6 @@
 SecureDocs - AI-Powered Secure Document Search Portal
 
 FastAPI backend
-
-Features:
-- SQLite + SQLAlchemy persistent database
-- Gemini AI document assistant
-- Encrypted document storage
-- Persistent Fernet encryption key
-- Session authentication + CSRF protection
-- Restricted document access
-- PDF / DOCX / TXT / MD / CSV support
-- Search and document retrieval
-- Security headers
-- CSP compatible with existing inline frontend JavaScript
-- HSTS
-- OPTIONS protection
-
-Environment variables:
-GEMINI_API_KEY
-SECUREDOCS_FERNET_KEY
-ADMIN_EMAIL
-ADMIN_PASSWORD
-COOKIE_SECURE
 """
 
 import hashlib
@@ -81,7 +60,6 @@ from sqlalchemy.orm import (
     Session,
 )
 
-# Optional Gemini SDK
 try:
     from google import genai
 except ImportError:
@@ -286,7 +264,9 @@ class DocumentChunk(Base):
     )
 
 
-Base.metadata.create_all(bind=engine)
+Base.metadata.create_all(
+    bind=engine
+)
 
 
 def get_db():
@@ -307,21 +287,22 @@ FERNET_KEY = os.getenv(
 )
 
 if not FERNET_KEY:
+
     print(
         "\nWARNING: SECUREDOCS_FERNET_KEY is not set."
     )
+
     print(
         "A temporary encryption key will be generated."
     )
-    print(
-        "Set SECUREDOCS_FERNET_KEY in production "
-        "so encrypted documents survive restarts.\n"
-    )
 
-    FERNET_KEY = Fernet.generate_key().decode()
+    FERNET_KEY = (
+        Fernet.generate_key().decode()
+    )
 
 
 try:
+
     FERNET = Fernet(
         FERNET_KEY.encode()
         if isinstance(FERNET_KEY, str)
@@ -329,9 +310,9 @@ try:
     )
 
 except Exception:
+
     raise RuntimeError(
-        "SECUREDOCS_FERNET_KEY is invalid. "
-        "Generate a Fernet key and store it as a secret."
+        "SECUREDOCS_FERNET_KEY is invalid."
     )
 
 
@@ -360,6 +341,7 @@ def hash_pw(
     pw: str,
     salt=None,
 ):
+
     salt = (
         salt
         or secrets.token_bytes(16)
@@ -384,7 +366,9 @@ def check_pw(
     pw: str,
     stored: str,
 ):
+
     try:
+
         salt, h = stored.split(
             "$",
             1,
@@ -404,6 +388,7 @@ def check_pw(
         )
 
     except Exception:
+
         return False
 
 
@@ -423,6 +408,7 @@ ADMIN_PW_ENV = os.getenv(
 db = SessionLocal()
 
 try:
+
     existing_admin = (
         db.query(User)
         .filter(
@@ -453,23 +439,29 @@ try:
         print(
             "\n========================================"
         )
+
         print(
             " SecureDocs Admin Account"
         )
+
         print(
             "========================================"
         )
+
         print(
             f" Email: {ADMIN_EMAIL}"
         )
+
         print(
             f" Password: {generated_admin_password}"
         )
+
         print(
             "========================================\n"
         )
 
 finally:
+
     db.close()
 
 
@@ -484,7 +476,10 @@ def get_user(
     request: Request,
     db: Session,
 ):
-    token = request.cookies.get("sid")
+
+    token = request.cookies.get(
+        "sid"
+    )
 
     if not token:
         return None
@@ -493,16 +488,20 @@ def get_user(
         token.encode()
     ).hexdigest()
 
-    s = SESSIONS.get(session_hash)
+    s = SESSIONS.get(
+        session_hash
+    )
 
     if not s:
         return None
 
     if s["exp"] < time.time():
+
         SESSIONS.pop(
             session_hash,
             None,
         )
+
         return None
 
     user = (
@@ -514,10 +513,12 @@ def get_user(
     )
 
     if not user:
+
         SESSIONS.pop(
             session_hash,
             None,
         )
+
         return None
 
     return {
@@ -531,12 +532,14 @@ def current_user(
     request: Request,
     db: Session = Depends(get_db),
 ):
+
     u = get_user(
         request,
         db,
     )
 
     if not u:
+
         raise HTTPException(
             401,
             "Please sign in.",
@@ -546,6 +549,7 @@ def current_user(
         "GET",
         "HEAD",
     ):
+
         csrf = request.headers.get(
             "x-csrf",
             "",
@@ -555,6 +559,7 @@ def current_user(
             csrf,
             u["csrf"],
         ):
+
             raise HTTPException(
                 403,
                 "Security check failed. "
@@ -573,11 +578,13 @@ STOP = set(
     a an the and or of to in on for is are was were be it
     this that with as at by from what who how when which
     do does can i you we my our your about me tell
+    happening happening's
     """.split()
 )
 
 
 def tok(s):
+
     words = re.findall(
         r"[a-z0-9]+",
         s.lower(),
@@ -608,11 +615,15 @@ def extract(
     ext,
     raw,
 ):
+
     try:
 
         if ext == ".pdf":
 
-            if not raw.startswith(b"%PDF"):
+            if not raw.startswith(
+                b"%PDF"
+            ):
+
                 raise ValueError(
                     "Invalid PDF"
                 )
@@ -638,7 +649,11 @@ def extract(
                     "word/document.xml"
                 )
 
-                if info.file_size > 20_000_000:
+                if (
+                    info.file_size
+                    > 20_000_000
+                ):
+
                     raise ValueError(
                         "DOCX too large"
                     )
@@ -652,6 +667,11 @@ def extract(
 
             xml = xml.replace(
                 "</w:p>",
+                "\n",
+            )
+
+            xml = xml.replace(
+                "</w:tr>",
                 "\n",
             )
 
@@ -678,6 +698,7 @@ def extract(
         )
 
     except HTTPException:
+
         raise
 
     except Exception:
@@ -704,9 +725,11 @@ def extract(
 
 def chunk(
     text,
-    size=500,
+    size=700,
 ):
+
     out = []
+
     cur = ""
 
     parts = re.split(
@@ -725,6 +748,7 @@ def chunk(
             len(cur) + len(part) > size
             and cur
         ):
+
             out.append(
                 cur.strip()
             )
@@ -734,6 +758,7 @@ def chunk(
         cur += part + " "
 
     if cur.strip():
+
         out.append(
             cur.strip()
         )
@@ -749,6 +774,7 @@ def visible(
     u,
     d,
 ):
+
     return (
         u["role"] == "admin"
         or d.level == 1
@@ -760,6 +786,7 @@ def meta(
     d,
     **kw,
 ):
+
     return {
         "id": d.id,
         "name": d.name,
@@ -772,6 +799,83 @@ def meta(
 
 
 # ============================================================
+# DOCUMENT NAME MATCHING
+# ============================================================
+
+def normalize_name(
+    name
+):
+
+    return set(
+        tok(
+            Path(name).stem
+        )
+    )
+
+
+def find_named_documents(
+    u,
+    query,
+    db,
+):
+
+    q = query.lower()
+
+    documents = (
+        db.query(Document)
+        .order_by(
+            Document.ts.desc()
+        )
+        .all()
+    )
+
+    matches = []
+
+    for d in documents:
+
+        if not visible(u, d):
+            continue
+
+        full_name = d.name.lower()
+
+        stem = Path(
+            d.name
+        ).stem.lower()
+
+        # Exact filename/name mention
+        if (
+            full_name in q
+            or stem in q
+        ):
+
+            matches.append(d)
+            continue
+
+        # Strong token-based filename match
+        name_tokens = normalize_name(
+            d.name
+        )
+
+        query_tokens = set(
+            re.findall(
+                r"[a-z0-9]+",
+                q,
+            )
+        )
+
+        if (
+            name_tokens
+            and name_tokens.issubset(
+                query_tokens
+            )
+        ):
+
+            matches.append(d)
+
+    return matches
+
+
+# ============================================================
 # DOCUMENT RETRIEVAL
 # ============================================================
 
@@ -781,6 +885,179 @@ def retrieve(
     db,
     k=6,
 ):
+
+    # --------------------------------------------------------
+    # FIRST: check whether the user explicitly named a document
+    # --------------------------------------------------------
+
+    named_docs = find_named_documents(
+        u,
+        query,
+        db,
+    )
+
+    # --------------------------------------------------------
+    # If a document was explicitly named,
+    # prioritize its actual CONTENT.
+    # --------------------------------------------------------
+
+    if named_docs:
+
+        pool = []
+
+        for d in named_docs:
+
+            for c in d.chunks:
+
+                try:
+
+                    text = dec(
+                        c.data
+                    ).decode(
+                        "utf-8",
+                        "replace",
+                    ).strip()
+
+                    if text:
+
+                        pool.append(
+                            (
+                                d,
+                                text,
+                                c.position,
+                            )
+                        )
+
+                except Exception:
+
+                    continue
+
+        if not pool:
+            return []
+
+        # Terms that are actually useful for content matching.
+        qt = set(
+            tok(query)
+        )
+
+        # Remove filename words from query scoring.
+        for d in named_docs:
+
+            qt -= normalize_name(
+                d.name
+            )
+
+        # Remove generic question words.
+        qt -= {
+            "what",
+            "happen",
+            "happening",
+            "tell",
+            "about",
+            "document",
+            "file",
+            "report",
+            "explain",
+            "describe",
+        }
+
+        # If the user asks a broad question like:
+        # "what is happening in report.docx"
+        # there may be no meaningful query terms.
+        #
+        # In that case, return the first several real
+        # content chunks instead of the filename.
+        if not qt:
+
+            return [
+                (
+                    1.0,
+                    d,
+                    text,
+                )
+                for d, text, position
+                in pool[:k]
+            ]
+
+        toks = [
+            Counter(tok(text))
+            for _, text, _ in pool
+        ]
+
+        df = Counter(
+            w
+            for c in toks
+            for w in c
+            if w in qt
+        )
+
+        scored = []
+
+        for (
+            (d, text, position),
+            tf,
+        ) in zip(
+            pool,
+            toks,
+        ):
+
+            score = 0.0
+
+            for w in qt:
+
+                if (
+                    tf[w]
+                    and df[w]
+                ):
+
+                    score += (
+                        (
+                            1
+                            + math.log(
+                                tf[w]
+                            )
+                        )
+                        * math.log(
+                            1
+                            + len(pool)
+                            / df[w]
+                        )
+                    )
+
+            if score > 0:
+
+                scored.append(
+                    (
+                        score,
+                        d,
+                        text,
+                    )
+                )
+
+        scored.sort(
+            key=lambda x: -x[0]
+        )
+
+        if scored:
+
+            return scored[:k]
+
+        # No keyword overlap but the correct document
+        # was explicitly named.
+        return [
+            (
+                1.0,
+                d,
+                text,
+            )
+            for d, text, position
+            in pool[:k]
+        ]
+
+    # --------------------------------------------------------
+    # NORMAL WORKSPACE SEARCH
+    # --------------------------------------------------------
+
     documents = (
         db.query(Document)
         .order_by(
@@ -796,31 +1073,33 @@ def retrieve(
         if not visible(u, d):
             continue
 
-        try:
+        for c in d.chunks:
 
-            texts = [d.name]
+            try:
 
-            for c in d.chunks:
+                text = dec(
+                    c.data
+                ).decode(
+                    "utf-8",
+                    "replace",
+                ).strip()
 
-                texts.append(
-                    dec(c.data).decode(
-                        "utf-8",
-                        "replace",
+                if text:
+
+                    pool.append(
+                        (
+                            d,
+                            text,
+                        )
                     )
-                )
 
-            for t in texts:
-                pool.append(
-                    (
-                        d,
-                        t,
-                    )
-                )
+            except Exception:
 
-        except Exception:
-            continue
+                continue
 
-    qt = set(tok(query))
+    qt = set(
+        tok(query)
+    )
 
     if not pool or not qt:
         return []
@@ -839,7 +1118,10 @@ def retrieve(
 
     scored = []
 
-    for (d, t), tf in zip(
+    for (
+        (d, t),
+        tf,
+    ) in zip(
         pool,
         toks,
     ):
@@ -848,18 +1130,23 @@ def retrieve(
             (
                 (
                     1
-                    + math.log(tf[w])
+                    + math.log(
+                        tf[w]
+                    )
                 )
                 * math.log(
                     1
-                    + len(pool) / df[w]
+                    + len(pool)
+                    / df[w]
                 )
             )
             for w in qt
-            if tf[w] and df[w]
+            if tf[w]
+            and df[w]
         )
 
         if score > 0:
+
             scored.append(
                 (
                     score,
@@ -883,11 +1170,21 @@ def local_answer(
     query,
     hits,
 ):
-    qt = set(tok(query))
+
+    qt = set(
+        tok(query)
+    )
 
     found = []
 
     for score, d, t in hits:
+
+        # NEVER treat a filename as document content.
+        if (
+            t.strip().lower()
+            == d.name.strip().lower()
+        ):
+            continue
 
         sentences = re.split(
             r"(?<=[.!?])\s+|\n",
@@ -896,20 +1193,28 @@ def local_answer(
 
         for sent in sentences:
 
+            sent = sent.strip()
+
+            if not sent:
+                continue
+
             overlap = len(
                 qt
-                & set(tok(sent))
+                & set(
+                    tok(sent)
+                )
             )
 
             if (
                 overlap
                 and len(sent) > 15
             ):
+
                 found.append(
                     (
                         overlap,
                         score,
-                        sent.strip(),
+                        sent,
                         d.name,
                     )
                 )
@@ -922,7 +1227,9 @@ def local_answer(
     )
 
     seen = set()
+
     best = []
+
     sources = []
 
     for (
@@ -936,12 +1243,18 @@ def local_answer(
             continue
 
         seen.add(sent)
-        best.append(sent)
+
+        best.append(
+            sent
+        )
 
         if name not in sources:
-            sources.append(name)
 
-        if len(best) == 3:
+            sources.append(
+                name
+            )
+
+        if len(best) == 5:
             break
 
     return (
@@ -1006,6 +1319,7 @@ def gemini_answer(
     query,
     hits,
 ):
+
     if not gemini_client:
         return None
 
@@ -1014,34 +1328,49 @@ def gemini_answer(
 
     context_parts = []
 
+    # Give Gemini substantially more real document
+    # content than just the first tiny fragment.
     for score, d, text in hits:
 
         context_parts.append(
             "DOCUMENT: "
             + d.name
-            + "\n"
-            + text[:5000]
+            + "\nDOCUMENT CONTENT:\n"
+            + text[:7000]
         )
 
-    context = "\n\n---\n\n".join(
-        context_parts
+    context = (
+        "\n\n====================\n\n"
+        .join(context_parts)
     )
 
     prompt = f"""
-You are SecureDocs AI, a document assistant.
+You are SecureDocs AI, an AI assistant
+for a private document management system.
 
-Answer the user's question using ONLY
-the document context supplied below.
+Your job is to answer the user's question
+using ONLY the supplied document content.
 
-Do not invent facts.
-Do not use outside knowledge.
+IMPORTANT RULES:
 
-If the answer is not present in the
-provided documents, clearly say that
-the information was not found.
-
-Keep the answer useful and reasonably
-concise.
+1. Never answer using only a filename.
+2. Never treat a filename as document content.
+3. Read the supplied document text carefully.
+4. If the user asks what is happening,
+   explain the events, activities, findings,
+   status, changes, or important information
+   described in the document.
+5. If the user asks about a specific document,
+   focus primarily on that document.
+6. Do not invent facts.
+7. Do not use outside knowledge.
+8. If the information is not present,
+   say that it was not found.
+9. Give a natural, useful answer rather than
+   simply repeating document titles.
+10. Mention important dates, numbers,
+    findings, actions, risks, or conclusions
+    when they are actually present.
 
 DOCUMENT CONTEXT:
 
@@ -1050,12 +1379,16 @@ DOCUMENT CONTEXT:
 USER QUESTION:
 
 {query}
+
+ANSWER:
 """
 
     try:
 
         response = (
-            gemini_client.models.generate_content(
+            gemini_client
+            .models
+            .generate_content(
                 model=GEMINI_MODEL,
                 contents=prompt,
             )
@@ -1075,7 +1408,10 @@ USER QUESTION:
         for _, d, _ in hits:
 
             if d.name not in sources:
-                sources.append(d.name)
+
+                sources.append(
+                    d.name
+                )
 
         return (
             text.strip(),
@@ -1111,22 +1447,6 @@ app.add_middleware(
 # ============================================================
 # SECURITY MIDDLEWARE
 # ============================================================
-
-# IMPORTANT:
-# The existing HTML files contain inline JavaScript
-# and inline event handlers.
-#
-# Therefore script-src MUST include 'unsafe-inline'
-# unless the HTML is later refactored to remove all
-# inline JavaScript/event handlers.
-#
-# This is what fixes the browser error:
-#
-# "Executing inline script violates CSP"
-#
-# and:
-#
-# "Executing inline event handler violates CSP"
 
 CSP_BASE = (
     "default-src 'self'; "
@@ -1260,7 +1580,9 @@ def auth(
         if t > now - 300
     ]
 
-    if len(FAILS[key]) >= 5:
+    if len(
+        FAILS[key]
+    ) >= 5:
 
         raise HTTPException(
             429,
@@ -1282,7 +1604,9 @@ def auth(
 
         if user is None:
 
-            if len(body.password) < 8:
+            if len(
+                body.password
+            ) < 8:
 
                 raise HTTPException(
                     400,
@@ -1300,6 +1624,7 @@ def auth(
             )
 
             db.add(user)
+
             db.commit()
 
             created = True
@@ -1318,9 +1643,13 @@ def auth(
                 "Incorrect email or password.",
             )
 
-    token = secrets.token_urlsafe(32)
+    token = secrets.token_urlsafe(
+        32
+    )
 
-    csrf = secrets.token_urlsafe(24)
+    csrf = secrets.token_urlsafe(
+        24
+    )
 
     expired = [
         h
@@ -1342,7 +1671,10 @@ def auth(
     ] = {
         "email": email,
         "csrf": csrf,
-        "exp": time.time() + SESSION_TTL,
+        "exp": (
+            time.time()
+            + SESSION_TTL
+        ),
     }
 
     response = JSONResponse(
@@ -1369,7 +1701,9 @@ def logout(
     u=Depends(current_user),
 ):
 
-    token = request.cookies.get("sid")
+    token = request.cookies.get(
+        "sid"
+    )
 
     if token:
 
@@ -1386,7 +1720,9 @@ def logout(
         }
     )
 
-    response.delete_cookie("sid")
+    response.delete_cookie(
+        "sid"
+    )
 
     return response
 
@@ -1395,6 +1731,7 @@ def logout(
 def me(
     u=Depends(current_user),
 ):
+
     return u
 
 
@@ -1479,7 +1816,9 @@ async def upload(
     if not name:
         name = "file"
 
-    ext = Path(name).suffix.lower()
+    ext = Path(
+        name
+    ).suffix.lower()
 
     if ext not in EXTS:
 
@@ -1519,7 +1858,9 @@ async def upload(
         if (
             SENSITIVE.search(name)
             or SENSITIVE_NAME.search(name)
-            or SENSITIVE.search(text[:3000])
+            or SENSITIVE.search(
+                text[:3000]
+            )
         )
         else 1
     )
@@ -1541,7 +1882,9 @@ async def upload(
 
     chunks = chunk(text)
 
-    for position, content in enumerate(chunks):
+    for position, content in enumerate(
+        chunks
+    ):
 
         db.add(
             DocumentChunk(
@@ -1556,9 +1899,14 @@ async def upload(
         )
 
     db.commit()
-    db.refresh(document)
 
-    return meta(document)
+    db.refresh(
+        document
+    )
+
+    return meta(
+        document
+    )
 
 
 @app.get(
@@ -1578,7 +1926,10 @@ def download(
         .first()
     )
 
-    if not d or not visible(u, d):
+    if not d or not visible(
+        u,
+        d,
+    ):
 
         raise HTTPException(
             404,
@@ -1587,7 +1938,9 @@ def download(
 
     try:
 
-        raw = dec(d.raw)
+        raw = dec(
+            d.raw
+        )
 
     except Exception:
 
@@ -1628,11 +1981,7 @@ def search(
             d.id,
             meta(
                 d,
-                snippet=(
-                    t
-                    if t != d.name
-                    else "Name match"
-                )[:100],
+                snippet=t[:100],
             ),
         )
 
@@ -1709,6 +2058,10 @@ def chat(
             "sources": [],
         }
 
+    # --------------------------------------------------------
+    # LIST DOCUMENTS
+    # --------------------------------------------------------
+
     if (
         "summar" in low
         or re.search(
@@ -1733,9 +2086,10 @@ def chat(
                     ).decode(
                         "utf-8",
                         "replace",
-                    )[:110]
+                    )[:150]
 
                 except Exception:
+
                     preview = ""
 
             lines.append(
@@ -1745,8 +2099,8 @@ def chat(
         return {
             "answer":
                 f"You have {len(docs)} "
-                "document(s). "
-                + "  ".join(lines),
+                "document(s).\n\n"
+                + "\n".join(lines),
 
             "sources": [
                 d.name
@@ -1754,22 +2108,30 @@ def chat(
             ],
         }
 
+    # --------------------------------------------------------
+    # RETRIEVE REAL DOCUMENT CONTENT
+    # --------------------------------------------------------
+
     hits = retrieve(
         u,
         body.message,
         db,
-        6,
+        8,
     )
 
     if not hits:
 
         return {
             "answer":
-                "I couldn't find that in "
-                "the documents you have "
-                "access to.",
+                "I couldn't find relevant "
+                "content in the documents "
+                "you have access to.",
             "sources": [],
         }
+
+    # --------------------------------------------------------
+    # GEMINI
+    # --------------------------------------------------------
 
     ai_result = gemini_answer(
         body.message,
@@ -1785,12 +2147,70 @@ def chat(
             "sources": sources,
         }
 
+    # --------------------------------------------------------
+    # LOCAL FALLBACK
+    # --------------------------------------------------------
+
     answer_text, sources = local_answer(
         body.message,
         hits,
     )
 
     if not answer_text:
+
+        # For a named document, at least give a
+        # meaningful content preview instead of
+        # returning its filename.
+        named = find_named_documents(
+            u,
+            body.message,
+            db,
+        )
+
+        if named:
+
+            previews = []
+
+            for d in named:
+
+                for c in d.chunks[:3]:
+
+                    try:
+
+                        text = dec(
+                            c.data
+                        ).decode(
+                            "utf-8",
+                            "replace",
+                        ).strip()
+
+                        if text:
+
+                            previews.append(
+                                text[:700]
+                            )
+
+                    except Exception:
+
+                        continue
+
+            if previews:
+
+                return {
+                    "answer":
+                        "Here is the relevant "
+                        "content I found in "
+                        + named[0].name
+                        + ":\n\n"
+                        + "\n\n".join(
+                            previews
+                        ),
+
+                    "sources": [
+                        d.name
+                        for d in named
+                    ],
+                }
 
         return {
             "answer":
@@ -1849,6 +2269,7 @@ async function api(p,o={}){
     );
 
     if(r.status===401){
+
         location.href="login.html";
 
         throw new Error(
@@ -2685,8 +3106,12 @@ def load_page(
 ):
 
     for p in (
-        BASE / "pages" / f"{name}.html",
-        BASE / f"{name}.html",
+        BASE
+        / "pages"
+        / f"{name}.html",
+
+        BASE
+        / f"{name}.html",
     ):
 
         if p.is_file():
@@ -2716,7 +3141,11 @@ def load_page(
     )
 
     if name in PROTECTED:
-        js = COMMON + js
+
+        js = (
+            COMMON
+            + js
+        )
 
     if js:
 
@@ -2743,7 +3172,9 @@ def load_page(
 
             html += script
 
-    return HTMLResponse(html)
+    return HTMLResponse(
+        html
+    )
 
 
 # ============================================================
@@ -2754,6 +3185,7 @@ def load_page(
 def home(
     request: Request,
 ):
+
     return load_page(
         "index",
         True,
