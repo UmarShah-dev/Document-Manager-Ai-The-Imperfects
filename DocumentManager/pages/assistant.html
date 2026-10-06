@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,375 +8,830 @@
     <title>AI Assistant — SecureDocs</title>
 
     <style>
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
 
-        body {
-            font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-            background: #f6f6f3;
-            color: #111;
-            min-height: 100vh;
+        :root {
+            --bg: #050816;
+            --panel: rgba(13, 18, 38, .76);
+            --border: rgba(255,255,255,.09);
+
+            --text: #f5f7ff;
+            --muted: #8991ad;
+
+            --blue: #4f8cff;
+            --violet: #8b5cf6;
         }
+
+
+        /* =========================
+           BODY
+        ========================== */
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: Inter, -apple-system, BlinkMacSystemFont,
+                "Segoe UI", sans-serif;
+
+            background:
+                radial-gradient(
+                    circle at 75% 5%,
+                    rgba(79,140,255,.14),
+                    transparent 28%
+                ),
+                radial-gradient(
+                    circle at 15% 85%,
+                    rgba(139,92,246,.11),
+                    transparent 30%
+                ),
+                var(--bg);
+
+            color: var(--text);
+
+            min-height: 100vh;
+
+            overflow-x: hidden;
+        }
+
+
+        body::before {
+            content: "";
+
+            position: fixed;
+            inset: 0;
+
+            pointer-events: none;
+
+            background-image:
+                linear-gradient(
+                    rgba(255,255,255,.025) 1px,
+                    transparent 1px
+                ),
+                linear-gradient(
+                    90deg,
+                    rgba(255,255,255,.025) 1px,
+                    transparent 1px
+                );
+
+            background-size: 55px 55px;
+
+            mask-image:
+                linear-gradient(
+                    to bottom,
+                    black,
+                    transparent 92%
+                );
+        }
+
 
         .app {
             display: flex;
             min-height: 100vh;
         }
 
-        /* SIDEBAR */
+
+        /* =========================
+           SIDEBAR
+        ========================== */
 
         .sidebar {
-            width: 250px;
-            background: #111;
-            color: white;
-            padding: 28px 18px;
+            width: 255px;
+
+            background: rgba(5,8,22,.82);
+
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+
+            border-right: 1px solid var(--border);
+
+            padding: 25px 17px;
+
             position: fixed;
+
             inset: 0 auto 0 0;
+
             display: flex;
             flex-direction: column;
+
+            z-index: 20;
         }
+
 
         .brand {
             display: flex;
             align-items: center;
+
             gap: 12px;
-            padding: 0 10px;
-            margin-bottom: 55px;
+
+            padding: 5px 10px;
+
+            margin-bottom: 52px;
         }
 
+
         .brand-mark {
-            width: 38px;
-            height: 38px;
-            border: 1px solid rgba(255,255,255,.2);
-            border-radius: 12px;
+            width: 40px;
+            height: 40px;
+
             display: grid;
             place-items: center;
+
+            border-radius: 12px;
+
             font-size: 14px;
-            font-weight: 700;
-            background: #1d1d1d;
+            font-weight: 800;
+
+            color: white;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    var(--blue),
+                    var(--violet)
+                );
+
+            box-shadow:
+                0 0 25px rgba(79,140,255,.28);
+
+            position: relative;
         }
+
+
+        .brand-mark::after {
+            content: "";
+
+            position: absolute;
+
+            inset: 1px;
+
+            border-radius: 11px;
+
+            border: 1px solid rgba(255,255,255,.25);
+        }
+
 
         .brand-name {
             font-size: 16px;
-            font-weight: 600;
+
+            font-weight: 700;
+
+            letter-spacing: -.4px;
         }
 
+
         .nav-label {
-            color: #777;
+            color: #626b87;
+
             font-size: 10px;
+
             text-transform: uppercase;
-            letter-spacing: 1.5px;
+
+            letter-spacing: 1.7px;
+
             padding: 0 12px;
+
             margin-bottom: 12px;
         }
 
+
         .nav {
             display: flex;
+
             flex-direction: column;
-            gap: 6px;
+
+            gap: 7px;
         }
+
 
         .nav a {
             text-decoration: none;
-            color: #999;
-            padding: 13px 12px;
-            border-radius: 11px;
-            font-size: 14px;
-            transition: .25s ease;
+
+            color: #7f88a4;
+
+            padding: 13px;
+
+            border-radius: 12px;
+
+            font-size: 13px;
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 10px;
+
+            border: 1px solid transparent;
+
+            transition:
+                transform .25s ease,
+                background .25s ease,
+                color .25s ease,
+                border .25s ease;
         }
 
-        .nav a:hover,
+
+        .nav a:hover {
+            color: white;
+
+            background: rgba(255,255,255,.045);
+
+            border-color: rgba(255,255,255,.07);
+
+            transform: translateX(3px);
+        }
+
+
         .nav a.active {
             color: white;
-            background: #202020;
+
+            background:
+                linear-gradient(
+                    90deg,
+                    rgba(79,140,255,.15),
+                    rgba(139,92,246,.10)
+                );
+
+            border-color: rgba(79,140,255,.20);
+
+            box-shadow:
+                inset 3px 0 0 var(--blue),
+                0 8px 25px rgba(0,0,0,.12);
         }
+
+
+        .nav a span {
+            flex: 1;
+        }
+
 
         .sidebar-bottom {
             margin-top: auto;
         }
 
+
         .user-mini {
-            border-top: 1px solid #292929;
-            padding-top: 18px;
+            border-top: 1px solid var(--border);
+
+            padding: 18px 8px 4px;
+
             display: flex;
+
             align-items: center;
-            gap: 10px;
+
+            gap: 11px;
         }
 
+
         .avatar {
-            width: 34px;
-            height: 34px;
+            width: 36px;
+            height: 36px;
+
             border-radius: 50%;
-            background: #e8e8e5;
-            color: #111;
+
             display: grid;
             place-items: center;
-            font-size: 12px;
-            font-weight: 700;
+
+            font-size: 11px;
+            font-weight: 800;
+
+            color: white;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    #1d4ed8,
+                    #7c3aed
+                );
+
+            box-shadow:
+                0 0 20px rgba(79,140,255,.18);
         }
+
 
         .user-info strong {
             display: block;
+
             font-size: 12px;
         }
 
+
         .user-info span {
-            color: #777;
+            color: #626b87;
+
             font-size: 10px;
         }
 
-        /* MAIN */
+
+        /* =========================
+           MAIN
+        ========================== */
 
         .main {
-            margin-left: 250px;
-            width: calc(100% - 250px);
+            margin-left: 255px;
+
+            width: calc(100% - 255px);
+
             min-height: 100vh;
-            padding: 38px 45px;
+
+            padding: 40px 48px;
+
             display: flex;
+
             flex-direction: column;
-            animation: pageIn .6s ease both;
+
+            animation: pageIn .7s ease both;
         }
+
 
         .topbar {
             display: flex;
+
             justify-content: space-between;
+
             align-items: flex-start;
+
             margin-bottom: 25px;
         }
 
-        .heading small {
-            color: #888;
-            font-size: 10px;
-            letter-spacing: 1.5px;
-        }
 
-        .heading h1 {
-            margin-top: 7px;
-            font-size: 31px;
-            letter-spacing: -1.5px;
+        .heading small {
+            color: #69738f;
+
+            font-size: 10px;
+
+            letter-spacing: 1.7px;
+
             font-weight: 600;
         }
 
+
+        .heading h1 {
+            margin-top: 7px;
+
+            font-size: 34px;
+
+            letter-spacing: -1.7px;
+
+            font-weight: 650;
+        }
+
+
         .heading p {
-            margin-top: 8px;
-            color: #888;
+            margin-top: 9px;
+
+            color: #7d87a3;
+
             font-size: 12px;
         }
 
+
+        /* =========================
+           STATUS
+        ========================== */
+
         .status-pill {
             display: flex;
+
             align-items: center;
-            gap: 7px;
-            padding: 9px 12px;
-            background: white;
-            border: 1px solid #e4e4df;
+
+            gap: 8px;
+
+            padding: 9px 13px;
+
+            background: rgba(255,255,255,.035);
+
+            border: 1px solid var(--border);
+
             border-radius: 20px;
+
             font-size: 10px;
-            color: #777;
+
+            color: #8993ae;
+
+            backdrop-filter: blur(10px);
         }
+
 
         .status-dot {
             width: 7px;
             height: 7px;
-            background: #111;
+
             border-radius: 50%;
+
+            background: #6ee7b7;
+
+            box-shadow:
+                0 0 12px rgba(110,231,183,.6);
+
             animation: pulse 1.8s infinite;
         }
 
-        /* CHAT */
+
+        /* =========================
+           CHAT
+        ========================== */
 
         .chat {
             flex: 1;
+
             min-height: 520px;
-            background: white;
-            border: 1px solid #e6e6e1;
+
+            position: relative;
+
+            background:
+                linear-gradient(
+                    145deg,
+                    rgba(17,24,47,.84),
+                    rgba(8,12,27,.80)
+                );
+
+            border: 1px solid var(--border);
+
             border-radius: 22px;
+
             display: flex;
+
             flex-direction: column;
+
             overflow: hidden;
+
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+
+            box-shadow:
+                0 25px 70px rgba(0,0,0,.22);
         }
+
+
+        /* =========================
+           CHAT HEADER
+        ========================== */
 
         .chat-header {
             padding: 17px 22px;
-            border-bottom: 1px solid #ededE8;
+
+            border-bottom: 1px solid rgba(255,255,255,.065);
+
             display: flex;
+
             align-items: center;
+
             gap: 12px;
+
+            background: rgba(255,255,255,.015);
         }
 
+
         .ai-icon {
-            width: 37px;
-            height: 37px;
-            background: #111;
-            color: white;
-            border-radius: 11px;
+            width: 39px;
+            height: 39px;
+
+            border-radius: 12px;
+
             display: grid;
             place-items: center;
-            font-size: 14px;
+
+            color: white;
+
+            font-size: 15px;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    var(--blue),
+                    var(--violet)
+                );
+
+            border: 1px solid rgba(255,255,255,.15);
+
+            box-shadow:
+                0 8px 25px rgba(79,140,255,.20);
+
+            animation: aiGlow 3s ease-in-out infinite;
         }
+
 
         .chat-header strong {
             font-size: 13px;
         }
 
+
         .chat-header span {
             display: block;
-            color: #999;
+
+            color: #69738f;
+
             font-size: 10px;
+
             margin-top: 3px;
         }
 
-        /* MESSAGES */
+
+        /* =========================
+           MESSAGES
+        ========================== */
 
         .messages {
             flex: 1;
+
             padding: 28px;
+
             overflow-y: auto;
+
+            scrollbar-width: thin;
+
+            scrollbar-color:
+                rgba(255,255,255,.12)
+                transparent;
         }
+
 
         .message {
             display: flex;
+
             margin-bottom: 22px;
+
             animation: messageIn .4s ease both;
         }
+
 
         .message.ai {
             justify-content: flex-start;
         }
 
+
         .message.user {
             justify-content: flex-end;
         }
 
+
         .bubble {
             max-width: 650px;
+
             padding: 15px 17px;
+
             border-radius: 15px;
+
             font-size: 13px;
+
             line-height: 1.7;
+
+            box-shadow:
+                0 8px 25px rgba(0,0,0,.10);
         }
 
+
         .ai .bubble {
-            background: #f2f2ef;
-            color: #333;
+            position: relative;
+
+            background:
+                rgba(255,255,255,.055);
+
+            color: #cbd2e5;
+
+            border: 1px solid rgba(255,255,255,.07);
+
             border-top-left-radius: 5px;
         }
 
+
         .user .bubble {
-            background: #111;
+            background:
+                linear-gradient(
+                    135deg,
+                    #246bff,
+                    #7346e8
+                );
+
             color: white;
+
+            border: 1px solid rgba(255,255,255,.12);
+
             border-top-right-radius: 5px;
+
+            box-shadow:
+                0 10px 30px rgba(79,140,255,.16);
         }
+
 
         .source {
             margin-top: 12px;
+
             padding-top: 10px;
-            border-top: 1px solid #ddd;
-            color: #888;
+
+            border-top: 1px solid rgba(255,255,255,.08);
+
+            color: #707b98;
+
             font-size: 10px;
         }
 
-        /* SUGGESTIONS */
+
+        /* =========================
+           SUGGESTIONS
+        ========================== */
 
         .suggestions {
             display: flex;
+
             gap: 8px;
+
             padding: 0 25px 15px;
+
             overflow-x: auto;
+
+            scrollbar-width: none;
         }
+
+
+        .suggestions::-webkit-scrollbar {
+            display: none;
+        }
+
 
         .suggestion {
             white-space: nowrap;
-            border: 1px solid #e2e2dd;
-            background: white;
+
+            border: 1px solid var(--border);
+
+            background: rgba(255,255,255,.035);
+
+            color: #8993ae;
+
             border-radius: 20px;
+
             padding: 9px 13px;
+
             font-size: 10px;
-            color: #777;
+
             cursor: pointer;
-            transition: .2s ease;
+
+            transition:
+                transform .2s ease,
+                border .2s ease,
+                background .2s ease,
+                color .2s ease;
         }
+
 
         .suggestion:hover {
-            border-color: #111;
-            color: #111;
+            border-color: rgba(79,140,255,.35);
+
+            color: #c7d2ff;
+
+            background: rgba(79,140,255,.07);
+
+            transform: translateY(-2px);
         }
 
-        /* INPUT */
+
+        /* =========================
+           INPUT
+        ========================== */
 
         .input-area {
             padding: 15px 20px 20px;
-            border-top: 1px solid #ededE8;
+
+            border-top: 1px solid rgba(255,255,255,.065);
+
+            background: rgba(5,8,22,.22);
         }
+
 
         .input-box {
             display: flex;
+
             align-items: center;
+
             gap: 10px;
-            background: #f5f5f2;
-            border: 1px solid #e6e6e1;
+
+            background:
+                rgba(255,255,255,.035);
+
+            border: 1px solid var(--border);
+
             border-radius: 14px;
+
             padding: 7px;
-            transition: .2s ease;
+
+            transition:
+                border .25s ease,
+                background .25s ease,
+                box-shadow .25s ease;
         }
 
+
         .input-box:focus-within {
-            border-color: #bbb;
-            background: white;
+            border-color: rgba(79,140,255,.42);
+
+            background:
+                rgba(79,140,255,.045);
+
+            box-shadow:
+                0 0 0 3px rgba(79,140,255,.06),
+                0 10px 30px rgba(0,0,0,.12);
         }
+
 
         .input-box input {
             flex: 1;
+
             border: none;
+
             outline: none;
+
             background: transparent;
+
             padding: 10px;
+
             font-size: 12px;
-            color: #111;
+
+            color: white;
         }
+
+
+        .input-box input::placeholder {
+            color: #626b87;
+        }
+
 
         .input-box button {
-            width: 39px;
-            height: 39px;
+            width: 40px;
+            height: 40px;
+
             border: none;
+
             border-radius: 10px;
-            background: #111;
+
+            background:
+                linear-gradient(
+                    135deg,
+                    var(--blue),
+                    var(--violet)
+                );
+
             color: white;
+
             cursor: pointer;
+
             font-size: 15px;
-            transition: .2s ease;
+
+            box-shadow:
+                0 8px 20px rgba(79,140,255,.20);
+
+            transition:
+                transform .2s ease,
+                box-shadow .2s ease;
         }
 
+
         .input-box button:hover {
-            transform: translateY(-1px);
-            background: #292929;
+            transform: translateY(-2px);
+
+            box-shadow:
+                0 12px 25px rgba(79,140,255,.30);
         }
+
 
         .disclaimer {
             text-align: center;
-            color: #aaa;
+
+            color: #555f79;
+
             font-size: 9px;
+
             margin-top: 9px;
         }
 
-        /* ANIMATIONS */
+
+        /* =========================
+           ANIMATIONS
+        ========================== */
 
         @keyframes pageIn {
+
             from {
                 opacity: 0;
-                transform: translateY(12px);
+                transform: translateY(14px);
             }
 
             to {
                 opacity: 1;
                 transform: translateY(0);
             }
+
         }
 
+
         @keyframes messageIn {
+
             from {
                 opacity: 0;
                 transform: translateY(8px);
@@ -385,9 +841,12 @@
                 opacity: 1;
                 transform: translateY(0);
             }
+
         }
 
+
         @keyframes pulse {
+
             0%, 100% {
                 opacity: .35;
                 transform: scale(.9);
@@ -397,16 +856,37 @@
                 opacity: 1;
                 transform: scale(1);
             }
+
         }
 
-        /* RESPONSIVE */
+
+        @keyframes aiGlow {
+
+            0%, 100% {
+                box-shadow:
+                    0 8px 25px rgba(79,140,255,.18);
+            }
+
+            50% {
+                box-shadow:
+                    0 8px 35px rgba(139,92,246,.35);
+            }
+
+        }
+
+
+        /* =========================
+           RESPONSIVE
+        ========================== */
 
         @media (max-width: 900px) {
 
             .sidebar {
-                width: 75px;
+                width: 78px;
+
                 padding: 25px 10px;
             }
+
 
             .brand-name,
             .nav-label,
@@ -415,21 +895,29 @@
                 display: none;
             }
 
+
             .brand {
                 justify-content: center;
+
                 padding: 0;
             }
 
+
             .nav a {
-                text-align: center;
+                justify-content: center;
             }
 
+
             .main {
-                margin-left: 75px;
-                width: calc(100% - 75px);
-                padding: 28px;
+                margin-left: 78px;
+
+                width: calc(100% - 78px);
+
+                padding: 30px;
             }
+
         }
+
 
         @media (max-width: 650px) {
 
@@ -437,41 +925,114 @@
                 padding: 18px;
             }
 
+
             .topbar {
                 flex-direction: column;
+
                 gap: 15px;
             }
+
+
+            .status-pill {
+                width: 100%;
+
+                justify-content: center;
+            }
+
 
             .messages {
                 padding: 20px 15px;
             }
 
+
             .suggestions {
                 padding-left: 15px;
+
                 padding-right: 15px;
             }
+
 
             .bubble {
                 max-width: 90%;
             }
+
+
+            .chat {
+                min-height: calc(100vh - 180px);
+            }
+
         }
+
+
+        @media (max-width: 480px) {
+
+            .main {
+                padding: 14px;
+            }
+
+
+            .chat {
+                border-radius: 17px;
+            }
+
+
+            .chat-header {
+                padding: 14px 16px;
+            }
+
+
+            .input-area {
+                padding: 12px;
+            }
+
+        }
+
+
+        @media (prefers-reduced-motion: reduce) {
+
+            *,
+            *::before,
+            *::after {
+                animation-duration: .01ms !important;
+
+                animation-iteration-count: 1 !important;
+
+                transition-duration: .01ms !important;
+            }
+
+        }
+
     </style>
 </head>
 
+
 <body>
 
+
 <div class="app">
+
 
     <!-- SIDEBAR -->
 
     <aside class="sidebar">
 
         <div class="brand">
-            <div class="brand-mark">S</div>
-            <div class="brand-name">SecureDocs</div>
+
+            <div class="brand-mark">
+                S
+            </div>
+
+            <div class="brand-name">
+                SecureDocs
+            </div>
+
         </div>
 
-        <div class="nav-label">Workspace</div>
+
+        <div class="nav-label">
+            Workspace
+        </div>
+
 
         <nav class="nav">
 
@@ -479,9 +1040,11 @@
                 ◉ <span>Overview</span>
             </a>
 
+
             <a href="documents.html">
                 ▣ <span>Documents</span>
             </a>
+
 
             <a href="assistant.html" class="active">
                 ✦ <span>AI Assistant</span>
@@ -489,15 +1052,26 @@
 
         </nav>
 
+
         <div class="sidebar-bottom">
 
             <div class="user-mini">
 
-                <div class="avatar">WS</div>
+                <div class="avatar">
+                    WS
+                </div>
+
 
                 <div class="user-info">
-                    <strong>Workspace User</strong>
-                    <span>Secure account</span>
+
+                    <strong>
+                        Workspace User
+                    </strong>
+
+                    <span>
+                        Secure account
+                    </span>
+
                 </div>
 
             </div>
@@ -511,19 +1085,28 @@
 
     <main class="main">
 
+
         <div class="topbar">
+
 
             <div class="heading">
 
-                <small>DOCUMENT INTELLIGENCE</small>
+                <small>
+                    DOCUMENT INTELLIGENCE
+                </small>
 
-                <h1>AI Assistant.</h1>
+
+                <h1>
+                    AI Assistant.
+                </h1>
+
 
                 <p>
                     Ask questions and get answers from your secure documents.
                 </p>
 
             </div>
+
 
             <div class="status-pill">
 
@@ -540,21 +1123,31 @@
 
         <section class="chat">
 
+
             <div class="chat-header">
 
                 <div class="ai-icon">
                     ✦
                 </div>
 
+
                 <div>
-                    <strong>SecureDocs AI</strong>
-                    <span>Answers grounded in your documents</span>
+
+                    <strong>
+                        SecureDocs AI
+                    </strong>
+
+                    <span>
+                        Answers grounded in your documents
+                    </span>
+
                 </div>
 
             </div>
 
 
             <div class="messages" id="messages">
+
 
                 <!-- AI -->
 
@@ -601,6 +1194,7 @@
 
                 </div>
 
+
             </div>
 
 
@@ -612,9 +1206,11 @@
                     Summarize my documents
                 </button>
 
+
                 <button class="suggestion">
                     What are the security rules?
                 </button>
+
 
                 <button class="suggestion">
                     Find important policies
@@ -636,17 +1232,20 @@
                         autocomplete="off"
                     >
 
+
                     <button type="submit">
                         ↑
                     </button>
 
                 </form>
 
+
                 <div class="disclaimer">
                     AI responses are based on your uploaded documents.
                 </div>
 
             </div>
+
 
         </section>
 
@@ -658,16 +1257,26 @@
 <script>
 
     const form = document.getElementById("chatForm");
+
     const input = document.getElementById("chatInput");
+
     const messages = document.getElementById("messages");
+
+
+    /* =========================
+       SEND MESSAGE
+    ========================== */
 
     form.addEventListener("submit", function(event) {
 
         event.preventDefault();
 
+
         const text = input.value.trim();
 
+
         if (!text) return;
+
 
         /* USER MESSAGE */
 
@@ -675,13 +1284,18 @@
 
         userMessage.className = "message user";
 
-        userMessage.innerHTML = `
-            <div class="bubble">
-                ${text}
-            </div>
-        `;
+
+        const userBubble = document.createElement("div");
+
+        userBubble.className = "bubble";
+
+        userBubble.textContent = text;
+
+
+        userMessage.appendChild(userBubble);
 
         messages.appendChild(userMessage);
+
 
         input.value = "";
 
@@ -696,19 +1310,27 @@
 
             aiMessage.className = "message ai";
 
-            aiMessage.innerHTML = `
-                <div class="bubble">
-                    I understand your question. Once the AI backend
-                    is connected, I will search your uploaded documents
-                    and provide an answer based on their content.
 
-                    <div class="source">
-                        AI response · Backend connection pending
-                    </div>
+            const aiBubble = document.createElement("div");
+
+            aiBubble.className = "bubble";
+
+
+            aiBubble.innerHTML = `
+                I understand your question. Once the AI backend
+                is connected, I will search your uploaded documents
+                and provide an answer based on their content.
+
+                <div class="source">
+                    AI response · Backend connection pending
                 </div>
             `;
 
+
+            aiMessage.appendChild(aiBubble);
+
             messages.appendChild(aiMessage);
+
 
             messages.scrollTop = messages.scrollHeight;
 
@@ -717,7 +1339,9 @@
     });
 
 
-    /* SUGGESTION BUTTONS */
+    /* =========================
+       SUGGESTIONS
+    ========================== */
 
     document.querySelectorAll(".suggestion").forEach(function(button) {
 
@@ -731,7 +1355,23 @@
 
     });
 
+
+    /* ENTER TO SEND */
+
+    input.addEventListener("keydown", function(event) {
+
+        if (event.key === "Enter") {
+
+            event.preventDefault();
+
+            form.requestSubmit();
+
+        }
+
+    });
+
 </script>
+
 
 </body>
 </html>
