@@ -1,5 +1,6 @@
 """
 SecureDocs - AI-Powered Secure Document Search Portal
+
 FastAPI backend
 
 Features:
@@ -12,22 +13,16 @@ Features:
 - PDF / DOCX / TXT / MD / CSV support
 - Search and document retrieval
 - Security headers
-- CSP nonce protection
+- CSP compatible with existing inline frontend JavaScript
 - HSTS
 - OPTIONS protection
 
 Environment variables:
-
 GEMINI_API_KEY
 SECUREDOCS_FERNET_KEY
 ADMIN_EMAIL
 ADMIN_PASSWORD
 COOKIE_SECURE
-
-For FastAPI Cloud:
-- Set GEMINI_API_KEY as a secret
-- Set SECUREDOCS_FERNET_KEY as a secret
-- Keep COOKIE_SECURE=1
 """
 
 import hashlib
@@ -76,7 +71,6 @@ from sqlalchemy import (
     Integer,
     LargeBinary,
     String,
-    Text,
     create_engine,
 )
 
@@ -126,7 +120,7 @@ EMAIL = re.compile(
 )
 
 # FastAPI Cloud uses HTTPS.
-# Set COOKIE_SECURE=0 only when running locally over plain HTTP.
+# Set COOKIE_SECURE=0 only for local HTTP testing.
 COOKIE_SECURE = os.getenv(
     "COOKIE_SECURE",
     "1",
@@ -273,9 +267,7 @@ class DocumentChunk(Base):
 
     doc_id = Column(
         String(64),
-        ForeignKey(
-            "documents.id"
-        ),
+        ForeignKey("documents.id"),
         nullable=False,
         index=True,
     )
@@ -296,9 +288,7 @@ class DocumentChunk(Base):
     )
 
 
-Base.metadata.create_all(
-    bind=engine
-)
+Base.metadata.create_all(bind=engine)
 
 
 def get_db():
@@ -322,9 +312,11 @@ if not FERNET_KEY:
     print(
         "\nWARNING: SECUREDOCS_FERNET_KEY is not set."
     )
+
     print(
         "A temporary encryption key will be generated."
     )
+
     print(
         "Set SECUREDOCS_FERNET_KEY in production "
         "so encrypted documents survive restarts.\n"
@@ -332,12 +324,14 @@ if not FERNET_KEY:
 
     FERNET_KEY = Fernet.generate_key().decode()
 
+
 try:
     FERNET = Fernet(
         FERNET_KEY.encode()
         if isinstance(FERNET_KEY, str)
         else FERNET_KEY
     )
+
 except Exception:
     raise RuntimeError(
         "SECUREDOCS_FERNET_KEY is invalid. "
@@ -463,27 +457,26 @@ try:
         print(
             "\n========================================"
         )
+
         print(
             " SecureDocs Admin Account"
         )
+
         print(
             "========================================"
         )
+
         print(
             f" Email: {ADMIN_EMAIL}"
         )
+
         print(
             f" Password: {generated_admin_password}"
         )
+
         print(
             "========================================\n"
         )
-
-    elif ADMIN_PW_ENV:
-        # If an explicit admin password is provided,
-        # keep the existing database password unless
-        # the account is being created for the first time.
-        pass
 
 finally:
     db.close()
@@ -500,9 +493,7 @@ def get_user(
     request: Request,
     db: Session,
 ):
-    token = request.cookies.get(
-        "sid"
-    )
+    token = request.cookies.get("sid")
 
     if not token:
         return None
@@ -511,9 +502,7 @@ def get_user(
         token.encode()
     ).hexdigest()
 
-    s = SESSIONS.get(
-        session_hash
-    )
+    s = SESSIONS.get(session_hash)
 
     if not s:
         return None
@@ -566,7 +555,6 @@ def current_user(
         "GET",
         "HEAD",
     ):
-
         csrf = request.headers.get(
             "x-csrf",
             "",
@@ -633,9 +621,7 @@ def extract(
 
         if ext == ".pdf":
 
-            if not raw.startswith(
-                b"%PDF"
-            ):
+            if not raw.startswith(b"%PDF"):
                 raise ValueError(
                     "Invalid PDF"
                 )
@@ -820,11 +806,11 @@ def retrieve(
             continue
 
         try:
-            texts = [
-                d.name
-            ]
+
+            texts = [d.name]
 
             for c in d.chunks:
+
                 texts.append(
                     dec(c.data).decode(
                         "utf-8",
@@ -843,17 +829,13 @@ def retrieve(
         except Exception:
             continue
 
-    qt = set(
-        tok(query)
-    )
+    qt = set(tok(query))
 
     if not pool or not qt:
         return []
 
     toks = [
-        Counter(
-            tok(t)
-        )
+        Counter(tok(t))
         for _, t in pool
     ]
 
@@ -875,14 +857,11 @@ def retrieve(
             (
                 (
                     1
-                    + math.log(
-                        tf[w]
-                    )
+                    + math.log(tf[w])
                 )
                 * math.log(
                     1
-                    + len(pool)
-                    / df[w]
+                    + len(pool) / df[w]
                 )
             )
             for w in qt
@@ -913,9 +892,7 @@ def local_answer(
     query,
     hits,
 ):
-    qt = set(
-        tok(query)
-    )
+    qt = set(tok(query))
 
     found = []
 
@@ -930,9 +907,7 @@ def local_answer(
 
             overlap = len(
                 qt
-                & set(
-                    tok(sent)
-                )
+                & set(tok(sent))
             )
 
             if (
@@ -998,36 +973,42 @@ if (
     GEMINI_API_KEY
     and genai is not None
 ):
+
     try:
+
         gemini_client = genai.Client(
             api_key=GEMINI_API_KEY
         )
+
         print(
             "Gemini AI: enabled"
         )
+
     except Exception as e:
+
         print(
             "Gemini AI initialization failed:",
             e,
         )
+
         gemini_client = None
 
 elif not GEMINI_API_KEY:
+
     print(
         "Gemini AI: disabled "
         "(GEMINI_API_KEY missing)"
     )
 
 elif genai is None:
+
     print(
         "Gemini AI: disabled "
         "(google-genai package missing)"
     )
 
 
-GEMINI_MODEL = (
-    "gemini-3.8-flash"
-)
+GEMINI_MODEL = "gemini-3.8-flash"
 
 
 def gemini_answer(
@@ -1063,6 +1044,7 @@ the document context supplied below.
 
 Do not invent facts.
 Do not use outside knowledge.
+
 If the answer is not present in the
 provided documents, clearly say that
 the information was not found.
@@ -1071,9 +1053,11 @@ Keep the answer useful and reasonably
 concise.
 
 DOCUMENT CONTEXT:
+
 {context}
 
 USER QUESTION:
+
 {query}
 """
 
@@ -1098,10 +1082,9 @@ USER QUESTION:
         sources = []
 
         for _, d, _ in hits:
+
             if d.name not in sources:
-                sources.append(
-                    d.name
-                )
+                sources.append(d.name)
 
         return (
             text.strip(),
@@ -1129,9 +1112,7 @@ app = FastAPI(
 )
 
 
-# FastAPI Cloud requires the deployed host.
-# Keep wildcard because the generated FastAPI Cloud
-# hostname can change between deployments.
+# FastAPI Cloud hostname can vary.
 app.add_middleware(
     TrustedHostMiddleware,
     allowed_hosts=["*"],
@@ -1142,8 +1123,16 @@ app.add_middleware(
 # SECURITY MIDDLEWARE
 # ============================================================
 
+# IMPORTANT:
+# Existing HTML contains inline JavaScript and inline
+# event handlers. "unsafe-inline" is required so the
+# existing frontend continues working.
+#
+# Other security restrictions remain enabled.
+
 CSP_BASE = (
     "default-src 'self'; "
+    "script-src 'self' 'unsafe-inline'; "
     "style-src 'self' 'unsafe-inline'; "
     "img-src 'self' data:; "
     "connect-src 'self'; "
@@ -1159,12 +1148,6 @@ async def security_middleware(
     request: Request,
     call_next,
 ):
-    # Fresh nonce for every response.
-    nonce = secrets.token_urlsafe(
-        24
-    )
-
-    request.state.csp_nonce = nonce
 
     # OPTIONS is not needed by this same-origin app.
     if request.method == "OPTIONS":
@@ -1178,6 +1161,7 @@ async def security_middleware(
         )
 
     else:
+
         response = await call_next(
             request
         )
@@ -1197,9 +1181,7 @@ async def security_middleware(
                 "no-store",
 
             "Content-Security-Policy":
-                CSP_BASE
-                + " script-src 'self' "
-                + f"'nonce-{nonce}';",
+                CSP_BASE,
 
             "Permissions-Policy":
                 "camera=(), "
@@ -1248,6 +1230,7 @@ def auth(
     request: Request,
     db: Session = Depends(get_db),
 ):
+
     email = (
         body.email
         .strip()
@@ -1338,13 +1321,9 @@ def auth(
                 "Incorrect email or password.",
             )
 
-    token = secrets.token_urlsafe(
-        32
-    )
+    token = secrets.token_urlsafe(32)
 
-    csrf = secrets.token_urlsafe(
-        24
-    )
+    csrf = secrets.token_urlsafe(24)
 
     # Clean expired sessions.
     expired = [
@@ -1354,6 +1333,7 @@ def auth(
     ]
 
     for h in expired:
+
         SESSIONS.pop(
             h,
             None,
@@ -1366,9 +1346,7 @@ def auth(
     ] = {
         "email": email,
         "csrf": csrf,
-        "exp":
-            time.time()
-            + SESSION_TTL,
+        "exp": time.time() + SESSION_TTL,
     }
 
     response = JSONResponse(
@@ -1394,9 +1372,8 @@ def logout(
     request: Request,
     u=Depends(current_user),
 ):
-    token = request.cookies.get(
-        "sid"
-    )
+
+    token = request.cookies.get("sid")
 
     if token:
 
@@ -1413,9 +1390,7 @@ def logout(
         }
     )
 
-    response.delete_cookie(
-        "sid"
-    )
+    response.delete_cookie("sid")
 
     return response
 
@@ -1436,6 +1411,7 @@ def files(
     u=Depends(current_user),
     db: Session = Depends(get_db),
 ):
+
     documents = (
         db.query(Document)
         .order_by(
@@ -1456,6 +1432,7 @@ def stats(
     u=Depends(current_user),
     db: Session = Depends(get_db),
 ):
+
     documents = (
         db.query(Document)
         .all()
@@ -1478,10 +1455,11 @@ def stats(
     return {
         "total": count,
         "indexed": count,
-        "queries":
+        "queries": (
             user.queries
             if user
-            else 0,
+            else 0
+        ),
     }
 
 
@@ -1491,6 +1469,7 @@ async def upload(
     u=Depends(current_user),
     db: Session = Depends(get_db),
 ):
+
     original_name = os.path.basename(
         file.filename or "file"
     )
@@ -1504,9 +1483,7 @@ async def upload(
     if not name:
         name = "file"
 
-    ext = Path(
-        name
-    ).suffix.lower()
+    ext = Path(name).suffix.lower()
 
     if ext not in EXTS:
 
@@ -1546,9 +1523,7 @@ async def upload(
         if (
             SENSITIVE.search(name)
             or SENSITIVE_NAME.search(name)
-            or SENSITIVE.search(
-                text[:3000]
-            )
+            or SENSITIVE.search(text[:3000])
         )
         else 1
     )
@@ -1570,9 +1545,7 @@ async def upload(
 
     chunks = chunk(text)
 
-    for position, content in enumerate(
-        chunks
-    ):
+    for position, content in enumerate(chunks):
 
         db.add(
             DocumentChunk(
@@ -1589,9 +1562,7 @@ async def upload(
     db.commit()
     db.refresh(document)
 
-    return meta(
-        document
-    )
+    return meta(document)
 
 
 @app.get(
@@ -1602,6 +1573,7 @@ def download(
     u=Depends(current_user),
     db: Session = Depends(get_db),
 ):
+
     d = (
         db.query(Document)
         .filter(
@@ -1618,6 +1590,7 @@ def download(
         )
 
     try:
+
         raw = dec(d.raw)
 
     except Exception:
@@ -1629,9 +1602,7 @@ def download(
 
     return Response(
         raw,
-        media_type=(
-            "application/octet-stream"
-        ),
+        media_type="application/octet-stream",
         headers={
             "Content-Disposition":
                 "attachment; "
@@ -1647,6 +1618,7 @@ def search(
     u=Depends(current_user),
     db: Session = Depends(get_db),
 ):
+
     results = {}
 
     for score, d, t in retrieve(
@@ -1683,6 +1655,7 @@ def chat(
     u=Depends(current_user),
     db: Session = Depends(get_db),
 ):
+
     user = (
         db.query(User)
         .filter(
@@ -1770,6 +1743,7 @@ def chat(
             if d.chunks:
 
                 try:
+
                     preview = dec(
                         d.chunks[0].data
                     ).decode(
@@ -1781,8 +1755,7 @@ def chat(
                     preview = ""
 
             lines.append(
-                f"{d.name}: "
-                f"{preview}..."
+                f"{d.name}: {preview}..."
             )
 
         return {
@@ -1829,9 +1802,7 @@ def chat(
 
     if ai_result:
 
-        answer_text, sources = (
-            ai_result
-        )
+        answer_text, sources = ai_result
 
         return {
             "answer": answer_text,
@@ -1842,11 +1813,9 @@ def chat(
     # Local fallback
     # --------------------------------------------------------
 
-    answer_text, sources = (
-        local_answer(
-            body.message,
-            hits,
-        )
+    answer_text, sources = local_answer(
+        body.message,
+        hits,
     )
 
     if not answer_text:
@@ -1883,7 +1852,6 @@ PUBLIC = {
 
 COMMON = r"""
 const $=s=>document.querySelector(s);
-
 let CSRF="",ME=null;
 
 const mk=(t,c,x)=>{
@@ -1909,7 +1877,6 @@ async function api(p,o={}){
     );
 
     if(r.status===401){
-
         location.href="login.html";
 
         throw new Error(
@@ -1919,18 +1886,16 @@ async function api(p,o={}){
 
     if(!r.ok){
 
-        let m=
-            "Something went wrong.";
+        let m="Something went wrong.";
 
         try{
 
             const j=await r.json();
 
             if(
-                typeof j.detail===
-                "string"
+                typeof j.detail==="string"
             )
-                m=j.detail
+                m=j.detail;
 
         }catch(e){}
 
@@ -2017,6 +1982,7 @@ function docRow(d,extra){
 
     r.append(
         l,
+
         mk(
             "div",
             "status",
@@ -2026,11 +1992,8 @@ function docRow(d,extra){
         )
     );
 
-    r.title=
-        "Click to download";
-
-    r.style.cursor=
-        "pointer";
+    r.title="Click to download";
+    r.style.cursor="pointer";
 
     r.onclick=()=>{
 
@@ -2038,6 +2001,7 @@ function docRow(d,extra){
             "/api/files/"
             +d.id
             +"/download"
+
     };
 
     return r
@@ -2050,6 +2014,7 @@ const ready=fetch(
             "same-origin"
     }
 )
+
 .then(r=>{
 
     if(!r.ok){
@@ -2061,11 +2026,12 @@ const ready=fetch(
     }
 
     return r.json()
+
 })
+
 .then(d=>{
 
     ME=d;
-
     CSRF=d.csrf;
 
     const avatar=
@@ -2132,25 +2098,42 @@ const $=s=>document.querySelector(s);
 const sec=$(".security");
 
 const dot=
-    sec.querySelector(
-        ".security-dot"
-    );
+    sec
+        ?sec.querySelector(".security-dot")
+        :null;
 
 function note(m){
 
-    sec.replaceChildren(
-        dot,
-        document.createTextNode(m)
-    )
+    if(!sec)
+        return;
+
+    if(dot){
+
+        sec.replaceChildren(
+            dot,
+            document.createTextNode(m)
+        );
+
+    }else{
+
+        sec.textContent=m;
+
+    }
 }
 
 async function go(e){
 
-    e.preventDefault();
-    e.stopPropagation();
+    if(e)
+        e.preventDefault();
+
+    if(e)
+        e.stopPropagation();
 
     const em=$("#email");
     const pw=$("#password");
+
+    if(!em || !pw)
+        return;
 
     if(
         !em.reportValidity()
@@ -2167,6 +2150,7 @@ async function go(e){
             "/api/auth",
             {
                 method:"POST",
+
                 credentials:
                     "same-origin",
 
@@ -2182,8 +2166,7 @@ async function go(e){
             }
         );
 
-        const j=
-            await r.json();
+        const j=await r.json();
 
         if(!r.ok)
 
@@ -2204,6 +2187,7 @@ async function go(e){
                 location.href=
                     "dashboard.html"
             },
+
             j.created
                 ?900
                 :200
@@ -2211,7 +2195,10 @@ async function go(e){
 
     }catch(x){
 
-        note(x.message)
+        note(
+            x.message
+            ||"Could not sign in."
+        )
     }
 }
 
@@ -2331,6 +2318,9 @@ let ALL=[];
 
 function draw(items){
 
+    if(!list)
+        return;
+
     list.replaceChildren();
 
     if(!items.length){
@@ -2430,6 +2420,7 @@ async function send(files){
 
         t.append(
             l,
+
             mk(
                 "div",
                 "status",
@@ -2512,6 +2503,7 @@ if(z){
             send([
                 ...e.dataTransfer.files
             ])
+
         }
     );
 }
@@ -2556,6 +2548,7 @@ if(searchBox){
                         )
 
                     }catch(x){}
+
                 },
                 250
             )
@@ -2573,6 +2566,9 @@ const msgs=
 
 ready.then(()=>{
 
+    if(!msgs)
+        return;
+
     [
         ...msgs.querySelectorAll(
             ".message"
@@ -2589,6 +2585,9 @@ function add(
     text,
     src
 ){
+
+    if(!msgs)
+        return;
 
     const m=mk(
         "div",
@@ -2630,8 +2629,7 @@ document.addEventListener(
     async e=>{
 
         if(
-            e.target.id!==
-            "chatForm"
+            e.target.id!=="chatForm"
         )
             return;
 
@@ -2640,6 +2638,9 @@ document.addEventListener(
 
         const i=
             $("#chatInput");
+
+        if(!i)
+            return;
 
         const t=
             i.value.trim();
@@ -2658,26 +2659,26 @@ document.addEventListener(
 
             await ready;
 
+            const response=
+                await api(
+                    "/api/chat",
+                    {
+                        method:"POST",
+
+                        headers:{
+                            "Content-Type":
+                                "application/json"
+                        },
+
+                        body:
+                            JSON.stringify({
+                                message:t
+                            })
+                    }
+                );
+
             const j=
-                await(
-                    await api(
-                        "/api/chat",
-                        {
-                            method:
-                                "POST",
-
-                            headers:{
-                                "Content-Type":
-                                    "application/json"
-                            },
-
-                            body:
-                                JSON.stringify({
-                                    message:t
-                                })
-                        }
-                    )
-                ).json();
+                await response.json();
 
             add(
                 "ai",
@@ -2692,10 +2693,12 @@ document.addEventListener(
                 x.message
             )
         }
+
     },
     true
 );
 """,
+
 }
 
 
@@ -2708,13 +2711,10 @@ def load_page(
     user_ok,
     request=None,
 ):
-    for p in (
-        BASE
-        / "pages"
-        / f"{name}.html",
 
-        BASE
-        / f"{name}.html",
+    for p in (
+        BASE / "pages" / f"{name}.html",
+        BASE / f"{name}.html",
     ):
 
         if p.is_file():
@@ -2730,7 +2730,6 @@ def load_page(
         return HTMLResponse(
             f"""
             <h2>{name}.html not found</h2>
-
             <p>
                 Put it next to main.py
                 or inside a 'pages' folder.
@@ -2749,6 +2748,9 @@ def load_page(
 
     if js:
 
+        # Keep nonce support for the backend-injected
+        # script while CSP also allows the existing
+        # inline JavaScript in the HTML.
         nonce = ""
 
         if request:
@@ -2759,10 +2761,8 @@ def load_page(
                 "",
             )
 
-        head, sep, tail = (
-            html.rpartition(
-                "</body>"
-            )
+        head, sep, tail = html.rpartition(
+            "</body>"
         )
 
         script = (
@@ -2784,9 +2784,7 @@ def load_page(
 
             html += script
 
-    return HTMLResponse(
-        html
-    )
+    return HTMLResponse(html)
 
 
 # ============================================================
@@ -2809,9 +2807,9 @@ def page(
     name: str,
     request: Request,
 ):
+
     if name not in (
-        PROTECTED
-        | PUBLIC
+        PROTECTED | PUBLIC
     ):
 
         raise HTTPException(
@@ -2819,18 +2817,27 @@ def page(
             "Not found",
         )
 
-    if (
-        name in PROTECTED
-        and not get_user(
-            request,
-            SessionLocal(),
-        )
-    ):
+    if name in PROTECTED:
 
-        return RedirectResponse(
-            "/login.html",
-            status_code=303,
-        )
+        db = SessionLocal()
+
+        try:
+
+            user = get_user(
+                request,
+                db,
+            )
+
+        finally:
+
+            db.close()
+
+        if not user:
+
+            return RedirectResponse(
+                "/login.html",
+                status_code=303,
+            )
 
     return load_page(
         name,
