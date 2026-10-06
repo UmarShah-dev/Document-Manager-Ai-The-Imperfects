@@ -119,8 +119,6 @@ EMAIL = re.compile(
     r"^[^@\s]{1,64}@[^@\s]{1,120}\.[^@\s]{2,}$"
 )
 
-# FastAPI Cloud uses HTTPS.
-# Set COOKIE_SECURE=0 only for local HTTP testing.
 COOKIE_SECURE = os.getenv(
     "COOKIE_SECURE",
     "1",
@@ -312,11 +310,9 @@ if not FERNET_KEY:
     print(
         "\nWARNING: SECUREDOCS_FERNET_KEY is not set."
     )
-
     print(
         "A temporary encryption key will be generated."
     )
-
     print(
         "Set SECUREDOCS_FERNET_KEY in production "
         "so encrypted documents survive restarts.\n"
@@ -457,23 +453,18 @@ try:
         print(
             "\n========================================"
         )
-
         print(
             " SecureDocs Admin Account"
         )
-
         print(
             "========================================"
         )
-
         print(
             f" Email: {ADMIN_EMAIL}"
         )
-
         print(
             f" Password: {generated_admin_password}"
         )
-
         print(
             "========================================\n"
         )
@@ -1111,8 +1102,6 @@ app = FastAPI(
     openapi_url=None,
 )
 
-
-# FastAPI Cloud hostname can vary.
 app.add_middleware(
     TrustedHostMiddleware,
     allowed_hosts=["*"],
@@ -1124,11 +1113,20 @@ app.add_middleware(
 # ============================================================
 
 # IMPORTANT:
-# Existing HTML contains inline JavaScript and inline
-# event handlers. "unsafe-inline" is required so the
-# existing frontend continues working.
+# The existing HTML files contain inline JavaScript
+# and inline event handlers.
 #
-# Other security restrictions remain enabled.
+# Therefore script-src MUST include 'unsafe-inline'
+# unless the HTML is later refactored to remove all
+# inline JavaScript/event handlers.
+#
+# This is what fixes the browser error:
+#
+# "Executing inline script violates CSP"
+#
+# and:
+#
+# "Executing inline event handler violates CSP"
 
 CSP_BASE = (
     "default-src 'self'; "
@@ -1149,7 +1147,6 @@ async def security_middleware(
     call_next,
 ):
 
-    # OPTIONS is not needed by this same-origin app.
     if request.method == "OPTIONS":
 
         response = Response(
@@ -1325,7 +1322,6 @@ def auth(
 
     csrf = secrets.token_urlsafe(24)
 
-    # Clean expired sessions.
     expired = [
         h
         for h, s in SESSIONS.items()
@@ -1690,10 +1686,6 @@ def chat(
         if visible(u, d)
     ]
 
-    # --------------------------------------------------------
-    # Greeting
-    # --------------------------------------------------------
-
     if re.fullmatch(
         r"(hi|hello|hey)\W*",
         low,
@@ -1707,10 +1699,6 @@ def chat(
             "sources": [],
         }
 
-    # --------------------------------------------------------
-    # No documents
-    # --------------------------------------------------------
-
     if not docs:
 
         return {
@@ -1720,10 +1708,6 @@ def chat(
                 "Documents page first.",
             "sources": [],
         }
-
-    # --------------------------------------------------------
-    # Document listing
-    # --------------------------------------------------------
 
     if (
         "summar" in low
@@ -1770,10 +1754,6 @@ def chat(
             ],
         }
 
-    # --------------------------------------------------------
-    # Retrieve relevant documents
-    # --------------------------------------------------------
-
     hits = retrieve(
         u,
         body.message,
@@ -1791,10 +1771,6 @@ def chat(
             "sources": [],
         }
 
-    # --------------------------------------------------------
-    # Gemini answer
-    # --------------------------------------------------------
-
     ai_result = gemini_answer(
         body.message,
         hits,
@@ -1808,10 +1784,6 @@ def chat(
             "answer": answer_text,
             "sources": sources,
         }
-
-    # --------------------------------------------------------
-    # Local fallback
-    # --------------------------------------------------------
 
     answer_text, sources = local_answer(
         body.message,
@@ -2748,27 +2720,14 @@ def load_page(
 
     if js:
 
-        # Keep nonce support for the backend-injected
-        # script while CSP also allows the existing
-        # inline JavaScript in the HTML.
-        nonce = ""
-
-        if request:
-
-            nonce = getattr(
-                request.state,
-                "csp_nonce",
-                "",
-            )
-
         head, sep, tail = html.rpartition(
             "</body>"
         )
 
         script = (
-            f'<script nonce="{nonce}">'
-            f'{js}'
-            f'</script>'
+            "<script>"
+            + js
+            + "</script>"
         )
 
         if sep:
