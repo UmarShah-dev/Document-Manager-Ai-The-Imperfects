@@ -710,7 +710,86 @@ ensure_demo_accounts()
 # AUTHENTICATION
 # ============================================================
 
-SESSIONS = {}
+SESSION_SECRET = hashlib.sha256(
+    (
+        FERNET_KEY
+        + "|SecureDocs-Session-2026"
+    ).encode()
+).digest()
+
+
+def make_session_cookie(
+    email: str,
+    csrf: str,
+    expires: int,
+) -> str:
+
+    payload = (
+        f"{email}|{csrf}|{expires}"
+    ).encode()
+
+    signature = hmac.new(
+        SESSION_SECRET,
+        payload,
+        hashlib.sha256,
+    ).hexdigest()
+
+    encoded = (
+        secrets.token_urlsafe(0)
+        + payload.hex()
+    )
+
+    return encoded + "." + signature
+
+
+def read_session_cookie(
+    token: str,
+):
+
+    try:
+
+        encoded, signature = token.split(
+            ".",
+            1,
+        )
+
+        payload = bytes.fromhex(
+            encoded
+        )
+
+        expected = hmac.new(
+            SESSION_SECRET,
+            payload,
+            hashlib.sha256,
+        ).hexdigest()
+
+        if not hmac.compare_digest(
+            signature,
+            expected,
+        ):
+            return None
+
+        email, csrf, expires = (
+            payload.decode().split(
+                "|",
+                2,
+            )
+        )
+
+        expires = int(expires)
+
+        if expires < int(time.time()):
+            return None
+
+        return {
+            "email": email,
+            "csrf": csrf,
+            "exp": expires,
+        }
+
+    except Exception:
+
+        return None
 
 
 def get_user(
@@ -725,51 +804,82 @@ def get_user(
     if not token:
         return None
 
-    session_hash = hashlib.sha256(
-        token.encode()
-    ).hexdigest()
-
-    s = SESSIONS.get(
-        session_hash
+    session = read_session_cookie(
+        token
     )
 
-    if not s:
-        return None
-
-    if s["exp"] < time.time():
-
-        SESSIONS.pop(
-            session_hash,
-            None,
-        )
-
+    if not session:
         return None
 
     user = (
         db.query(User)
         .filter(
-            User.email == s["email"]
+            User.email == session["email"]
         )
         .first()
     )
 
     if not user:
-
-        SESSIONS.pop(
-            session_hash,
-            None,
-        )
-
         return None
 
     return {
         "email": user.email,
         "role": user.role,
-        "csrf": s["csrf"],
+        "csrf": session["csrf"],
     }
 
 
 def current_user(
+    request: Request,
+    db: Session = Depends(get_db),
+):
+
+    u = get_user(
+        request,
+        db,
+    )
+
+    if not u:
+
+        raise HTTPException(
+            401,
+            "Please sign in.",
+        )
+
+    if request.method not in (
+        "GET",
+        "HEAD",
+    ):
+
+        csrf = request.headers.get(
+            "x-csrf",
+            "",
+        )
+
+        if not hmac.compare_digest(
+            csrf,
+            u["csrf"],
+        ):
+
+            raise HTTPException(
+                403,
+                "Security check failed. "
+                "Reload the page.",
+            )
+
+    return u
+
+
+def require_admin(u):
+
+    if u["role"] != "admin":
+
+        raise HTTPException(
+            403,
+            "Administrator access required.",
+        )
+
+    return udef current_user(
     request: Request,
     db: Session = Depends(get_db),
 ):
