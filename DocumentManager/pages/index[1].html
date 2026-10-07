@@ -1,0 +1,1365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>SecureDocs — AI Document Portal</title>
+
+<style>
+/* =========================================================
+   RESET
+========================================================= */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family:
+        Inter,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+
+    color: #f4f7ff;
+    background: #050816;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+a {
+    color: inherit;
+    text-decoration: none;
+}
+
+button,
+input {
+    font: inherit;
+}
+
+
+/* =========================================================
+   PREMIUM BACKGROUND
+========================================================= */
+
+.background {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: -2;
+
+    background:
+        radial-gradient(
+            circle at 15% 15%,
+            rgba(50, 105, 255, 0.18),
+            transparent 28%
+        ),
+        radial-gradient(
+            circle at 85% 20%,
+            rgba(124, 58, 237, 0.16),
+            transparent 30%
+        ),
+        radial-gradient(
+            circle at 50% 100%,
+            rgba(14, 165, 233, 0.10),
+            transparent 32%
+        ),
+        linear-gradient(
+            135deg,
+            #030612 0%,
+            #071022 48%,
+            #050816 100%
+        );
+}
+
+.background::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+
+    background-image:
+        linear-gradient(
+            rgba(255,255,255,0.025) 1px,
+            transparent 1px
+        ),
+        linear-gradient(
+            90deg,
+            rgba(255,255,255,0.025) 1px,
+            transparent 1px
+        );
+
+    background-size: 70px 70px;
+
+    mask-image: linear-gradient(
+        to bottom,
+        black,
+        transparent 80%
+    );
+}
+
+.background::after {
+    content: "";
+    position: absolute;
+    width: 700px;
+    height: 700px;
+    left: 50%;
+    top: 45%;
+
+    transform: translate(-50%, -50%);
+
+    background:
+        radial-gradient(
+            circle,
+            rgba(37, 99, 235, 0.07),
+            transparent 65%
+        );
+
+    filter: blur(30px);
+}
+
+
+/* =========================================================
+   FLOATING GLOWS
+========================================================= */
+
+.glow {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(100px);
+    pointer-events: none;
+}
+
+.glow-one {
+    width: 420px;
+    height: 420px;
+    background: #1748c9;
+    top: -220px;
+    left: -130px;
+    opacity: 0.25;
+
+    animation: floating 10s ease-in-out infinite;
+}
+
+.glow-two {
+    width: 420px;
+    height: 420px;
+    background: #6d28d9;
+    bottom: -220px;
+    right: -120px;
+    opacity: 0.22;
+
+    animation: floating 12s ease-in-out infinite reverse;
+}
+
+.glow-three {
+    width: 260px;
+    height: 260px;
+    background: #0ea5e9;
+    top: 42%;
+    left: 45%;
+    opacity: 0.10;
+
+    animation: floating 8s ease-in-out infinite;
+}
+
+
+/* =========================================================
+   NAVBAR
+========================================================= */
+
+.navbar {
+    width: min(1180px, 92%);
+    margin: 0 auto;
+
+    padding: 22px 0;
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    animation: fadeDown 0.8s ease forwards;
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.brand-icon {
+    width: 43px;
+    height: 43px;
+
+    border-radius: 14px;
+
+    display: grid;
+    place-items: center;
+
+    color: white;
+    font-size: 15px;
+    font-weight: 900;
+
+    background:
+        linear-gradient(
+            145deg,
+            #2563eb,
+            #4f46e5 55%,
+            #7c3aed
+        );
+
+    border: 1px solid rgba(255,255,255,0.16);
+
+    box-shadow:
+        0 12px 35px rgba(37,99,235,0.30),
+        inset 0 1px 1px rgba(255,255,255,0.35);
+
+    position: relative;
+    overflow: hidden;
+
+    transition:
+        transform 0.35s ease,
+        box-shadow 0.35s ease;
+}
+
+.brand:hover .brand-icon {
+    transform:
+        perspective(500px)
+        rotateX(8deg)
+        rotateY(-10deg)
+        translateY(-2px)
+        scale(1.04);
+
+    box-shadow:
+        0 20px 45px rgba(37,99,235,0.38),
+        inset 0 1px 1px rgba(255,255,255,0.4);
+}
+
+.brand-icon::after {
+    content: "";
+
+    position: absolute;
+
+    width: 90px;
+    height: 18px;
+
+    background: rgba(255,255,255,0.30);
+
+    transform:
+        rotate(-45deg)
+        translateX(-120px);
+
+    animation: shine 4s ease-in-out infinite;
+}
+
+.brand-text strong {
+    display: block;
+
+    font-size: 14px;
+    letter-spacing: -0.02em;
+}
+
+.brand-text span {
+    display: block;
+
+    margin-top: 2px;
+
+    font-size: 10px;
+    color: #7f8ba3;
+}
+
+.nav-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    font-size: 10px;
+    color: #a7b2c8;
+
+    padding: 9px 15px;
+
+    border: 1px solid rgba(148,163,184,0.14);
+    border-radius: 999px;
+
+    background:
+        rgba(15,23,42,0.58);
+
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+
+    box-shadow:
+        0 10px 35px rgba(0,0,0,0.18);
+}
+
+.status-dot {
+    width: 6px;
+    height: 6px;
+
+    background: #22c55e;
+    border-radius: 50%;
+
+    box-shadow:
+        0 0 0 5px rgba(34,197,94,0.08),
+        0 0 15px rgba(34,197,94,0.45);
+
+    animation: pulse 2s infinite;
+}
+
+
+/* =========================================================
+   HERO
+========================================================= */
+
+.hero {
+    width: min(1180px, 92%);
+
+    min-height:
+        calc(100vh - 90px);
+
+    margin: 0 auto;
+
+    display: grid;
+
+    grid-template-columns:
+        1.05fr 0.95fr;
+
+    align-items: center;
+
+    gap: 70px;
+}
+
+.hero-content {
+    animation:
+        fadeUp 0.9s 0.15s ease both;
+}
+
+.eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+
+    font-size: 10px;
+    font-weight: 800;
+
+    letter-spacing: 0.18em;
+
+    color: #8190aa;
+
+    margin-bottom: 20px;
+}
+
+.eyebrow-line {
+    width: 24px;
+    height: 1px;
+
+    background:
+        linear-gradient(
+            90deg,
+            #2563eb,
+            #7c3aed
+        );
+}
+
+.hero h1 {
+    font-size:
+        clamp(52px, 6vw, 82px);
+
+    line-height: 0.94;
+
+    letter-spacing: -0.075em;
+
+    max-width: 720px;
+}
+
+.hero h1 span {
+    display: inline-block;
+
+    background:
+        linear-gradient(
+            90deg,
+            #60a5fa,
+            #a78bfa,
+            #38bdf8,
+            #60a5fa
+        );
+
+    background-size: 250%;
+
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+
+    animation:
+        gradientText 6s ease infinite;
+}
+
+.hero-description {
+    max-width: 540px;
+
+    margin-top: 28px;
+
+    color: #8c9ab2;
+
+    font-size: 15px;
+
+    line-height: 1.8;
+}
+
+.hero-actions {
+    display: flex;
+
+    gap: 12px;
+
+    margin-top: 32px;
+}
+
+
+/* =========================================================
+   BUTTONS
+========================================================= */
+
+.primary-button {
+    display: inline-flex;
+
+    align-items: center;
+    justify-content: center;
+
+    gap: 12px;
+
+    padding: 14px 21px;
+
+    border-radius: 14px;
+
+    color: white;
+
+    font-size: 12px;
+    font-weight: 750;
+
+    background:
+        linear-gradient(
+            135deg,
+            #2563eb,
+            #4f46e5 55%,
+            #7c3aed
+        );
+
+    border:
+        1px solid rgba(255,255,255,0.16);
+
+    box-shadow:
+        0 16px 35px rgba(37,99,235,0.24),
+        inset 0 1px 1px rgba(255,255,255,0.28);
+
+    transition:
+        transform 0.3s ease,
+        box-shadow 0.3s ease;
+}
+
+.primary-button span {
+    transition:
+        transform 0.3s ease;
+}
+
+.primary-button:hover {
+    transform:
+        translateY(-4px)
+        scale(1.02);
+
+    box-shadow:
+        0 23px 50px rgba(37,99,235,0.35),
+        0 0 30px rgba(99,102,241,0.15);
+}
+
+.primary-button:hover span {
+    transform:
+        translateX(5px);
+}
+
+.secondary-button {
+    display: inline-flex;
+
+    align-items: center;
+    justify-content: center;
+
+    padding: 14px 20px;
+
+    border-radius: 14px;
+
+    background:
+        rgba(15,23,42,0.55);
+
+    border:
+        1px solid rgba(148,163,184,0.16);
+
+    backdrop-filter: blur(15px);
+    -webkit-backdrop-filter: blur(15px);
+
+    color: #c5cfdf;
+
+    font-size: 12px;
+    font-weight: 700;
+
+    transition:
+        transform 0.3s ease,
+        background 0.3s ease,
+        border-color 0.3s ease,
+        box-shadow 0.3s ease;
+}
+
+.secondary-button:hover {
+    transform:
+        translateY(-4px);
+
+    background:
+        rgba(30,41,59,0.72);
+
+    border-color:
+        rgba(96,165,250,0.30);
+
+    box-shadow:
+        0 15px 35px rgba(0,0,0,0.20);
+}
+
+
+/* =========================================================
+   3D AI VISUAL
+========================================================= */
+
+.hero-visual {
+    display: grid;
+    place-items: center;
+
+    perspective: 1000px;
+
+    animation:
+        fadeUp 1s 0.3s ease both;
+}
+
+.ai-orbit {
+    width: min(390px, 75vw);
+
+    aspect-ratio: 1;
+
+    border-radius: 50%;
+
+    border:
+        1px solid rgba(96,165,250,0.16);
+
+    position: relative;
+
+    display: grid;
+    place-items: center;
+
+    animation:
+        float 7s ease-in-out infinite;
+
+    transform-style:
+        preserve-3d;
+
+    box-shadow:
+        0 40px 100px rgba(0,0,0,0.30),
+        inset 0 0 80px rgba(37,99,235,0.035);
+
+    background:
+        radial-gradient(
+            circle,
+            rgba(37,99,235,0.06),
+            transparent 62%
+        );
+}
+
+.ai-orbit::before {
+    content: "";
+
+    position: absolute;
+
+    width: 72%;
+    height: 72%;
+
+    border-radius: 50%;
+
+    border:
+        1px solid rgba(129,140,248,0.18);
+
+    box-shadow:
+        inset 0 0 35px rgba(37,99,235,0.08);
+
+    animation:
+        rotate 18s linear infinite;
+}
+
+.ai-orbit::after {
+    content: "";
+
+    position: absolute;
+
+    width: 48%;
+    height: 48%;
+
+    border-radius: 50%;
+
+    border:
+        1px solid rgba(56,189,248,0.17);
+
+    animation:
+        rotateReverse 13s linear infinite;
+}
+
+.ai-core {
+    width: 112px;
+    height: 112px;
+
+    border-radius: 32px;
+
+    background:
+        linear-gradient(
+            145deg,
+            #172554,
+            #0f172a 50%,
+            #111827
+        );
+
+    color: white;
+
+    display: grid;
+    place-items: center;
+
+    font-size: 22px;
+    font-weight: 850;
+
+    letter-spacing: -0.04em;
+
+    border:
+        1px solid rgba(147,197,253,0.25);
+
+    box-shadow:
+        0 30px 80px rgba(0,0,0,0.48),
+        0 0 80px rgba(37,99,235,0.22),
+        0 0 130px rgba(124,58,237,0.10),
+        inset 0 1px 1px rgba(255,255,255,0.20);
+
+    position: relative;
+
+    z-index: 2;
+
+    transform-style:
+        preserve-3d;
+
+    animation:
+        corePulse 4s ease-in-out infinite;
+}
+
+.ai-core::before {
+    content: "";
+
+    position: absolute;
+
+    inset: -12px;
+
+    border-radius: 40px;
+
+    border:
+        1px solid rgba(96,165,250,0.45);
+
+    opacity: 0.4;
+
+    animation:
+        coreRing 3s ease-in-out infinite;
+}
+
+.ai-core::after {
+    content: "";
+
+    position: absolute;
+
+    width: 80px;
+    height: 30px;
+
+    top: 12px;
+    left: 16px;
+
+    background:
+        rgba(147,197,253,0.15);
+
+    filter: blur(10px);
+
+    transform:
+        rotate(-20deg);
+
+    border-radius: 50%;
+}
+
+.orbit-dot {
+    position: absolute;
+
+    width: 10px;
+    height: 10px;
+
+    background: #60a5fa;
+
+    border-radius: 50%;
+
+    top: 15%;
+    right: 17%;
+
+    box-shadow:
+        0 0 0 7px rgba(96,165,250,0.06),
+        0 0 25px rgba(96,165,250,0.65);
+
+    animation:
+        orbitMove 5s linear infinite;
+}
+
+.orbit-dot-two {
+    position: absolute;
+
+    width: 7px;
+    height: 7px;
+
+    border-radius: 50%;
+
+    background: #a78bfa;
+
+    bottom: 17%;
+    left: 18%;
+
+    box-shadow:
+        0 0 20px rgba(167,139,250,0.7);
+
+    animation:
+        orbitMoveTwo 7s linear infinite;
+}
+
+
+/* =========================================================
+   FEATURES
+========================================================= */
+
+.features {
+    width: min(1180px, 92%);
+
+    margin:
+        0 auto 80px;
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, 1fr);
+
+    gap: 15px;
+
+    perspective: 1200px;
+}
+
+.feature {
+    padding: 26px;
+
+    min-height: 190px;
+
+    border-radius: 22px;
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(15,23,42,0.72),
+            rgba(15,23,42,0.43)
+        );
+
+    border:
+        1px solid rgba(148,163,184,0.12);
+
+    backdrop-filter: blur(22px);
+    -webkit-backdrop-filter: blur(22px);
+
+    box-shadow:
+        0 20px 50px rgba(0,0,0,0.18),
+        inset 0 1px 1px rgba(255,255,255,0.04);
+
+    transform-style:
+        preserve-3d;
+
+    transition:
+        transform 0.4s ease,
+        background 0.3s ease,
+        border-color 0.3s ease,
+        box-shadow 0.3s ease;
+}
+
+.feature:hover {
+    transform:
+        perspective(900px)
+        rotateX(4deg)
+        rotateY(-4deg)
+        translateY(-8px);
+
+    background:
+        linear-gradient(
+            145deg,
+            rgba(20,31,56,0.86),
+            rgba(15,23,42,0.62)
+        );
+
+    border-color:
+        rgba(96,165,250,0.22);
+
+    box-shadow:
+        0 30px 70px rgba(0,0,0,0.30),
+        0 0 35px rgba(37,99,235,0.07);
+}
+
+.feature-number {
+    font-size: 10px;
+
+    font-weight: 800;
+
+    color: #64748b;
+
+    letter-spacing: 0.15em;
+}
+
+.feature h3 {
+    margin-top: 22px;
+
+    font-size: 18px;
+
+    letter-spacing: -0.03em;
+
+    color: #e9effa;
+}
+
+.feature p {
+    margin-top: 9px;
+
+    font-size: 12px;
+
+    line-height: 1.7;
+
+    color: #7f8ba3;
+}
+
+
+/* =========================================================
+   FOOTER
+========================================================= */
+
+footer {
+    width: min(1180px, 92%);
+
+    margin: 0 auto;
+
+    padding:
+        25px 0 35px;
+
+    border-top:
+        1px solid rgba(148,163,184,0.10);
+
+    display: flex;
+
+    justify-content:
+        space-between;
+
+    font-size: 10px;
+
+    color: #56627a;
+}
+
+
+/* =========================================================
+   ANIMATIONS
+========================================================= */
+
+@keyframes fadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(25px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeDown {
+    from {
+        opacity: 0;
+        transform: translateY(-15px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes floating {
+    0%, 100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-22px);
+    }
+}
+
+@keyframes float {
+    0%, 100% {
+        transform:
+            translateY(0)
+            rotateX(0deg);
+    }
+
+    50% {
+        transform:
+            translateY(-12px)
+            rotateX(2deg);
+    }
+}
+
+@keyframes rotate {
+    from {
+        transform: rotate(0);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes rotateReverse {
+    from {
+        transform: rotate(360deg);
+    }
+
+    to {
+        transform: rotate(0);
+    }
+}
+
+@keyframes corePulse {
+    0%, 100% {
+        transform:
+            scale(1)
+            rotateX(0)
+            rotateY(0);
+    }
+
+    50% {
+        transform:
+            scale(1.045)
+            rotateX(4deg)
+            rotateY(-4deg);
+    }
+}
+
+@keyframes coreRing {
+    0%, 100% {
+        transform: scale(0.95);
+        opacity: 0.15;
+    }
+
+    50% {
+        transform: scale(1.08);
+        opacity: 0.5;
+    }
+}
+
+@keyframes pulse {
+    0%, 100% {
+        box-shadow:
+            0 0 0 5px rgba(34,197,94,0.08),
+            0 0 12px rgba(34,197,94,0.20);
+    }
+
+    50% {
+        box-shadow:
+            0 0 0 9px rgba(34,197,94,0.02),
+            0 0 20px rgba(34,197,94,0.40);
+    }
+}
+
+@keyframes shine {
+    0% {
+        transform:
+            rotate(-45deg)
+            translateX(-100px);
+    }
+
+    60%, 100% {
+        transform:
+            rotate(-45deg)
+            translateX(160px);
+    }
+}
+
+@keyframes orbitMove {
+    from {
+        transform:
+            rotate(0deg)
+            translateX(165px)
+            rotate(0deg);
+    }
+
+    to {
+        transform:
+            rotate(360deg)
+            translateX(165px)
+            rotate(-360deg);
+    }
+}
+
+@keyframes orbitMoveTwo {
+    from {
+        transform:
+            rotate(360deg)
+            translateX(135px)
+            rotate(-360deg);
+    }
+
+    to {
+        transform:
+            rotate(0deg)
+            translateX(135px)
+            rotate(0deg);
+    }
+}
+
+@keyframes gradientText {
+    0%, 100% {
+        background-position: 0%;
+    }
+
+    50% {
+        background-position: 100%;
+    }
+}
+
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+
+@media (max-width: 850px) {
+
+    .hero {
+        grid-template-columns: 1fr;
+
+        gap: 50px;
+
+        padding-top: 55px;
+        padding-bottom: 70px;
+    }
+
+    .hero-content {
+        text-align: center;
+    }
+
+    .eyebrow {
+        justify-content: center;
+    }
+
+    .hero-description {
+        margin-left: auto;
+        margin-right: auto;
+    }
+
+    .hero-actions {
+        justify-content: center;
+    }
+
+    .hero-visual {
+        order: -1;
+    }
+
+    .ai-orbit {
+        width: 280px;
+    }
+
+    .ai-core {
+        width: 85px;
+        height: 85px;
+
+        border-radius: 23px;
+
+        font-size: 18px;
+    }
+
+    .features {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 550px) {
+
+    .navbar {
+        padding-top: 18px;
+    }
+
+    .nav-status {
+        display: none;
+    }
+
+    .hero h1 {
+        font-size: 50px;
+    }
+
+    .hero-actions {
+        flex-direction: column;
+    }
+
+    .primary-button,
+    .secondary-button {
+        width: 100%;
+    }
+
+    footer {
+        flex-direction: column;
+        gap: 8px;
+    }
+}
+
+
+/* =========================================================
+   REDUCED MOTION
+========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<!-- Premium Background -->
+
+<div class="background">
+    <div class="glow glow-one"></div>
+    <div class="glow glow-two"></div>
+    <div class="glow glow-three"></div>
+</div>
+
+
+<!-- Navigation -->
+
+<header class="navbar">
+
+    <a href="#" class="brand">
+
+        <div class="brand-icon">
+            S
+        </div>
+
+        <div class="brand-text">
+
+            <strong>
+                SecureDocs
+            </strong>
+
+            <span>
+                AI Document Portal
+            </span>
+
+        </div>
+
+    </a>
+
+
+    <div class="nav-status">
+
+        <span class="status-dot"></span>
+
+        Secure workspace
+
+    </div>
+
+</header>
+
+
+<!-- Main -->
+
+<main>
+
+    <!-- Hero -->
+
+    <section class="hero">
+
+        <div class="hero-content">
+
+            <div class="eyebrow">
+
+                <span class="eyebrow-line"></span>
+
+                AI-POWERED DOCUMENT SEARCH
+
+            </div>
+
+
+            <h1>
+
+                Your documents.
+
+                <span>
+                    Understood.
+                </span>
+
+            </h1>
+
+
+            <p class="hero-description">
+
+                A secure internal workspace where teams can
+                upload private documents, search their knowledge
+                base and ask AI questions — without exposing
+                sensitive data.
+
+            </p>
+
+
+            <div class="hero-actions">
+
+                <a
+                    href="login.html"
+                    class="primary-button"
+                >
+
+                    Enter workspace
+
+                    <span>
+                        →
+                    </span>
+
+                </a>
+
+
+                <a
+                    href="#features"
+                    class="secondary-button"
+                >
+
+                    Explore platform
+
+                </a>
+
+            </div>
+
+        </div>
+
+
+        <!-- 3D AI Visual -->
+
+        <div class="hero-visual">
+
+            <div class="ai-orbit">
+
+                <div class="orbit-dot"></div>
+
+                <div class="orbit-dot-two"></div>
+
+                <div class="ai-core">
+                    AI
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <!-- Features -->
+
+    <section
+        class="features"
+        id="features"
+    >
+
+        <article class="feature">
+
+            <span class="feature-number">
+                01 / SEARCH
+            </span>
+
+            <h3>
+                Find information instantly.
+            </h3>
+
+            <p>
+                Search across your authorized documents
+                instead of manually opening files one by one.
+            </p>
+
+        </article>
+
+
+        <article class="feature">
+
+            <span class="feature-number">
+                02 / AI
+            </span>
+
+            <h3>
+                Ask your knowledge base.
+            </h3>
+
+            <p>
+                Ask natural-language questions and receive
+                answers grounded in your organization's documents.
+            </p>
+
+        </article>
+
+
+        <article class="feature">
+
+            <span class="feature-number">
+                03 / SECURITY
+            </span>
+
+            <h3>
+                Privacy comes first.
+            </h3>
+
+            <p>
+                Role-based access and protected documents keep
+                sensitive company information inside the workspace.
+            </p>
+
+        </article>
+
+    </section>
+
+</main>
+
+
+<!-- Footer -->
+
+<footer>
+
+    <span>
+        SecureDocs © 2026
+    </span>
+
+    <span>
+        Private knowledge. Intelligent access.
+    </span>
+
+</footer>
+
+</body>
+</html>
+```

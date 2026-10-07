@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Audit Logs — SecureDocs</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#050816;--panel:rgba(13,18,38,.72);--border:rgba(255,255,255,.09);
+--text:#f5f7ff;--muted:#8991ad;--blue:#4f8cff;--violet:#8b5cf6}
+body{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+background:radial-gradient(circle at 75% 5%,rgba(79,140,255,.14),transparent 28%),
+radial-gradient(circle at 15% 85%,rgba(139,92,246,.11),transparent 30%),var(--bg);
+color:var(--text);min-height:100vh;overflow-x:hidden}
+body::before{content:"";position:fixed;inset:0;pointer-events:none;
+background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),
+linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);
+background-size:55px 55px;mask-image:linear-gradient(to bottom,black,transparent 92%)}
+.app{display:flex;min-height:100vh}
+
+.sidebar{width:255px;background:rgba(5,8,22,.82);backdrop-filter:blur(25px);
+-webkit-backdrop-filter:blur(25px);border-right:1px solid var(--border);
+padding:25px 17px;position:fixed;inset:0 auto 0 0;display:flex;flex-direction:column;z-index:20}
+.brand{display:flex;align-items:center;gap:12px;padding:5px 10px;margin-bottom:52px}
+.brand-mark{width:40px;height:40px;display:grid;place-items:center;border-radius:12px;
+font-size:14px;font-weight:800;color:white;background:linear-gradient(135deg,var(--blue),var(--violet));
+box-shadow:0 0 25px rgba(79,140,255,.28);position:relative}
+.brand-mark::after{content:"";position:absolute;inset:1px;border-radius:11px;border:1px solid rgba(255,255,255,.25)}
+.brand-name{font-size:16px;font-weight:700;letter-spacing:-.4px}
+.nav-label{color:#626b87;font-size:10px;text-transform:uppercase;letter-spacing:1.7px;padding:0 12px;margin-bottom:12px}
+.nav{display:flex;flex-direction:column;gap:7px}
+.nav a{text-decoration:none;color:#7f88a4;padding:13px;border-radius:12px;font-size:13px;
+display:flex;align-items:center;gap:10px;border:1px solid transparent;
+transition:transform .25s ease,background .25s ease,color .25s ease,border .25s ease}
+.nav a:hover{color:white;background:rgba(255,255,255,.045);border-color:rgba(255,255,255,.07);transform:translateX(3px)}
+.nav a.active{color:white;background:linear-gradient(90deg,rgba(79,140,255,.15),rgba(139,92,246,.10));
+border-color:rgba(79,140,255,.20);box-shadow:inset 3px 0 0 var(--blue),0 8px 25px rgba(0,0,0,.12)}
+.nav a span{flex:1}
+.nav a .badge{flex:0 0 auto;font-style:normal;font-size:8px;font-weight:800;letter-spacing:.7px;
+padding:3px 6px;border-radius:5px;background:linear-gradient(135deg,rgba(139,92,246,.22),rgba(79,140,255,.18));
+color:#c4b5fd;border:1px solid rgba(139,92,246,.28)}
+.sidebar-bottom{margin-top:auto}
+.user-mini{border-top:1px solid var(--border);padding:18px 8px 4px;display:flex;align-items:center;gap:11px}
+.avatar{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;font-size:11px;
+font-weight:800;color:white;background:linear-gradient(135deg,#1d4ed8,#7c3aed);box-shadow:0 0 20px rgba(79,140,255,.18)}
+.user-info strong{display:block;font-size:12px}
+.user-info span{color:#626b87;font-size:10px}
+
+.main{margin-left:255px;width:calc(100% - 255px);padding:40px 48px;animation:pageIn .7s ease both}
+.topbar{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:28px;gap:20px}
+.heading small{color:#69738f;font-size:10px;letter-spacing:1.7px;font-weight:600}
+.heading h1{margin-top:7px;font-size:34px;letter-spacing:-1.7px;font-weight:650}
+.heading p{margin-top:9px;color:#7d87a3;font-size:12px}
+.top-actions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.status-pill{display:flex;align-items:center;gap:8px;padding:9px 13px;background:rgba(255,255,255,.035);
+border:1px solid var(--border);border-radius:20px;font-size:10px;color:#8993ae;backdrop-filter:blur(10px);white-space:nowrap}
+.status-dot{width:7px;height:7px;border-radius:50%;background:#6ee7b7;
+box-shadow:0 0 12px rgba(110,231,183,.6);animation:pulse 1.8s infinite}
+.export-btn{padding:9px 14px;border-radius:11px;color:white;font-size:11px;font-weight:600;
+font-family:inherit;cursor:pointer;
+background:linear-gradient(135deg,var(--blue),var(--violet));
+border:1px solid rgba(255,255,255,.12);
+box-shadow:0 8px 22px rgba(79,140,255,.20);
+transition:transform .25s ease,box-shadow .25s ease}
+.export-btn:hover{transform:translateY(-2px);box-shadow:0 12px 28px rgba(79,140,255,.30)}
+
+.filters-bar{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+.chip{padding:8px 14px;border-radius:20px;font-size:11px;font-weight:600;color:#8993ae;
+background:rgba(255,255,255,.035);border:1px solid var(--border);cursor:pointer;
+transition:all .25s ease;font-family:inherit;display:inline-flex;align-items:center;gap:6px}
+.chip:hover{border-color:rgba(79,140,255,.35);color:#c7d2ff;background:rgba(79,140,255,.07)}
+.chip.active{background:linear-gradient(135deg,rgba(79,140,255,.18),rgba(139,92,246,.14));
+color:#c7d2ff;border-color:rgba(79,140,255,.32)}
+.chip .count{display:inline-block;padding:1px 6px;border-radius:8px;
+background:rgba(255,255,255,.08);font-size:9px;font-weight:700}
+.chip.active .count{background:rgba(79,140,255,.25);color:white}
+
+.search-bar{position:relative;margin-bottom:16px}
+.search-bar input{width:100%;padding:12px 14px 12px 42px;color:white;font-size:12px;
+font-family:inherit;border-radius:12px;outline:none;
+border:1px solid var(--border);background:rgba(2,6,23,.48);
+transition:border .25s ease,box-shadow .25s ease,background .25s ease}
+.search-bar input::placeholder{color:#626b87}
+.search-bar input:focus{border-color:rgba(79,140,255,.45);background:rgba(2,6,23,.72);
+box-shadow:0 0 0 3px rgba(79,140,255,.08)}
+.search-bar .s-icon{position:absolute;left:15px;top:50%;transform:translateY(-50%);
+color:#626b87;font-size:14px;pointer-events:none}
+
+.results-info{display:flex;justify-content:space-between;align-items:center;
+margin-bottom:12px;font-size:11px;color:#7d87a3;padding:0 4px;flex-wrap:wrap;gap:10px}
+.results-info strong{color:#cbd2e5;font-weight:600}
+
+.log-wrap{background:linear-gradient(145deg,rgba(17,24,47,.82),rgba(8,12,27,.76));
+border:1px solid var(--border);border-radius:18px;overflow:hidden;backdrop-filter:blur(18px);
+box-shadow:0 20px 60px rgba(0,0,0,.18)}
+.log{display:flex;align-items:center;gap:16px;padding:16px 22px;
+border-bottom:1px solid rgba(255,255,255,.05);transition:background .25s ease}
+.log:last-child{border-bottom:none}
+.log:hover{background:rgba(255,255,255,.022)}
+.log-icon{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;
+font-size:14px;flex:0 0 38px;border:1px solid}
+.li-blue{background:rgba(79,140,255,.10);color:#93b4ff;border-color:rgba(79,140,255,.22)}
+.li-green{background:rgba(34,197,94,.10);color:#6ee7b7;border-color:rgba(34,197,94,.22)}
+.li-red{background:rgba(239,68,68,.10);color:#fca5a5;border-color:rgba(239,68,68,.22)}
+.li-violet{background:rgba(139,92,246,.10);color:#c4b5fd;border-color:rgba(139,92,246,.22)}
+.li-amber{background:rgba(245,158,11,.10);color:#fcd34d;border-color:rgba(245,158,11,.22)}
+.log-body{flex:1;min-width:0}
+.log-action{font-size:12px;font-weight:600;color:#e9effa}
+.log-action b{color:#93b4ff;font-weight:600}
+.log-meta{font-size:10px;color:#66708d;margin-top:4px}
+.log-time{font-size:10px;color:#66708d;white-space:nowrap}
+
+.empty-state{padding:60px 20px;text-align:center;color:#66708d;font-size:12px}
+.empty-state .big{font-size:32px;margin-bottom:12px;opacity:.4}
+
+.load-more-wrap{padding:18px;text-align:center;border-top:1px solid rgba(255,255,255,.05)}
+.load-more{padding:10px 20px;border-radius:10px;font-size:11px;font-weight:600;
+font-family:inherit;cursor:pointer;color:#cbd2e5;
+background:rgba(255,255,255,.04);border:1px solid var(--border);
+transition:all .25s ease}
+.load-more:hover{background:rgba(79,140,255,.10);color:#93b4ff;border-color:rgba(79,140,255,.28)}
+
+.toast-wrap{position:fixed;bottom:24px;right:24px;z-index:200;
+display:flex;flex-direction:column;gap:10px}
+.toast{padding:14px 18px;border-radius:12px;font-size:12px;color:#e9effa;font-weight:600;
+background:linear-gradient(145deg,rgba(17,24,47,.96),rgba(8,12,27,.96));
+border:1px solid var(--border);box-shadow:0 20px 50px rgba(0,0,0,.40);
+display:flex;align-items:center;gap:10px;min-width:260px;
+animation:toastIn .35s cubic-bezier(.2,.8,.2,1)}
+.toast::before{content:"";width:4px;height:22px;border-radius:2px;
+background:linear-gradient(180deg,var(--blue),var(--violet))}
+.toast.success::before{background:linear-gradient(180deg,#22c55e,#10b981)}
+.toast.danger::before{background:linear-gradient(180deg,#ef4444,#f59e0b)}
+
+@keyframes pageIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulse{0%,100%{opacity:.35;transform:scale(.9)}50%{opacity:1;transform:scale(1)}}
+@keyframes toastIn{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:translateX(0)}}
+
+@media(max-width:900px){
+.sidebar{width:78px;padding:25px 10px}
+.brand-name,.nav-label,.nav a span,.user-info{display:none}
+.brand{justify-content:center;padding:0}
+.nav a{justify-content:center}
+.nav a .badge{display:none}
+.main{margin-left:78px;width:calc(100% - 78px);padding:30px}
+}
+@media(max-width:650px){
+.main{padding:20px}
+.topbar{flex-direction:column;gap:15px}
+.top-actions{width:100%;justify-content:space-between}
+.log{padding:14px 16px;gap:12px}
+.log-time{display:none}
+}
+@media(prefers-reduced-motion:reduce){
+*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}
+}
+</style>
+</head>
+<body>
+<div class="app">
+
+<aside class="sidebar">
+    <div class="brand">
+        <div class="brand-mark">S</div>
+        <div class="brand-name">SecureDocs</div>
+    </div>
+    <div class="nav-label">Workspace</div>
+    <nav class="nav">
+        <a href="dashboard.html">◉ <span>Overview</span></a>
+        <a href="documents.html">▣ <span>Documents</span></a>
+        <a href="search.html">⌕ <span>AI Search</span></a>
+        <a href="assistant.html">✦ <span>AI Chat (RAG)</span></a>
+        <a href="users.html">⬡ <span>Users</span> <em class="badge">ADMIN</em></a>
+        <a href="roles.html">⬢ <span>Roles &amp; Permissions</span> <em class="badge">ADMIN</em></a>
+        <a href="audit.html" class="active">☰ <span>Audit Logs</span> <em class="badge">ADMIN</em></a>
+        <a href="settings.html">⚙ <span>Settings</span> <em class="badge">ADMIN</em></a>
+        <a href="profile.html">◐ <span>Profile</span></a>
+    </nav>
+    <div class="sidebar-bottom">
+        <div class="user-mini">
+            <div class="avatar">WS</div>
+            <div class="user-info">
+                <strong>Wasif Siddiqui</strong>
+                <span>Secure account</span>
+            </div>
+        </div>
+    </div>
+</aside>
+
+<main class="main">
+    <div class="topbar">
+        <div class="heading">
+            <small>COMPLIANCE</small>
+            <h1>Audit Logs.</h1>
+            <p>Complete activity trail of every action across the workspace.</p>
+        </div>
+        <div class="top-actions">
+            <div class="status-pill"><span class="status-dot"></span>Live monitoring</div>
+            <button class="export-btn" onclick="exportCSV()">↓ Export CSV</button>
+        </div>
+    </div>
+
+    <div class="filters-bar" id="filtersBar">
+        <button class="chip active" data-filter="all">All events <span class="count" id="count-all">0</span></button>
+        <button class="chip" data-filter="login">Logins <span class="count" id="count-login">0</span></button>
+        <button class="chip" data-filter="upload">Uploads <span class="count" id="count-upload">0</span></button>
+        <button class="chip" data-filter="ai">AI queries <span class="count" id="count-ai">0</span></button>
+        <button class="chip" data-filter="permission">Permission changes <span class="count" id="count-permission">0</span></button>
+        <button class="chip" data-filter="warning">Warnings <span class="count" id="count-warning">0</span></button>
+    </div>
+
+    <div class="search-bar">
+        <span class="s-icon">⌕</span>
+        <input type="search" id="searchInput" placeholder="Search by user, action, document, or IP...">
+    </div>
+
+    <div class="results-info">
+        <span>Showing <strong id="shownCount">0</strong> of <strong id="totalCount">0</strong> events</span>
+        <span id="activeFilterLabel">Filter: All events</span>
+    </div>
+
+    <div class="log-wrap" id="logWrap"></div>
+
+    <div class="load-more-wrap" id="loadMoreWrap" style="display:none;">
+        <button class="load-more" id="loadMoreBtn" onclick="loadMore()">Load more events</button>
+    </div>
+</main>
+
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script src="auth.js"></script>
+<script>
+SecureDocsAuth.guard("admin");
+</script>
+<script>
+/* =========================
+   DATA
+========================== */
+var allLogs = [
+    { id:1,  type:"login",      icon:"✓",  color:"li-green",  action:"<b>Sarah Connor</b> signed in successfully", meta:"IP 192.168.1.42 · Chrome · macOS", time:"2 min ago", ts: Date.now() - 120000 },
+    { id:2,  type:"upload",     icon:"↑",  color:"li-blue",   action:"<b>John Mercer</b> uploaded <b>Q4-Report.pdf</b>", meta:"/Finance/Reports · 3.2 MB", time:"18 min ago", ts: Date.now() - 1080000 },
+    { id:3,  type:"ai",         icon:"✦",  color:"li-violet", action:"<b>Amelia Rivera</b> ran AI query: \"remote work policy\"", meta:"Matched 3 documents · 0.42s", time:"1 hour ago", ts: Date.now() - 3600000 },
+    { id:4,  type:"warning",    icon:"⚠",  color:"li-amber",  action:"<b>Nadia Patel</b> accessed <b>Security Guidelines.pdf</b>", meta:"Outside working hours · Flagged for review", time:"3 hours ago", ts: Date.now() - 10800000 },
+    { id:5,  type:"permission", icon:"⚙",  color:"li-blue",   action:"<b>Sarah Connor</b> updated role <b>Analyst</b>", meta:"Added permission: Export results", time:"Yesterday · 4:12 PM", ts: Date.now() - 86400000 },
+    { id:6,  type:"login",      icon:"✕",  color:"li-red",    action:"Failed sign-in attempt for <b>unknown@company.com</b>", meta:"IP 203.0.113.8 · 3 attempts blocked", time:"Yesterday · 11:07 PM", ts: Date.now() - 90000000 },
+    { id:7,  type:"login",      icon:"✓",  color:"li-green",  action:"<b>David Kim</b> signed in successfully", meta:"IP 10.0.4.21 · Safari · iOS", time:"2 days ago", ts: Date.now() - 172800000 },
+    { id:8,  type:"upload",     icon:"🗑",  color:"li-red",    action:"<b>Sarah Connor</b> deleted <b>Old-Policy-2023.pdf</b>", meta:"/Legal/Archive · Soft delete", time:"3 days ago", ts: Date.now() - 259200000 },
+    { id:9,  type:"ai",         icon:"✦",  color:"li-violet", action:"<b>John Mercer</b> ran AI query: \"Q4 revenue breakdown\"", meta:"Matched 5 documents · 0.38s", time:"3 days ago", ts: Date.now() - 260000000 },
+    { id:10, type:"permission", icon:"⚙",  color:"li-blue",   action:"<b>Sarah Connor</b> created role <b>Reviewer</b>", meta:"Permissions: View documents, Export results", time:"4 days ago", ts: Date.now() - 345600000 },
+    { id:11, type:"warning",    icon:"⚠",  color:"li-amber",  action:"<b>Liam Turner</b> accessed <b>Employee Handbook.docx</b>", meta:"Unusual location · Karachi → London", time:"5 days ago", ts: Date.now() - 432000000 },
+    { id:12, type:"upload",     icon:"↑",  color:"li-blue",   action:"<b>Amelia Rivera</b> uploaded <b>Market-Analysis.pdf</b>", meta:"/Marketing/Reports · 5.7 MB", time:"6 days ago", ts: Date.now() - 518400000 }
+];
+
+var currentFilter = "all";
+var currentSearch = "";
+var visibleCount = 6;
+var pageSize = 6;
+
+/* =========================
+   HELPERS
+========================== */
+function stripHTML(html){
+    var tmp = document.createElement("div");
+    tmp.innerHTML = html;
+    return tmp.textContent || tmp.innerText || "";
+}
+
+function getFiltered(){
+    var list = allLogs.slice();
+    if(currentFilter !== "all"){
+        list = list.filter(function(l){ return l.type === currentFilter; });
+    }
+    if(currentSearch){
+        var q = currentSearch.toLowerCase();
+        list = list.filter(function(l){
+            var txt = (stripHTML(l.action) + " " + l.meta + " " + l.time).toLowerCase();
+            return txt.indexOf(q) !== -1;
+        });
+    }
+    list.sort(function(a,b){ return b.ts - a.ts; });
+    return list;
+}
+
+/* =========================
+   RENDER
+========================== */
+function render(){
+    var filtered = getFiltered();
+    var total = filtered.length;
+    var shown = Math.min(visibleCount, total);
+    var visible = filtered.slice(0, visibleCount);
+    var wrap = document.getElementById("logWrap");
+
+    document.getElementById("totalCount").textContent = total;
+    document.getElementById("shownCount").textContent = shown;
+
+    if(total === 0){
+        wrap.innerHTML = '<div class="empty-state"><div class="big">☰</div>No events match your filter or search.</div>';
+        document.getElementById("loadMoreWrap").style.display = "none";
+        return;
+    }
+
+    var html = "";
+    visible.forEach(function(l){
+        html += '<div class="log">' +
+                    '<div class="log-icon ' + l.color + '">' + l.icon + '</div>' +
+                    '<div class="log-body">' +
+                        '<div class="log-action">' + l.action + '</div>' +
+                        '<div class="log-meta">' + l.meta + '</div>' +
+                    '</div>' +
+                    '<div class="log-time">' + l.time + '</div>' +
+                '</div>';
+    });
+    wrap.innerHTML = html;
+
+    var lmWrap = document.getElementById("loadMoreWrap");
+    if(shown < total){
+        lmWrap.style.display = "block";
+        document.getElementById("loadMoreBtn").textContent = "Load more events (" + (total - shown) + " remaining)";
+    } else {
+        lmWrap.style.display = "none";
+    }
+}
+
+function updateCounts(){
+    document.getElementById("count-all").textContent = allLogs.length;
+    ["login","upload","ai","permission","warning"].forEach(function(k){
+        var n = allLogs.filter(function(l){ return l.type === k; }).length;
+        document.getElementById("count-" + k).textContent = n;
+    });
+}
+
+function updateFilterLabel(){
+    var labels = {
+        all:"All events", login:"Logins", upload:"Uploads",
+        ai:"AI queries", permission:"Permission changes", warning:"Warnings"
+    };
+    document.getElementById("activeFilterLabel").textContent = "Filter: " + labels[currentFilter];
+}
+
+function loadMore(){
+    visibleCount += pageSize;
+    render();
+}
+
+/* =========================
+   FILTER CHIP CLICKS
+========================== */
+var chips = document.querySelectorAll("#filtersBar .chip");
+for(var i = 0; i < chips.length; i++){
+    (function(chip){
+        chip.addEventListener("click", function(){
+            for(var j = 0; j < chips.length; j++){
+                chips[j].classList.remove("active");
+            }
+            chip.classList.add("active");
+            currentFilter = chip.getAttribute("data-filter");
+            visibleCount = pageSize;
+            updateFilterLabel();
+            render();
+
+            var labels = {
+                all:"All events", login:"Logins", upload:"Uploads",
+                ai:"AI queries", permission:"Permission changes", warning:"Warnings"
+            };
+            toast("Showing: " + labels[currentFilter], "");
+        });
+    })(chips[i]);
+}
+
+/* =========================
+   SEARCH
+========================== */
+document.getElementById("searchInput").addEventListener("input", function(){
+    currentSearch = this.value.trim();
+    visibleCount = pageSize;
+    render();
+});
+
+/* =========================
+   EXPORT CSV
+========================== */
+function exportCSV(){
+    var filtered = getFiltered();
+    if(filtered.length === 0){
+        toast("No events to export", "danger");
+        return;
+    }
+    var rows = [["Time","Type","Action","Details"]];
+    filtered.forEach(function(l){
+        rows.push([l.time, l.type, stripHTML(l.action).replace(/"/g,'""'), l.meta.replace(/"/g,'""')]);
+    });
+    var csv = rows.map(function(r){
+        return r.map(function(v){ return '"' + v + '"'; }).join(",");
+    }).join("\n");
+
+    var blob = new Blob([csv], { type:"text/csv;charset=utf-8;" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = "audit-logs-" + new Date().toISOString().slice(0,10) + ".csv";
+    a.click();
+    URL.revokeObjectURL(url);
+    toast("Exported " + filtered.length + " events to CSV", "success");
+}
+
+/* =========================
+   TOAST
+========================== */
+function toast(msg, type){
+    var wrap = document.getElementById("toastWrap");
+    var el = document.createElement("div");
+    el.className = "toast " + (type || "");
+    el.textContent = msg;
+    wrap.appendChild(el);
+    setTimeout(function(){
+        el.style.transition = "opacity .3s ease, transform .3s ease";
+        el.style.opacity = "0";
+        el.style.transform = "translateX(30px)";
+        setTimeout(function(){ el.remove(); }, 300);
+    }, 2400);
+}
+
+/* =========================
+   INIT
+========================== */
+updateCounts();
+updateFilterLabel();
+render();
+</script>
+</body>
+</html>
