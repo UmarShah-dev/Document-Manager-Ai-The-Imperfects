@@ -72,6 +72,7 @@ BASE = Path(__file__).resolve().parent
 
 MAX_BYTES = 5 * 1024 * 1024
 SESSION_TTL = 8 * 3600
+SESSION_COOKIE_NAME = "securedocs_sid"
 
 EXTS = {
     ".txt",
@@ -841,7 +842,7 @@ def get_user(
 ):
 
     token = request.cookies.get(
-        "sid"
+        SESSION_COOKIE_NAME
     )
 
     if not token:
@@ -2212,12 +2213,16 @@ def auth(
     # which used the default /api path. Without this, browsers that
     # already logged in before the fix can send two `sid` cookies.
     response.delete_cookie(
-        "sid",
+        SESSION_COOKIE_NAME,
         path="/api",
     )
 
+    # Remove legacy cookies from previous deployments.
+    response.delete_cookie("sid", path="/")
+    response.delete_cookie("sid", path="/api")
+
     response.set_cookie(
-        "sid",
+        SESSION_COOKIE_NAME,
         token,
         max_age=SESSION_TTL,
         httponly=True,
@@ -2237,7 +2242,7 @@ def logout(
 ):
 
     token = request.cookies.get(
-        "sid"
+        SESSION_COOKIE_NAME
     )
 
     audit(
@@ -2257,14 +2262,18 @@ def logout(
     # Clear both the current root cookie and the stale /api cookie
     # left by older deployments.
     response.delete_cookie(
-        "sid",
+        SESSION_COOKIE_NAME,
         path="/",
     )
 
     response.delete_cookie(
-        "sid",
+        SESSION_COOKIE_NAME,
         path="/api",
     )
+
+    # Remove legacy cookies from previous deployments.
+    response.delete_cookie("sid", path="/")
+    response.delete_cookie("sid", path="/api")
 
     return response
 
