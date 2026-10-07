@@ -4431,78 +4431,234 @@ document.addEventListener(
 
 
 # ============================================================
-# PAGE LOADING
+# PAGE LOADING — ROBUST VERSION
 # ============================================================
 
-def load_page(
-    name,
-):
+ALLOWED_PAGES = {
+    "index",
+    "login",
+    "dashboard",
+    "documents",
+    "assistant",
+    "search",
+    "users",
+    "roles",
+    "audit",
+    "settings",
+    "profile",
+}
 
-    locations = (
-        BASE
-        / "pages"
-        / f"{name}.html",
 
-        BASE
-        / f"{name}.html",
-    )
+def find_page_file(name: str):
+    """
+    Find an HTML page regardless of whether it is located in:
+    
+        DocumentManager/pages/
+        DocumentManager/
+        DocumentManager/DocumentManager/pages/
+        DocumentManager/DocumentManager/
+        
+    This makes deployment much more tolerant of the
+    GitHub/FastAPI Cloud folder structure.
+    """
 
-    html = None
+    if name not in ALLOWED_PAGES:
+        return None
 
-    for p in locations:
+    filename = f"{name}.html"
 
-        if p.is_file():
+    # Normal locations first
+    candidates = [
+        BASE / "pages" / filename,
+        BASE / filename,
 
-            html = p.read_text(
-                "utf-8"
-            )
+        # In case the repository/application directory
+        # contains another DocumentManager folder.
+        BASE / "DocumentManager" / "pages" / filename,
+        BASE / "DocumentManager" / filename,
 
-            break
+        BASE.parent / "pages" / filename,
+        BASE.parent / filename,
 
-    if html is None:
+        BASE.parent / "DocumentManager" / "pages" / filename,
+        BASE.parent / "DocumentManager" / filename,
+    ]
+
+    for path in candidates:
+        try:
+            if path.is_file():
+                return path
+        except Exception:
+            continue
+
+    # Final fallback: search nearby directories.
+    # The page name is restricted by ALLOWED_PAGES above,
+    # so arbitrary files cannot be requested.
+    search_roots = [
+        BASE,
+        BASE.parent,
+    ]
+
+    for root in search_roots:
+        try:
+            for path in root.rglob(filename):
+                if path.is_file():
+                    return path
+        except Exception:
+            continue
+
+    return None
+
+
+def load_page(name: str):
+    """
+    Load an allowed HTML page and inject the required
+    JavaScript connector.
+    """
+
+    if name not in ALLOWED_PAGES:
+        raise HTTPException(
+            404,
+            "Page not found.",
+        )
+
+    page_path = find_page_file(name)
+
+    if page_path is None:
 
         return HTMLResponse(
             f"""
-            <h2>{name}.html not found</h2>
-            <p>
-                Put this page inside the
-                <b>pages</b> folder.
-            </p>
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <meta charset="UTF-8">
+                <title>SecureDocs</title>
+                <style>
+                    body {{
+                        font-family:
+                            Arial,
+                            sans-serif;
+                        background:#0b0d10;
+                        color:white;
+                        display:flex;
+                        align-items:center;
+                        justify-content:center;
+                        min-height:100vh;
+                        margin:0;
+                    }}
+
+                    .box {{
+                        max-width:650px;
+                        padding:40px;
+                        text-align:center;
+                    }}
+
+                    h1 {{
+                        margin-bottom:12px;
+                    }}
+
+                    p {{
+                        color:#aaa;
+                        line-height:1.6;
+                    }}
+
+                    code {{
+                        color:#fff;
+                    }}
+                </style>
+            </head>
+
+            <body>
+
+                <div class="box">
+
+                    <h1>
+                        SecureDocs
+                    </h1>
+
+                    <p>
+                        The page
+                        <code>{name}.html</code>
+                        could not be found on the server.
+                    </p>
+
+                    <p>
+                        Make sure the HTML file is included
+                        in the deployed project.
+                    </p>
+
+                </div>
+
+            </body>
+            </html>
             """,
-            500,
+            status_code=500,
         )
+
+    try:
+
+        html = page_path.read_text(
+            encoding="utf-8"
+        )
+
+    except Exception as e:
+
+        print(
+            "Could not read page:",
+            page_path,
+            repr(e),
+        )
+
+        return HTMLResponse(
+            "<h2>Could not load page.</h2>",
+            status_code=500,
+        )
+
+    # --------------------------------------------------------
+    # PAGE-SPECIFIC JAVASCRIPT
+    # --------------------------------------------------------
 
     js = PAGE_JS.get(
         name,
         "",
     )
 
+    # --------------------------------------------------------
+    # PROTECTED PAGE CONNECTOR
+    # --------------------------------------------------------
+
     if name in PROTECTED:
 
         js = (
             COMMON
+            + "\n"
             + js
         )
 
-    if js:
+    # --------------------------------------------------------
+    # INJECT JAVASCRIPT BEFORE </body>
+    # --------------------------------------------------------
 
-        head, sep, tail = html.rpartition(
+    if js.strip():
+
+        script = (
+            "\n<script>\n"
+            + js
+            + "\n</script>\n"
+        )
+
+        lower_html = html.lower()
+
+        body_position = lower_html.rfind(
             "</body>"
         )
 
-        script = (
-            "<script>"
-            + js
-            + "</script>"
-        )
-
-        if sep:
+        if body_position != -1:
 
             html = (
-                head
+                html[:body_position]
                 + script
-                + "</body>"
-                + tail
+                + html[body_position:]
             )
 
         else:
@@ -4510,7 +4666,8 @@ def load_page(
             html += script
 
     return HTMLResponse(
-        html
+        content=html,
+        media_type="text/html",
     )
 
 
@@ -4526,19 +4683,125 @@ def home():
     )
 
 
+# ------------------------------------------------------------
+# Normal routes:
+#
+# /login.html
+# /dashboard.html
+# /documents.html
+# /assistant.html
+# /search.html
+# /users.html
+# /roles.html
+# /audit.html
+# /settings.html
+# /profile.html
+# ------------------------------------------------------------
+
 @app.get("/{name}.html")
 def page(
     name: str,
     request: Request,
 ):
 
-    if name not in (
-        PROTECTED | PUBLIC
-    ):
+    # Only allow our known pages.
+    if name not in ALLOWED_PAGES:
 
         raise HTTPException(
             404,
             "Not found",
+        )
+
+    # --------------------------------------------------------
+    # PUBLIC PAGES
+    # --------------------------------------------------------
+
+    if name in PUBLIC:
+
+        return load_page(
+            name
+        )
+
+    # --------------------------------------------------------
+    # PROTECTED PAGES
+    # --------------------------------------------------------
+
+    if name in PROTECTED:
+
+        db = SessionLocal()
+
+        try:
+
+            user = get_user(
+                request,
+                db,
+            )
+
+        finally:
+
+            db.close()
+
+        # Not logged in
+        if not user:
+
+            return RedirectResponse(
+                "/login.html",
+                status_code=303,
+            )
+
+        # ----------------------------------------------------
+        # ADMIN-ONLY PAGES
+        # ----------------------------------------------------
+
+        if name in {
+            "users",
+            "roles",
+            "audit",
+            "settings",
+        }:
+
+            if user["role"] != "admin":
+
+                return RedirectResponse(
+                    "/dashboard.html",
+                    status_code=303,
+                )
+
+    return load_page(
+        name
+    )
+
+
+# ============================================================
+# EXTRA PAGE ROUTE
+# ============================================================
+#
+# Also supports links such as:
+#
+# /pages/search.html
+# /pages/profile.html
+#
+# This is useful if any of your HTML sidebar links
+# accidentally contain "pages/".
+# ============================================================
+
+@app.get("/pages/{name}.html")
+def page_from_pages_folder(
+    name: str,
+    request: Request,
+):
+
+    if name not in ALLOWED_PAGES:
+
+        raise HTTPException(
+            404,
+            "Not found",
+        )
+
+    if name in PUBLIC:
+
+        return load_page(
+            name
         )
 
     if name in PROTECTED:
@@ -4563,18 +4826,19 @@ def page(
                 status_code=303,
             )
 
-        # Admin-only pages
         if name in {
             "users",
             "roles",
             "audit",
             "settings",
-        } and user["role"] != "admin":
+        }:
 
-            return RedirectResponse(
-                "/dashboard.html",
-                status_code=303,
-            )
+            if user["role"] != "admin":
+
+                return RedirectResponse(
+                    "/dashboard.html",
+                    status_code=303,
+                )
 
     return load_page(
         name
