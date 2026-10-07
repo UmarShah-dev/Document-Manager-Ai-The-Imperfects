@@ -50,7 +50,10 @@ from sqlalchemy import (
     Integer,
     LargeBinary,
     String,
+    Text,
     create_engine,
+    inspect,
+    text as sql_text,
 )
 
 from sqlalchemy.orm import (
@@ -119,7 +122,7 @@ DATABASE_URL = (
 engine = create_engine(
     DATABASE_URL,
     connect_args={
-        "check_same_thread": False
+        "check_same_thread": False,
     },
 )
 
@@ -131,6 +134,10 @@ SessionLocal = sessionmaker(
 
 Base = declarative_base()
 
+
+# ============================================================
+# USER
+# ============================================================
 
 class User(Base):
     __tablename__ = "users"
@@ -165,12 +172,60 @@ class User(Base):
         nullable=False,
     )
 
+    # New profile fields
+    full_name = Column(
+        String(150),
+        default="",
+        nullable=False,
+    )
+
+    department = Column(
+        String(100),
+        default="",
+        nullable=False,
+    )
+
+    job_title = Column(
+        String(100),
+        default="",
+        nullable=False,
+    )
+
+    phone = Column(
+        String(50),
+        default="",
+        nullable=False,
+    )
+
+    bio = Column(
+        Text,
+        default="",
+        nullable=False,
+    )
+
+    # Settings
+    theme = Column(
+        String(30),
+        default="system",
+        nullable=False,
+    )
+
+    notifications = Column(
+        Integer,
+        default=1,
+        nullable=False,
+    )
+
     documents = relationship(
         "Document",
         back_populates="user",
         cascade="all, delete-orphan",
     )
 
+
+# ============================================================
+# DOCUMENT
+# ============================================================
 
 class Document(Base):
     __tablename__ = "documents"
@@ -232,6 +287,10 @@ class Document(Base):
     )
 
 
+# ============================================================
+# DOCUMENT CHUNKS
+# ============================================================
+
 class DocumentChunk(Base):
     __tablename__ = "document_chunks"
 
@@ -264,16 +323,159 @@ class DocumentChunk(Base):
     )
 
 
+# ============================================================
+# AUDIT LOG
+# ============================================================
+
+class AuditLog(Base):
+    __tablename__ = "audit_logs"
+
+    id = Column(
+        Integer,
+        primary_key=True,
+        autoincrement=True,
+    )
+
+    ts = Column(
+        Float,
+        nullable=False,
+        index=True,
+    )
+
+    user_email = Column(
+        String(150),
+        nullable=False,
+        index=True,
+    )
+
+    action = Column(
+        String(50),
+        nullable=False,
+        index=True,
+    )
+
+    description = Column(
+        String(500),
+        nullable=False,
+    )
+
+    document = Column(
+        String(200),
+        default="",
+        nullable=False,
+    )
+
+    ip = Column(
+        String(100),
+        default="",
+        nullable=False,
+    )
+
+    level = Column(
+        String(30),
+        default="info",
+        nullable=False,
+    )
+
+
+# ============================================================
+# CREATE TABLES
+# ============================================================
+
 Base.metadata.create_all(
     bind=engine
 )
 
 
+# ============================================================
+# DATABASE MIGRATION FOR OLD DATABASES
+# ============================================================
+
+def ensure_column(
+    table,
+    column,
+    definition,
+):
+    try:
+        inspector = inspect(engine)
+
+        columns = {
+            x["name"]
+            for x in inspector.get_columns(
+                table
+            )
+        }
+
+        if column not in columns:
+
+            with engine.begin() as conn:
+
+                conn.execute(
+                    sql_text(
+                        f"ALTER TABLE {table} "
+                        f"ADD COLUMN {column} "
+                        f"{definition}"
+                    )
+                )
+
+    except Exception as e:
+
+        print(
+            "Database migration warning:",
+            repr(e),
+        )
+
+
+ensure_column(
+    "users",
+    "full_name",
+    "VARCHAR(150) DEFAULT ''",
+)
+
+ensure_column(
+    "users",
+    "department",
+    "VARCHAR(100) DEFAULT ''",
+)
+
+ensure_column(
+    "users",
+    "job_title",
+    "VARCHAR(100) DEFAULT ''",
+)
+
+ensure_column(
+    "users",
+    "phone",
+    "VARCHAR(50) DEFAULT ''",
+)
+
+ensure_column(
+    "users",
+    "bio",
+    "TEXT DEFAULT ''",
+)
+
+ensure_column(
+    "users",
+    "theme",
+    "VARCHAR(30) DEFAULT 'system'",
+)
+
+ensure_column(
+    "users",
+    "notifications",
+    "INTEGER DEFAULT 1",
+)
+
+
 def get_db():
+
     db = SessionLocal()
 
     try:
         yield db
+
     finally:
         db.close()
 
@@ -305,7 +507,10 @@ try:
 
     FERNET = Fernet(
         FERNET_KEY.encode()
-        if isinstance(FERNET_KEY, str)
+        if isinstance(
+            FERNET_KEY,
+            str,
+        )
         else FERNET_KEY
     )
 
@@ -431,6 +636,7 @@ try:
             ),
             role="admin",
             queries=0,
+            full_name="Administrator",
         )
 
         db.add(admin)
@@ -569,6 +775,64 @@ def current_user(
     return u
 
 
+def require_admin(u):
+
+    if u["role"] != "admin":
+
+        raise HTTPException(
+            403,
+            "Administrator access required.",
+        )
+
+    return u
+
+
+# ============================================================
+# AUDIT HELPER
+# ============================================================
+
+def audit(
+    db,
+    request,
+    user_email,
+    action,
+    description,
+    document="",
+    level="info",
+):
+
+    try:
+
+        ip = (
+            request.client.host
+            if request.client
+            else ""
+        )
+
+        db.add(
+            AuditLog(
+                ts=time.time(),
+                user_email=user_email,
+                action=action,
+                description=description[:500],
+                document=document[:200],
+                ip=ip[:100],
+                level=level[:30],
+            )
+        )
+
+        db.commit()
+
+    except Exception as e:
+
+        print(
+            "Audit log error:",
+            repr(e),
+        )
+
+        db.rollback()
+
+
 # ============================================================
 # TEXT PROCESSING
 # ============================================================
@@ -649,10 +913,7 @@ def extract(
                     "word/document.xml"
                 )
 
-                if (
-                    info.file_size
-                    > 20_000_000
-                ):
+                if info.file_size > 20_000_000:
 
                     raise ValueError(
                         "DOCX too large"
@@ -793,6 +1054,7 @@ def meta(
         "ext": d.ext,
         "size": d.size,
         "ts": d.ts,
+        "owner": d.owner,
         "restricted": d.level > 1,
         **kw,
     }
@@ -802,9 +1064,7 @@ def meta(
 # DOCUMENT NAME MATCHING
 # ============================================================
 
-def normalize_name(
-    name
-):
+def normalize_name(name):
 
     return set(
         tok(
@@ -842,7 +1102,6 @@ def find_named_documents(
             d.name
         ).stem.lower()
 
-        # Exact filename/name mention
         if (
             full_name in q
             or stem in q
@@ -851,7 +1110,6 @@ def find_named_documents(
             matches.append(d)
             continue
 
-        # Strong token-based filename match
         name_tokens = normalize_name(
             d.name
         )
@@ -886,20 +1144,11 @@ def retrieve(
     k=6,
 ):
 
-    # --------------------------------------------------------
-    # FIRST: check whether the user explicitly named a document
-    # --------------------------------------------------------
-
     named_docs = find_named_documents(
         u,
         query,
         db,
     )
-
-    # --------------------------------------------------------
-    # If a document was explicitly named,
-    # prioritize its actual CONTENT.
-    # --------------------------------------------------------
 
     if named_docs:
 
@@ -911,19 +1160,19 @@ def retrieve(
 
                 try:
 
-                    text = dec(
+                    content = dec(
                         c.data
                     ).decode(
                         "utf-8",
                         "replace",
                     ).strip()
 
-                    if text:
+                    if content:
 
                         pool.append(
                             (
                                 d,
-                                text,
+                                content,
                                 c.position,
                             )
                         )
@@ -935,19 +1184,16 @@ def retrieve(
         if not pool:
             return []
 
-        # Terms that are actually useful for content matching.
         qt = set(
             tok(query)
         )
 
-        # Remove filename words from query scoring.
         for d in named_docs:
 
             qt -= normalize_name(
                 d.name
             )
 
-        # Remove generic question words.
         qt -= {
             "what",
             "happen",
@@ -961,40 +1207,34 @@ def retrieve(
             "describe",
         }
 
-        # If the user asks a broad question like:
-        # "what is happening in report.docx"
-        # there may be no meaningful query terms.
-        #
-        # In that case, return the first several real
-        # content chunks instead of the filename.
         if not qt:
 
             return [
                 (
                     1.0,
                     d,
-                    text,
+                    content,
                 )
-                for d, text, position
+                for d, content, position
                 in pool[:k]
             ]
 
         toks = [
-            Counter(tok(text))
-            for _, text, _ in pool
+            Counter(tok(content))
+            for _, content, _ in pool
         ]
 
         df = Counter(
-            w
+            word
             for c in toks
-            for w in c
-            if w in qt
+            for word in c
+            if word in qt
         )
 
         scored = []
 
         for (
-            (d, text, position),
+            (d, content, position),
             tf,
         ) in zip(
             pool,
@@ -1003,24 +1243,21 @@ def retrieve(
 
             score = 0.0
 
-            for w in qt:
+            for word in qt:
 
-                if (
-                    tf[w]
-                    and df[w]
-                ):
+                if tf[word] and df[word]:
 
                     score += (
                         (
                             1
                             + math.log(
-                                tf[w]
+                                tf[word]
                             )
                         )
                         * math.log(
                             1
                             + len(pool)
-                            / df[w]
+                            / df[word]
                         )
                     )
 
@@ -1030,7 +1267,7 @@ def retrieve(
                     (
                         score,
                         d,
-                        text,
+                        content,
                     )
                 )
 
@@ -1042,21 +1279,15 @@ def retrieve(
 
             return scored[:k]
 
-        # No keyword overlap but the correct document
-        # was explicitly named.
         return [
             (
                 1.0,
                 d,
-                text,
+                content,
             )
-            for d, text, position
+            for d, content, position
             in pool[:k]
         ]
-
-    # --------------------------------------------------------
-    # NORMAL WORKSPACE SEARCH
-    # --------------------------------------------------------
 
     documents = (
         db.query(Document)
@@ -1077,19 +1308,19 @@ def retrieve(
 
             try:
 
-                text = dec(
+                content = dec(
                     c.data
                 ).decode(
                     "utf-8",
                     "replace",
                 ).strip()
 
-                if text:
+                if content:
 
                     pool.append(
                         (
                             d,
-                            text,
+                            content,
                         )
                     )
 
@@ -1105,21 +1336,21 @@ def retrieve(
         return []
 
     toks = [
-        Counter(tok(t))
-        for _, t in pool
+        Counter(tok(content))
+        for _, content in pool
     ]
 
     df = Counter(
-        w
+        word
         for c in toks
-        for w in c
-        if w in qt
+        for word in c
+        if word in qt
     )
 
     scored = []
 
     for (
-        (d, t),
+        (d, content),
         tf,
     ) in zip(
         pool,
@@ -1131,18 +1362,18 @@ def retrieve(
                 (
                     1
                     + math.log(
-                        tf[w]
+                        tf[word]
                     )
                 )
                 * math.log(
                     1
                     + len(pool)
-                    / df[w]
+                    / df[word]
                 )
             )
-            for w in qt
-            if tf[w]
-            and df[w]
+            for word in qt
+            if tf[word]
+            and df[word]
         )
 
         if score > 0:
@@ -1151,7 +1382,7 @@ def retrieve(
                 (
                     score,
                     d,
-                    t,
+                    content,
                 )
             )
 
@@ -1163,7 +1394,7 @@ def retrieve(
 
 
 # ============================================================
-# LOCAL ANSWER FALLBACK
+# LOCAL DOCUMENT FALLBACK
 # ============================================================
 
 def local_answer(
@@ -1177,44 +1408,43 @@ def local_answer(
 
     found = []
 
-    for score, d, t in hits:
+    for score, d, content in hits:
 
-        # NEVER treat a filename as document content.
         if (
-            t.strip().lower()
+            content.strip().lower()
             == d.name.strip().lower()
         ):
             continue
 
         sentences = re.split(
             r"(?<=[.!?])\s+|\n",
-            t,
+            content,
         )
 
-        for sent in sentences:
+        for sentence in sentences:
 
-            sent = sent.strip()
+            sentence = sentence.strip()
 
-            if not sent:
+            if not sentence:
                 continue
 
             overlap = len(
                 qt
                 & set(
-                    tok(sent)
+                    tok(sentence)
                 )
             )
 
             if (
                 overlap
-                and len(sent) > 15
+                and len(sentence) > 15
             ):
 
                 found.append(
                     (
                         overlap,
                         score,
-                        sent,
+                        sentence,
                         d.name,
                     )
                 )
@@ -1227,32 +1457,24 @@ def local_answer(
     )
 
     seen = set()
-
     best = []
-
     sources = []
 
     for (
         _,
         _,
-        sent,
+        sentence,
         name,
     ) in found:
 
-        if sent in seen:
+        if sentence in seen:
             continue
 
-        seen.add(sent)
-
-        best.append(
-            sent
-        )
+        seen.add(sentence)
+        best.append(sentence)
 
         if name not in sources:
-
-            sources.append(
-                name
-            )
+            sources.append(name)
 
         if len(best) == 5:
             break
@@ -1292,7 +1514,7 @@ if (
 
         print(
             "Gemini AI initialization failed:",
-            e,
+            repr(e),
         )
 
         gemini_client = None
@@ -1315,6 +1537,10 @@ elif genai is None:
 GEMINI_MODEL = "gemini-3.8-flash"
 
 
+# ============================================================
+# GEMINI DOCUMENT MODE
+# ============================================================
+
 def gemini_answer(
     query,
     hits,
@@ -1328,15 +1554,13 @@ def gemini_answer(
 
     context_parts = []
 
-    # Give Gemini substantially more real document
-    # content than just the first tiny fragment.
-    for score, d, text in hits:
+    for score, d, content in hits:
 
         context_parts.append(
             "DOCUMENT: "
             + d.name
             + "\nDOCUMENT CONTENT:\n"
-            + text[:7000]
+            + content[:7000]
         )
 
     context = (
@@ -1346,31 +1570,31 @@ def gemini_answer(
 
     prompt = f"""
 You are SecureDocs AI, an AI assistant
-for a private document management system.
+inside a private document management system.
 
-Your job is to answer the user's question
-using ONLY the supplied document content.
+The user is asking about document content.
+
+Answer using the supplied document content.
 
 IMPORTANT RULES:
 
 1. Never answer using only a filename.
 2. Never treat a filename as document content.
-3. Read the supplied document text carefully.
+3. Carefully read the supplied text.
 4. If the user asks what is happening,
-   explain the events, activities, findings,
-   status, changes, or important information
-   described in the document.
-5. If the user asks about a specific document,
+   explain actual events, activities,
+   findings, status, changes, or important
+   information described in the document.
+5. If a specific document is named,
    focus primarily on that document.
 6. Do not invent facts.
-7. Do not use outside knowledge.
-8. If the information is not present,
-   say that it was not found.
-9. Give a natural, useful answer rather than
-   simply repeating document titles.
-10. Mention important dates, numbers,
-    findings, actions, risks, or conclusions
-    when they are actually present.
+7. Do not use outside knowledge for
+   document-specific questions.
+8. If information is missing, say so.
+9. Give a natural useful answer.
+10. Mention dates, numbers, findings,
+    actions, risks, and conclusions when
+    they actually appear in the content.
 
 DOCUMENT CONTEXT:
 
@@ -1394,13 +1618,13 @@ ANSWER:
             )
         )
 
-        text = getattr(
+        result = getattr(
             response,
             "text",
             None,
         )
 
-        if not text:
+        if not result:
             return None
 
         sources = []
@@ -1414,14 +1638,111 @@ ANSWER:
                 )
 
         return (
-            text.strip(),
+            result.strip(),
             sources[:5],
         )
 
     except Exception as e:
 
         print(
-            "Gemini request failed:",
+            "Gemini document request failed:",
+            repr(e),
+        )
+
+        return None
+
+
+# ============================================================
+# GEMINI GENERAL MODE
+# ============================================================
+
+def gemini_general(
+    query,
+):
+
+    if not gemini_client:
+        return None
+
+    prompt = f"""
+You are SecureDocs AI.
+
+You are the general-purpose AI assistant
+inside the SecureDocs application.
+
+You can answer general questions normally.
+
+You can:
+
+- Have normal conversations.
+- Answer casual questions.
+- Explain concepts.
+- Help with school and learning.
+- Help with programming.
+- Generate code.
+- Debug code.
+- Explain errors.
+- Create examples.
+- Help plan projects.
+- Brainstorm ideas.
+- Rewrite and improve text.
+- Give step-by-step instructions.
+- Answer how-to questions.
+- Discuss technology.
+- Answer questions about yourself.
+
+IMPORTANT:
+
+1. Answer naturally and helpfully.
+2. You are NOT restricted to document questions.
+3. If the user asks for code, provide useful,
+   complete code when appropriate.
+4. If the user asks how to do something,
+   explain how to do it.
+5. If the user asks "Who are you?",
+   say you are SecureDocs AI.
+6. Do not invent private information about
+   the user.
+7. If asked for the user's name and it has
+   not been provided, say you don't know.
+8. Do not pretend to know personal information
+   that was never supplied.
+9. Keep simple questions concise.
+10. For complicated requests, give clear
+    step-by-step help.
+
+USER QUESTION:
+
+{query}
+
+ANSWER:
+"""
+
+    try:
+
+        response = (
+            gemini_client
+            .models
+            .generate_content(
+                model=GEMINI_MODEL,
+                contents=prompt,
+            )
+        )
+
+        result = getattr(
+            response,
+            "text",
+            None,
+        )
+
+        if not result:
+            return None
+
+        return result.strip()
+
+    except Exception as e:
+
+        print(
+            "Gemini general request failed:",
             repr(e),
         )
 
@@ -1473,7 +1794,7 @@ async def security_middleware(
             status_code=405,
             content="Method Not Allowed",
             headers={
-                "Allow": "GET, POST, HEAD",
+                "Allow": "GET, POST, PATCH, DELETE, HEAD",
             },
         )
 
@@ -1533,7 +1854,82 @@ class ChatIn(BaseModel):
 
     message: str = Field(
         min_length=1,
-        max_length=500,
+        max_length=5000,
+    )
+
+
+class ProfileUpdate(BaseModel):
+
+    full_name: str = Field(
+        default="",
+        max_length=150,
+    )
+
+    department: str = Field(
+        default="",
+        max_length=100,
+    )
+
+    job_title: str = Field(
+        default="",
+        max_length=100,
+    )
+
+    phone: str = Field(
+        default="",
+        max_length=50,
+    )
+
+    bio: str = Field(
+        default="",
+        max_length=2000,
+    )
+
+
+class SettingsUpdate(BaseModel):
+
+    theme: str = Field(
+        default="system",
+        max_length=30,
+    )
+
+    notifications: bool = True
+
+
+class UserRoleUpdate(BaseModel):
+
+    role: str = Field(
+        min_length=1,
+        max_length=30,
+    )
+
+
+class UserCreate(BaseModel):
+
+    email: str = Field(
+        max_length=150
+    )
+
+    password: str = Field(
+        min_length=8,
+        max_length=128,
+    )
+
+    role: str = Field(
+        default="employee",
+        max_length=30,
+    )
+
+
+class PasswordChange(BaseModel):
+
+    current_password: str = Field(
+        max_length=128
+    )
+
+    new_password: str = Field(
+        min_length=8,
+        max_length=128
     )
 
 
@@ -1561,14 +1957,14 @@ def auth(
             "Enter a valid email address.",
         )
 
-    key = (
+    ip = (
         request.client.host
         if request.client
         else "?"
     )
 
     key = (
-        key,
+        ip,
         email,
     )
 
@@ -1621,10 +2017,10 @@ def auth(
                 ),
                 role="employee",
                 queries=0,
+                full_name="",
             )
 
             db.add(user)
-
             db.commit()
 
             created = True
@@ -1677,6 +2073,15 @@ def auth(
         ),
     }
 
+    audit(
+        db,
+        request,
+        email,
+        "login",
+        "User signed in.",
+        level="info",
+    )
+
     response = JSONResponse(
         {
             "created": created,
@@ -1699,6 +2104,7 @@ def auth(
 def logout(
     request: Request,
     u=Depends(current_user),
+    db: Session = Depends(get_db),
 ):
 
     token = request.cookies.get(
@@ -1713,6 +2119,14 @@ def logout(
             ).hexdigest(),
             None,
         )
+
+    audit(
+        db,
+        request,
+        u["email"],
+        "logout",
+        "User signed out.",
+    )
 
     response = JSONResponse(
         {
@@ -1730,9 +2144,35 @@ def logout(
 @app.get("/api/me")
 def me(
     u=Depends(current_user),
+    db: Session = Depends(get_db),
 ):
 
-    return u
+    user = (
+        db.query(User)
+        .filter(
+            User.email == u["email"]
+        )
+        .first()
+    )
+
+    return {
+        **u,
+        "full_name": (
+            user.full_name
+            if user
+            else ""
+        ),
+        "department": (
+            user.department
+            if user
+            else ""
+        ),
+        "job_title": (
+            user.job_title
+            if user
+            else ""
+        ),
+    }
 
 
 # ============================================================
@@ -1766,10 +2206,9 @@ def stats(
     db: Session = Depends(get_db),
 ):
 
-    documents = (
-        db.query(Document)
-        .all()
-    )
+    documents = db.query(
+        Document
+    ).all()
 
     count = sum(
         1
@@ -1798,6 +2237,7 @@ def stats(
 
 @app.post("/api/upload")
 async def upload(
+    request: Request,
     file: UploadFile = File(...),
     u=Depends(current_user),
     db: Session = Depends(get_db),
@@ -1848,7 +2288,7 @@ async def upload(
             "File is empty.",
         )
 
-    text = extract(
+    document_text = extract(
         ext,
         raw,
     )
@@ -1859,7 +2299,7 @@ async def upload(
             SENSITIVE.search(name)
             or SENSITIVE_NAME.search(name)
             or SENSITIVE.search(
-                text[:3000]
+                document_text[:3000]
             )
         )
         else 1
@@ -1880,7 +2320,9 @@ async def upload(
 
     db.add(document)
 
-    chunks = chunk(text)
+    chunks = chunk(
+        document_text
+    )
 
     for position, content in enumerate(
         chunks
@@ -1904,6 +2346,16 @@ async def upload(
         document
     )
 
+    audit(
+        db,
+        request,
+        u["email"],
+        "upload",
+        f"Uploaded document: {name}",
+        document=name,
+        level="info",
+    )
+
     return meta(
         document
     )
@@ -1914,6 +2366,7 @@ async def upload(
 )
 def download(
     doc_id: str,
+    request: Request,
     u=Depends(current_user),
     db: Session = Depends(get_db),
 ):
@@ -1949,6 +2402,15 @@ def download(
             "Could not decrypt this document.",
         )
 
+    audit(
+        db,
+        request,
+        u["email"],
+        "download",
+        f"Downloaded document: {d.name}",
+        document=d.name,
+    )
+
     return Response(
         raw,
         media_type="application/octet-stream",
@@ -1961,6 +2423,10 @@ def download(
     )
 
 
+# ============================================================
+# SEARCH
+# ============================================================
+
 @app.get("/api/search")
 def search(
     q: str = "",
@@ -1970,9 +2436,9 @@ def search(
 
     results = {}
 
-    for score, d, t in retrieve(
+    for score, d, content in retrieve(
         u,
-        q[:200],
+        q[:300],
         db,
         30,
     ):
@@ -1981,7 +2447,7 @@ def search(
             d.id,
             meta(
                 d,
-                snippet=t[:100],
+                snippet=content[:300],
             ),
         )
 
@@ -1991,12 +2457,95 @@ def search(
 
 
 # ============================================================
-# ASSISTANT API
+# AI SEARCH
+# ============================================================
+
+@app.get("/api/ai-search")
+def ai_search(
+    q: str = "",
+    u=Depends(current_user),
+    db: Session = Depends(get_db),
+):
+
+    q = q.strip()
+
+    if not q:
+
+        return {
+            "answer": "",
+            "sources": [],
+            "results": [],
+        }
+
+    hits = retrieve(
+        u,
+        q[:500],
+        db,
+        10,
+    )
+
+    if not hits:
+
+        general = gemini_general(q)
+
+        return {
+            "answer": general or
+            "No relevant document content was found.",
+            "sources": [],
+            "results": [],
+        }
+
+    ai = gemini_answer(
+        q,
+        hits,
+    )
+
+    results = []
+
+    for score, d, content in hits:
+
+        results.append(
+            {
+                **meta(d),
+                "score": round(
+                    float(score),
+                    4,
+                ),
+                "snippet": content[:400],
+            }
+        )
+
+    return {
+        "answer": (
+            ai[0]
+            if ai
+            else local_answer(
+                q,
+                hits,
+            )[0]
+        ),
+        "sources": (
+            ai[1]
+            if ai
+            else list(
+                {
+                    d.name
+                    for _, d, _ in hits
+                }
+            )[:5]
+        ),
+        "results": results,
+    }
+
+
+# ============================================================
+# GENERAL + DOCUMENT AI ASSISTANT
 # ============================================================
 
 @app.post("/api/chat")
 def chat(
     body: ChatIn,
+    request: Request,
     u=Depends(current_user),
     db: Session = Depends(get_db),
 ):
@@ -2017,11 +2566,16 @@ def chat(
 
         db.commit()
 
-    low = (
-        body.message
-        .lower()
-        .strip()
-    )
+    query = body.message.strip()
+
+    if not query:
+
+        raise HTTPException(
+            400,
+            "Message cannot be empty.",
+        )
+
+    low = query.lower()
 
     docs = [
         d
@@ -2035,34 +2589,33 @@ def chat(
         if visible(u, d)
     ]
 
+    # --------------------------------------------------------
+    # SIMPLE GREETING
+    # --------------------------------------------------------
+
     if re.fullmatch(
         r"(hi|hello|hey)\W*",
         low,
     ):
 
-        return {
-            "answer":
-                "Hello! Ask me anything "
-                "about the documents "
-                "in your workspace.",
-            "sources": [],
-        }
-
-    if not docs:
+        answer = gemini_general(
+            query
+        )
 
         return {
             "answer":
-                "There are no documents yet. "
-                "Upload some on the "
-                "Documents page first.",
+                answer
+                or
+                "Hello! I'm SecureDocs AI. "
+                "How can I help?",
             "sources": [],
         }
 
     # --------------------------------------------------------
-    # LIST DOCUMENTS
+    # DOCUMENT LIST
     # --------------------------------------------------------
 
-    if (
+    if docs and (
         "summar" in low
         or re.search(
             r"\b(list|which|what)\b.*"
@@ -2073,7 +2626,7 @@ def chat(
 
         lines = []
 
-        for d in docs[:6]:
+        for d in docs[:10]:
 
             preview = ""
 
@@ -2086,10 +2639,9 @@ def chat(
                     ).decode(
                         "utf-8",
                         "replace",
-                    )[:150]
+                    )[:180]
 
                 except Exception:
-
                     preview = ""
 
             lines.append(
@@ -2099,71 +2651,72 @@ def chat(
         return {
             "answer":
                 f"You have {len(docs)} "
-                "document(s).\n\n"
+                "document(s) available.\n\n"
                 + "\n".join(lines),
 
             "sources": [
                 d.name
-                for d in docs[:6]
+                for d in docs[:10]
             ],
         }
 
     # --------------------------------------------------------
-    # RETRIEVE REAL DOCUMENT CONTENT
+    # DOCUMENT RETRIEVAL
     # --------------------------------------------------------
 
     hits = retrieve(
         u,
-        body.message,
+        query,
         db,
         8,
     )
 
-    if not hits:
-
-        return {
-            "answer":
-                "I couldn't find relevant "
-                "content in the documents "
-                "you have access to.",
-            "sources": [],
-        }
-
     # --------------------------------------------------------
-    # GEMINI
+    # DOCUMENT MODE
     # --------------------------------------------------------
 
-    ai_result = gemini_answer(
-        body.message,
-        hits,
-    )
+    if hits:
 
-    if ai_result:
+        ai_result = gemini_answer(
+            query,
+            hits,
+        )
 
-        answer_text, sources = ai_result
+        if ai_result:
 
-        return {
-            "answer": answer_text,
-            "sources": sources,
-        }
+            answer_text, sources = ai_result
 
-    # --------------------------------------------------------
-    # LOCAL FALLBACK
-    # --------------------------------------------------------
+            audit(
+                db,
+                request,
+                u["email"],
+                "ai",
+                "AI document question answered.",
+                document=", ".join(
+                    sources[:3]
+                ),
+            )
 
-    answer_text, sources = local_answer(
-        body.message,
-        hits,
-    )
+            return {
+                "answer": answer_text,
+                "sources": sources,
+            }
 
-    if not answer_text:
+        answer_text, sources = local_answer(
+            query,
+            hits,
+        )
 
-        # For a named document, at least give a
-        # meaningful content preview instead of
-        # returning its filename.
+        if answer_text:
+
+            return {
+                "answer": answer_text,
+                "sources": sources,
+            }
+
         named = find_named_documents(
             u,
-            body.message,
+            query,
             db,
         )
 
@@ -2177,21 +2730,20 @@ def chat(
 
                     try:
 
-                        text = dec(
+                        content = dec(
                             c.data
                         ).decode(
                             "utf-8",
                             "replace",
                         ).strip()
 
-                        if text:
+                        if content:
 
                             previews.append(
-                                text[:700]
+                                content[:700]
                             )
 
                     except Exception:
-
                         continue
 
             if previews:
@@ -2205,25 +2757,792 @@ def chat(
                         + "\n\n".join(
                             previews
                         ),
-
                     "sources": [
                         d.name
                         for d in named
                     ],
                 }
 
+    # --------------------------------------------------------
+    # GENERAL GEMINI MODE
+    # --------------------------------------------------------
+
+    general = gemini_general(
+        query
+    )
+
+    if general:
+
+        audit(
+            db,
+            request,
+            u["email"],
+            "ai",
+            "AI general question answered.",
+        )
+
         return {
-            "answer":
-                "I couldn't find that in "
-                "the documents you have "
-                "access to.",
+            "answer": general,
             "sources": [],
         }
 
+    # --------------------------------------------------------
+    # FINAL FALLBACK
+    # --------------------------------------------------------
+
     return {
-        "answer": answer_text,
-        "sources": sources,
+        "answer":
+            "The AI assistant is temporarily "
+            "unavailable. Please try again.",
+        "sources": [],
     }
+
+
+# ============================================================
+# PROFILE API
+# ============================================================
+
+@app.get("/api/profile")
+def get_profile(
+    u=Depends(current_user),
+    db: Session = Depends(get_db),
+):
+
+    user = (
+        db.query(User)
+        .filter(
+            User.email == u["email"]
+        )
+        .first()
+    )
+
+    if not user:
+
+        raise HTTPException(
+            404,
+            "User not found.",
+        )
+
+    return {
+        "id": user.id,
+        "email": user.email,
+        "role": user.role,
+        "full_name": user.full_name or "",
+        "department": user.department or "",
+        "job_title": user.job_title or "",
+        "phone": user.phone or "",
+        "bio": user.bio or "",
+        "queries": user.queries or 0,
+    }
+
+
+@app.put("/api/profile")
+def update_profile(
+    body: ProfileUpdate,
+    request: Request,
+    u=Depends(current_user),
+    db: Session = Depends(get_db),
+):
+
+    user = (
+        db.query(User)
+        .filter(
+            User.email == u["email"]
+        )
+        .first()
+    )
+
+    if not user:
+
+        raise HTTPException(
+            404,
+            "User not found.",
+        )
+
+    user.full_name = body.full_name.strip()
+    user.department = body.department.strip()
+    user.job_title = body.job_title.strip()
+    user.phone = body.phone.strip()
+    user.bio = body.bio.strip()
+
+    db.commit()
+
+    audit(
+        db,
+        request,
+        u["email"],
+        "profile",
+        "Profile information updated.",
+    )
+
+    return {
+        "ok": True,
+        "profile": {
+            "email": user.email,
+            "full_name": user.full_name,
+            "department": user.department,
+            "job_title": user.job_title,
+            "phone": user.phone,
+            "bio": user.bio,
+        },
+    }
+
+
+@app.post("/api/profile/password")
+def change_password(
+    body: PasswordChange,
+    request: Request,
+    u=Depends(current_user),
+    db: Session = Depends(get_db),
+):
+
+    user = (
+        db.query(User)
+        .filter(
+            User.email == u["email"]
+        )
+        .first()
+    )
+
+    if not user:
+
+        raise HTTPException(
+            404,
+            "User not found.",
+        )
+
+    if not check_pw(
+        body.current_password,
+        user.pw,
+    ):
+
+        audit(
+            db,
+            request,
+            u["email"],
+            "warning",
+            "Failed password change attempt.",
+            level="warning",
+        )
+
+        raise HTTPException(
+            401,
+            "Current password is incorrect.",
+        )
+
+    user.pw = hash_pw(
+        body.new_password
+    )
+
+    db.commit()
+
+    audit(
+        db,
+        request,
+        u["email"],
+        "security",
+        "Password changed.",
+    )
+
+    return {
+        "ok": True
+    }
+
+
+# ============================================================
+# SETTINGS API
+# ============================================================
+
+@app.get("/api/settings")
+def get_settings(
+    u=Depends(current_user),
+    db: Session = Depends(get_db),
+):
+
+    user = (
+        db.query(User)
+        .filter(
+            User.email == u["email"]
+        )
+        .first()
+    )
+
+    if not user:
+
+        raise HTTPException(
+            404,
+            "User not found.",
+        )
+
+    return {
+        "theme": user.theme or "system",
+        "notifications": bool(
+            user.notifications
+        ),
+    }
+
+
+@app.put("/api/settings")
+def update_settings(
+    body: SettingsUpdate,
+    request: Request,
+    u=Depends(current_user),
+    db: Session = Depends(get_db),
+):
+
+    user = (
+        db.query(User)
+        .filter(
+            User.email == u["email"]
+        )
+        .first()
+    )
+
+    if not user:
+
+        raise HTTPException(
+            404,
+            "User not found.",
+        )
+
+    allowed_themes = {
+        "system",
+        "light",
+        "dark",
+    }
+
+    if body.theme not in allowed_themes:
+
+        raise HTTPException(
+            400,
+            "Invalid theme.",
+        )
+
+    user.theme = body.theme
+    user.notifications = (
+        1
+        if body.notifications
+        else 0
+    )
+
+    db.commit()
+
+    audit(
+        db,
+        request,
+        u["email"],
+        "settings",
+        "Account settings updated.",
+    )
+
+    return {
+        "ok": True,
+        "theme": user.theme,
+        "notifications": bool(
+            user.notifications
+        ),
+    }
+
+
+# ============================================================
+# ADMIN — USERS
+# ============================================================
+
+@app.get("/api/users")
+def users(
+    u=Depends(current_user),
+    db: Session = Depends(get_db),
+):
+
+    require_admin(u)
+
+    all_users = (
+        db.query(User)
+        .order_by(
+            User.id.asc()
+        )
+        .all()
+    )
+
+    return [
+        {
+            "id": user.id,
+            "email": user.email,
+            "full_name": user.full_name or "",
+            "department": user.department or "",
+            "job_title": user.job_title or "",
+            "role": user.role,
+            "queries": user.queries or 0,
+            "documents": len(
+                user.documents
+            ),
+        }
+        for user in all_users
+    ]
+
+
+@app.post("/api/users")
+def create_user(
+    body: UserCreate,
+    request: Request,
+    u=Depends(current_user),
+    db: Session = Depends(get_db),
+):
+
+    require_admin(u)
+
+    email = (
+        body.email
+        .strip()
+        .lower()
+    )
+
+    if not EMAIL.match(email):
+
+        raise HTTPException(
+            400,
+            "Invalid email address.",
+        )
+
+    if body.role not in {
+        "admin",
+        "manager",
+        "employee",
+    }:
+
+        raise HTTPException(
+            400,
+            "Invalid role.",
+        )
+
+    existing = (
+        db.query(User)
+        .filter(
+            User.email == email
+        )
+        .first()
+    )
+
+    if existing:
+
+        raise HTTPException(
+            409,
+            "User already exists.",
+        )
+
+    user = User(
+        email=email,
+        pw=hash_pw(
+            body.password
+        ),
+        role=body.role,
+        queries=0,
+    )
+
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+
+    audit(
+        db,
+        request,
+        u["email"],
+        "permission",
+        f"Created user {email}.",
+        level="info",
+    )
+
+    return {
+        "id": user.id,
+        "email": user.email,
+        "role": user.role,
+    }
+
+
+@app.patch("/api/users/{user_id}/role")
+def update_user_role(
+    user_id: int,
+    body: UserRoleUpdate,
+    request: Request,
+    u=Depends(current_user),
+    db: Session = Depends(get_db),
+):
+
+    require_admin(u)
+
+    if body.role not in {
+        "admin",
+        "manager",
+        "employee",
+    }:
+
+        raise HTTPException(
+            400,
+            "Invalid role.",
+        )
+
+    user = (
+        db.query(User)
+        .filter(
+            User.id == user_id
+        )
+        .first()
+    )
+
+    if not user:
+
+        raise HTTPException(
+            404,
+            "User not found.",
+        )
+
+    old_role = user.role
+    user.role = body.role
+
+    db.commit()
+
+    audit(
+        db,
+        request,
+        u["email"],
+        "permission",
+        (
+            f"Changed {user.email} "
+            f"from {old_role} "
+            f"to {body.role}."
+        ),
+        level="info",
+    )
+
+    return {
+        "ok": True,
+        "id": user.id,
+        "role": user.role,
+    }
+
+
+@app.delete("/api/users/{user_id}")
+def delete_user(
+    user_id: int,
+    request: Request,
+    u=Depends(current_user),
+    db: Session = Depends(get_db),
+):
+
+    require_admin(u)
+
+    user = (
+        db.query(User)
+        .filter(
+            User.id == user_id
+        )
+        .first()
+    )
+
+    if not user:
+
+        raise HTTPException(
+            404,
+            "User not found.",
+        )
+
+    if user.email == ADMIN_EMAIL:
+
+        raise HTTPException(
+            400,
+            "The primary administrator cannot be deleted.",
+        )
+
+    email = user.email
+
+    db.delete(user)
+    db.commit()
+
+    audit(
+        db,
+        request,
+        u["email"],
+        "permission",
+        f"Deleted user {email}.",
+        level="warning",
+    )
+
+    return {
+        "ok": True
+    }
+
+
+# ============================================================
+# ROLES & PERMISSIONS
+# ============================================================
+
+ROLE_PERMISSIONS = {
+    "admin": [
+        "View all documents",
+        "Upload documents",
+        "Download documents",
+        "Use AI assistant",
+        "Use AI search",
+        "Manage users",
+        "Manage roles",
+        "View audit logs",
+        "Manage settings",
+    ],
+
+    "manager": [
+        "View accessible documents",
+        "Upload documents",
+        "Download documents",
+        "Use AI assistant",
+        "Use AI search",
+    ],
+
+    "employee": [
+        "View accessible documents",
+        "Upload documents",
+        "Download documents",
+        "Use AI assistant",
+        "Use AI search",
+    ],
+}
+
+
+@app.get("/api/roles")
+def roles(
+    u=Depends(current_user),
+):
+
+    require_admin(u)
+
+    return [
+        {
+            "name": name,
+            "permissions": permissions,
+        }
+        for name, permissions
+        in ROLE_PERMISSIONS.items()
+    ]
+
+
+@app.get("/api/roles/{role_name}")
+def role_detail(
+    role_name: str,
+    u=Depends(current_user),
+):
+
+    require_admin(u)
+
+    if role_name not in ROLE_PERMISSIONS:
+
+        raise HTTPException(
+            404,
+            "Role not found.",
+        )
+
+    return {
+        "name": role_name,
+        "permissions":
+            ROLE_PERMISSIONS[
+                role_name
+            ],
+    }
+
+
+# ============================================================
+# AUDIT LOG API
+# ============================================================
+
+@app.get("/api/audit")
+def audit_logs(
+    q: str = "",
+    action: str = "all",
+    limit: int = 100,
+    offset: int = 0,
+    u=Depends(current_user),
+    db: Session = Depends(get_db),
+):
+
+    require_admin(u)
+
+    limit = max(
+        1,
+        min(limit, 500),
+    )
+
+    offset = max(
+        0,
+        offset,
+    )
+
+    query = (
+        db.query(AuditLog)
+        .order_by(
+            AuditLog.ts.desc()
+        )
+    )
+
+    if q.strip():
+
+        term = (
+            "%"
+            + q.strip()
+            + "%"
+        )
+
+        query = query.filter(
+            (
+                AuditLog.user_email.ilike(term)
+                | AuditLog.description.ilike(term)
+                | AuditLog.document.ilike(term)
+                | AuditLog.ip.ilike(term)
+            )
+        )
+
+    if action.lower() != "all":
+
+        query = query.filter(
+            AuditLog.action
+            == action.lower()
+        )
+
+    total = query.count()
+
+    logs = (
+        query
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
+
+    return {
+        "total": total,
+        "logs": [
+            {
+                "id": log.id,
+                "ts": log.ts,
+                "user": log.user_email,
+                "email": log.user_email,
+                "action": log.action,
+                "description":
+                    log.description,
+                "document":
+                    log.document,
+                "ip": log.ip,
+                "level": log.level,
+            }
+            for log in logs
+        ],
+    }
+
+
+@app.get("/api/audit/stats")
+def audit_stats(
+    u=Depends(current_user),
+    db: Session = Depends(get_db),
+):
+
+    require_admin(u)
+
+    logs = (
+        db.query(AuditLog)
+        .all()
+    )
+
+    counts = Counter(
+        x.action
+        for x in logs
+    )
+
+    return {
+        "total": len(logs),
+        "login": counts["login"],
+        "upload": counts["upload"],
+        "ai": counts["ai"],
+        "permission":
+            counts["permission"],
+        "warning":
+            counts["warning"],
+        "security":
+            counts["security"],
+    }
+
+
+# ============================================================
+# AUDIT CSV
+# ============================================================
+
+@app.get("/api/audit/export")
+def audit_export(
+    u=Depends(current_user),
+    db: Session = Depends(get_db),
+):
+
+    require_admin(u)
+
+    logs = (
+        db.query(AuditLog)
+        .order_by(
+            AuditLog.ts.desc()
+        )
+        .all()
+    )
+
+    lines = [
+        "timestamp,user,action,description,document,ip,level"
+    ]
+
+    for log in logs:
+
+        values = [
+            time.strftime(
+                "%Y-%m-%d %H:%M:%S",
+                time.localtime(
+                    log.ts
+                ),
+            ),
+            log.user_email,
+            log.action,
+            log.description,
+            log.document,
+            log.ip,
+            log.level,
+        ]
+
+        escaped = []
+
+        for value in values:
+
+            value = str(
+                value or ""
+            ).replace(
+                '"',
+                '""',
+            )
+
+            escaped.append(
+                '"' + value + '"'
+            )
+
+        lines.append(
+            ",".join(
+                escaped
+            )
+        )
+
+    content = (
+        "\n".join(lines)
+        + "\n"
+    )
+
+    return Response(
+        content,
+        media_type="text/csv",
+        headers={
+            "Content-Disposition":
+                "attachment; "
+                'filename="securedocs-audit.csv"'
+        },
+    )
 
 
 # ============================================================
@@ -2234,6 +3553,12 @@ PROTECTED = {
     "dashboard",
     "documents",
     "assistant",
+    "search",
+    "users",
+    "roles",
+    "audit",
+    "settings",
+    "profile",
 }
 
 PUBLIC = {
@@ -2244,13 +3569,15 @@ PUBLIC = {
 
 COMMON = r"""
 const $=s=>document.querySelector(s);
-let CSRF="",ME=null;
+
+let CSRF="";
+let ME=null;
 
 const mk=(t,c,x)=>{
     const e=document.createElement(t);
     if(c)e.className=c;
     if(x!=null)e.textContent=x;
-    return e
+    return e;
 };
 
 async function api(p,o={}){
@@ -2263,7 +3590,9 @@ async function api(p,o={}){
     const r=await fetch(
         p,
         Object.assign(
-            {credentials:"same-origin"},
+            {
+                credentials:"same-origin"
+            },
             o
         )
     );
@@ -2274,7 +3603,14 @@ async function api(p,o={}){
 
         throw new Error(
             "Please sign in."
-        )
+        );
+    }
+
+    if(r.status===403){
+
+        throw new Error(
+            "You do not have permission to perform this action."
+        );
     }
 
     if(!r.ok){
@@ -2292,10 +3628,10 @@ async function api(p,o={}){
 
         }catch(e){}
 
-        throw new Error(m)
+        throw new Error(m);
     }
 
-    return r
+    return r;
 }
 
 const fmt=b=>
@@ -2327,7 +3663,7 @@ function ago(t){
 
     return Math.floor(
         s/86400
-    )+" days ago"
+    )+" days ago";
 }
 
 function docRow(d,extra){
@@ -2393,11 +3729,11 @@ function docRow(d,extra){
         location.href=
             "/api/files/"
             +d.id
-            +"/download"
+            +"/download";
 
     };
 
-    return r
+    return r;
 }
 
 const ready=fetch(
@@ -2407,7 +3743,6 @@ const ready=fetch(
             "same-origin"
     }
 )
-
 .then(r=>{
 
     if(!r.ok){
@@ -2415,13 +3750,12 @@ const ready=fetch(
         location.href=
             "login.html";
 
-        throw 0
+        throw 0;
     }
 
-    return r.json()
+    return r.json();
 
 })
-
 .then(d=>{
 
     ME=d;
@@ -2441,6 +3775,8 @@ const ready=fetch(
 
     if(strong)
         strong.textContent=
+            d.full_name
+            ||
             d.email.split("@")[0];
 
     const span=
@@ -2475,13 +3811,17 @@ const ready=fetch(
                 );
 
                 location.href=
-                    "login.html"
+                    "login.html";
             }
-        }
+        };
     }
 });
 """
 
+
+# ============================================================
+# EXISTING PAGE JAVASCRIPT
+# ============================================================
 
 PAGE_JS = {
 
@@ -2510,7 +3850,6 @@ function note(m){
     }else{
 
         sec.textContent=m;
-
     }
 }
 
@@ -2578,20 +3917,20 @@ async function go(e){
         setTimeout(
             ()=>{
                 location.href=
-                    "dashboard.html"
+                    "dashboard.html";
             },
-
             j.created
                 ?900
                 :200
-        )
+        );
 
     }catch(x){
 
         note(
             x.message
-            ||"Could not sign in."
-        )
+            ||
+            "Could not sign in."
+        );
     }
 }
 
@@ -2604,7 +3943,7 @@ document.addEventListener(
                 ".login-button"
             )
         )
-            go(e)
+            go(e);
 
     },
     true
@@ -2643,16 +3982,13 @@ document.addEventListener(
         );
 
     if(h[0])
-        h[0].textContent=
-            s.total;
+        h[0].textContent=s.total;
 
     if(h[1])
-        h[1].textContent=
-            s.indexed;
+        h[1].textContent=s.indexed;
 
     if(h[2])
-        h[2].textContent=
-            s.queries;
+        h[2].textContent=s.queries;
 
     const p=
         $(".content-grid .panel");
@@ -2691,14 +4027,14 @@ document.addEventListener(
             )
         );
 
-        p.append(e)
+        p.append(e);
     }
 
     f.slice(0,3).forEach(
         d=>p.append(
             docRow(d)
         )
-    )
+    );
 
 })();
 """,
@@ -2733,7 +4069,7 @@ function draw(items){
 
         list.append(e);
 
-        return
+        return;
     }
 
     items.forEach(
@@ -2743,7 +4079,7 @@ function draw(items){
                 d.snippet
             )
         )
-    )
+    );
 }
 
 async function load(){
@@ -2757,7 +4093,7 @@ async function load(){
             )
         ).json();
 
-    draw(ALL)
+    draw(ALL);
 }
 
 async function send(files){
@@ -2847,11 +4183,11 @@ async function send(files){
                 f.name
                 +": "
                 +x.message
-            )
+            );
         }
     }
 
-    load()
+    load();
 }
 
 document.addEventListener(
@@ -2871,7 +4207,7 @@ document.addEventListener(
 
         e.target.value="";
 
-        send(fs)
+        send(fs);
 
     },
     true
@@ -2895,7 +4231,7 @@ if(z){
 
             send([
                 ...e.dataTransfer.files
-            ])
+            ]);
 
         }
     );
@@ -2924,7 +4260,7 @@ if(searchBox){
 
                         draw(ALL);
 
-                        return
+                        return;
                     }
 
                     await ready;
@@ -2938,15 +4274,14 @@ if(searchBox){
                                     +encodeURIComponent(v)
                                 )
                             ).json()
-                        )
+                        );
 
                     }catch(x){}
-
                 },
                 250
-            )
+            );
         }
-    )
+    );
 }
 
 load();
@@ -2970,7 +4305,7 @@ ready.then(()=>{
     .slice(1)
     .forEach(
         x=>x.remove()
-    )
+    );
 });
 
 function add(
@@ -3006,7 +4341,7 @@ function add(
                 "Source · "
                 +src.join(" · ")
             )
-        )
+        );
     }
 
     m.append(b);
@@ -3014,7 +4349,7 @@ function add(
     msgs.append(m);
 
     msgs.scrollTop=
-        msgs.scrollHeight
+        msgs.scrollHeight;
 }
 
 document.addEventListener(
@@ -3084,7 +4419,7 @@ document.addEventListener(
             add(
                 "ai",
                 x.message
-            )
+            );
         }
 
     },
@@ -3101,18 +4436,20 @@ document.addEventListener(
 
 def load_page(
     name,
-    user_ok,
-    request=None,
 ):
 
-    for p in (
+    locations = (
         BASE
         / "pages"
         / f"{name}.html",
 
         BASE
         / f"{name}.html",
-    ):
+    )
+
+    html = None
+
+    for p in locations:
 
         if p.is_file():
 
@@ -3122,14 +4459,14 @@ def load_page(
 
             break
 
-    else:
+    if html is None:
 
         return HTMLResponse(
             f"""
             <h2>{name}.html not found</h2>
             <p>
-                Put it next to main.py
-                or inside a 'pages' folder.
+                Put this page inside the
+                <b>pages</b> folder.
             </p>
             """,
             500,
@@ -3178,18 +4515,14 @@ def load_page(
 
 
 # ============================================================
-# ROUTES
+# PAGE ROUTES
 # ============================================================
 
 @app.get("/")
-def home(
-    request: Request,
-):
+def home():
 
     return load_page(
-        "index",
-        True,
-        request,
+        "index"
     )
 
 
@@ -3230,8 +4563,19 @@ def page(
                 status_code=303,
             )
 
+        # Admin-only pages
+        if name in {
+            "users",
+            "roles",
+            "audit",
+            "settings",
+        } and user["role"] != "admin":
+
+            return RedirectResponse(
+                "/dashboard.html",
+                status_code=303,
+            )
+
     return load_page(
-        name,
-        True,
-        request,
+        name
     )
