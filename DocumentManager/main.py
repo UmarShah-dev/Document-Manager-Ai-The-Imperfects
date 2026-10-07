@@ -6,7 +6,9 @@ FastAPI backend
 
 import hashlib
 import hmac
-import io"""
+import io
+import math
+import os
 SecureDocs - AI-Powered Secure Document Search Portal
 
 FastAPI backend
