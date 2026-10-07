@@ -2165,8 +2165,9 @@ def auth(
         token,
         max_age=SESSION_TTL,
         httponly=True,
-        samesite="strict",
+        samesite="lax",
         secure=COOKIE_SECURE,
+        path="/",
     )
 
     return response
@@ -2198,7 +2199,8 @@ def logout(
     )
 
     response.delete_cookie(
-        "sid"
+        "sid",
+        path="/",
     )
 
     return response
@@ -3899,7 +3901,7 @@ window.ready = fetch(
     if(!r.ok){
 
         location.href =
-            "login.html";
+            "/login.html";
 
         throw 0;
     }
