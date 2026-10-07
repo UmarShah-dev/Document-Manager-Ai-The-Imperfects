@@ -705,12 +705,60 @@ ensure_demo_accounts()
 # AUTHENTICATION
 # ============================================================
 
-SESSION_SECRET = hashlib.sha256(
-    (
-        FERNET_KEY
-        + "|SecureDocs-Session-2026"
-    ).encode()
-).digest()
+# The session signing key MUST be identical across all workers/processes.
+# Previously it was derived directly from FERNET_KEY. If the Fernet secret
+# was missing in one worker, that worker generated a temporary key and could
+# reject a valid login cookie created by another worker. That produces the
+# exact login -> dashboard -> login loop.
+#
+# Store a generated signing key in the shared SQLite database so all workers
+# use the same key and it survives process restarts. An explicit environment
+# secret still takes priority when provided.
+
+SESSION_SECRET_ENV = os.getenv(
+    "SECUREDOCS_SESSION_SECRET"
+)
+
+if SESSION_SECRET_ENV:
+
+    SESSION_SECRET = hashlib.sha256(
+        SESSION_SECRET_ENV.encode()
+    ).digest()
+
+else:
+
+    with engine.begin() as conn:
+
+        conn.execute(
+            sql_text(
+                "CREATE TABLE IF NOT EXISTS app_secrets ("
+                "name TEXT PRIMARY KEY, "
+                "value TEXT NOT NULL"
+                ")"
+            )
+        )
+
+        conn.execute(
+            sql_text(
+                "INSERT OR IGNORE INTO app_secrets "
+                "(name, value) VALUES "
+                "('session_secret', :value)"
+            ),
+            {
+                "value": secrets.token_urlsafe(48),
+            },
+        )
+
+        stored_secret = conn.execute(
+            sql_text(
+                "SELECT value FROM app_secrets "
+                "WHERE name = 'session_secret'"
+            )
+        ).scalar_one()
+
+    SESSION_SECRET = hashlib.sha256(
+        stored_secret.encode()
+    ).digest()
 
 
 def make_session_cookie(
@@ -2160,6 +2208,14 @@ def auth(
         }
     )
 
+    # Remove the stale cookie created by the old broken version,
+    # which used the default /api path. Without this, browsers that
+    # already logged in before the fix can send two `sid` cookies.
+    response.delete_cookie(
+        "sid",
+        path="/api",
+    )
+
     response.set_cookie(
         "sid",
         token,
@@ -2198,9 +2254,16 @@ def logout(
         }
     )
 
+    # Clear both the current root cookie and the stale /api cookie
+    # left by older deployments.
     response.delete_cookie(
         "sid",
         path="/",
+    )
+
+    response.delete_cookie(
+        "sid",
+        path="/api",
     )
 
     return response
