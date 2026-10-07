@@ -596,7 +596,7 @@ def check_pw(
 DEMO_ACCOUNTS = {
 
     "admin@securedocs.com": {
-        "password": "admin123",
+        "password": "SecureDocs_Admin_2026!X7",
         "role": "admin",
         "full_name": "Administrator",
     },
