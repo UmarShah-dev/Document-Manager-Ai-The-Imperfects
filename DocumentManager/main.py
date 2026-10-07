@@ -162,7 +162,7 @@ class User(Base):
 
     role = Column(
         String(30),
-        default="employee",
+        default="visitor",
         nullable=False,
     )
 
@@ -172,7 +172,6 @@ class User(Base):
         nullable=False,
     )
 
-    # New profile fields
     full_name = Column(
         String(150),
         default="",
@@ -203,7 +202,6 @@ class User(Base):
         nullable=False,
     )
 
-    # Settings
     theme = Column(
         String(30),
         default="system",
@@ -388,7 +386,7 @@ Base.metadata.create_all(
 
 
 # ============================================================
-# DATABASE MIGRATION FOR OLD DATABASES
+# DATABASE MIGRATION
 # ============================================================
 
 def ensure_column(
@@ -401,15 +399,11 @@ def ensure_column(
 
         columns = {
             x["name"]
-            for x in inspector.get_columns(
-                table
-            )
+            for x in inspector.get_columns(table)
         }
 
         if column not in columns:
-
             with engine.begin() as conn:
-
                 conn.execute(
                     sql_text(
                         f"ALTER TABLE {table} "
@@ -419,7 +413,6 @@ def ensure_column(
                 )
 
     except Exception as e:
-
         print(
             "Database migration warning:",
             repr(e),
@@ -475,7 +468,6 @@ def get_db():
 
     try:
         yield db
-
     finally:
         db.close()
 
@@ -598,77 +590,120 @@ def check_pw(
 
 
 # ============================================================
-# ADMIN ACCOUNT
+# DEMO ACCOUNTS
 # ============================================================
 
-ADMIN_EMAIL = os.getenv(
-    "ADMIN_EMAIL",
-    "admin@securedocs.com",
-).strip().lower()
+DEMO_ACCOUNTS = {
 
-ADMIN_PW_ENV = os.getenv(
-    "ADMIN_PASSWORD"
-)
+    "admin@securedocs.com": {
+        "password": "admin123",
+        "role": "admin",
+        "full_name": "Administrator",
+    },
 
-db = SessionLocal()
+    "executive@securedocs.com": {
+        "password": "exec123",
+        "role": "executive",
+        "full_name": "Executive User",
+    },
 
-try:
+    "visitor@securedocs.com": {
+        "password": "visit123",
+        "role": "visitor",
+        "full_name": "Visitor User",
+    },
 
-    existing_admin = (
-        db.query(User)
-        .filter(
-            User.email == ADMIN_EMAIL
-        )
-        .first()
-    )
+}
 
-    if existing_admin is None:
 
-        generated_admin_password = (
-            ADMIN_PW_ENV
-            or secrets.token_urlsafe(12)
-        )
+ADMIN_EMAIL = "admin@securedocs.com"
 
-        admin = User(
-            email=ADMIN_EMAIL,
-            pw=hash_pw(
-                generated_admin_password
-            ),
-            role="admin",
-            queries=0,
-            full_name="Administrator",
-        )
 
-        db.add(admin)
+def ensure_demo_accounts():
+
+    db = SessionLocal()
+
+    try:
+
+        for email, info in DEMO_ACCOUNTS.items():
+
+            user = (
+                db.query(User)
+                .filter(
+                    User.email == email
+                )
+                .first()
+            )
+
+            if user is None:
+
+                user = User(
+                    email=email,
+                    pw=hash_pw(
+                        info["password"]
+                    ),
+                    role=info["role"],
+                    queries=0,
+                    full_name=info["full_name"],
+                )
+
+                db.add(user)
+
+            else:
+
+                # Reset the demo credentials so
+                # the frontend developer test accounts
+                # always work after deployment.
+                user.pw = hash_pw(
+                    info["password"]
+                )
+
+                user.role = info["role"]
+
+                if not user.full_name:
+                    user.full_name = (
+                        info["full_name"]
+                    )
+
         db.commit()
 
         print(
             "\n========================================"
         )
-
         print(
-            " SecureDocs Admin Account"
+            " SecureDocs Demo Accounts"
         )
-
         print(
             "========================================"
         )
-
         print(
-            f" Email: {ADMIN_EMAIL}"
+            " Admin     : admin@securedocs.com / admin123"
         )
-
         print(
-            f" Password: {generated_admin_password}"
+            " Executive : executive@securedocs.com / exec123"
         )
-
+        print(
+            " Visitor   : visitor@securedocs.com / visit123"
+        )
         print(
             "========================================\n"
         )
 
-finally:
+    except Exception as e:
 
-    db.close()
+        db.rollback()
+
+        print(
+            "Demo account setup failed:",
+            repr(e),
+        )
+
+    finally:
+
+        db.close()
+
+
+ensure_demo_accounts()
 
 
 # ============================================================
@@ -1916,7 +1951,7 @@ class UserCreate(BaseModel):
     )
 
     role: str = Field(
-        default="employee",
+        default="visitor",
         max_length=30,
     )
 
@@ -2015,7 +2050,7 @@ def auth(
                 pw=hash_pw(
                     body.password
                 ),
-                role="employee",
+                role="visitor",
                 queries=0,
                 full_name="",
             )
@@ -2589,9 +2624,9 @@ def chat(
         if visible(u, d)
     ]
 
-    # --------------------------------------------------------
-    # SIMPLE GREETING
-    # --------------------------------------------------------
+    # ========================================================
+    # GREETING
+    # ========================================================
 
     if re.fullmatch(
         r"(hi|hello|hey)\W*",
@@ -2611,9 +2646,9 @@ def chat(
             "sources": [],
         }
 
-    # --------------------------------------------------------
+    # ========================================================
     # DOCUMENT LIST
-    # --------------------------------------------------------
+    # ========================================================
 
     if docs and (
         "summar" in low
@@ -2642,6 +2677,7 @@ def chat(
                     )[:180]
 
                 except Exception:
+
                     preview = ""
 
             lines.append(
@@ -2660,9 +2696,9 @@ def chat(
             ],
         }
 
-    # --------------------------------------------------------
+    # ========================================================
     # DOCUMENT RETRIEVAL
-    # --------------------------------------------------------
+    # ========================================================
 
     hits = retrieve(
         u,
@@ -2671,9 +2707,9 @@ def chat(
         8,
     )
 
-    # --------------------------------------------------------
+    # ========================================================
     # DOCUMENT MODE
-    # --------------------------------------------------------
+    # ========================================================
 
     if hits:
 
@@ -2744,6 +2780,7 @@ def chat(
                             )
 
                     except Exception:
+
                         continue
 
             if previews:
@@ -2763,9 +2800,9 @@ def chat(
                     ],
                 }
 
-    # --------------------------------------------------------
+    # ========================================================
     # GENERAL GEMINI MODE
-    # --------------------------------------------------------
+    # ========================================================
 
     general = gemini_general(
         query
@@ -2786,9 +2823,9 @@ def chat(
             "sources": [],
         }
 
-    # --------------------------------------------------------
+    # ========================================================
     # FINAL FALLBACK
-    # --------------------------------------------------------
+    # ========================================================
 
     return {
         "answer":
@@ -3019,6 +3056,7 @@ def update_settings(
         )
 
     user.theme = body.theme
+
     user.notifications = (
         1
         if body.notifications
@@ -3106,8 +3144,8 @@ def create_user(
 
     if body.role not in {
         "admin",
-        "manager",
-        "employee",
+        "executive",
+        "visitor",
     }:
 
         raise HTTPException(
@@ -3137,6 +3175,7 @@ def create_user(
         ),
         role=body.role,
         queries=0,
+        full_name="",
     )
 
     db.add(user)
@@ -3172,8 +3211,8 @@ def update_user_role(
 
     if body.role not in {
         "admin",
-        "manager",
-        "employee",
+        "executive",
+        "visitor",
     }:
 
         raise HTTPException(
@@ -3197,6 +3236,7 @@ def update_user_role(
         )
 
     old_role = user.role
+
     user.role = body.role
 
     db.commit()
@@ -3277,6 +3317,7 @@ def delete_user(
 # ============================================================
 
 ROLE_PERMISSIONS = {
+
     "admin": [
         "View all documents",
         "Upload documents",
@@ -3287,9 +3328,19 @@ ROLE_PERMISSIONS = {
         "Manage roles",
         "View audit logs",
         "Manage settings",
+        "Manage profiles",
     ],
 
-    "manager": [
+    "executive": [
+        "View accessible documents",
+        "Upload documents",
+        "Download documents",
+        "Use AI assistant",
+        "Use AI search",
+        "View own profile",
+    ],
+
+    "visitor": [
         "View accessible documents",
         "Upload documents",
         "Download documents",
@@ -3297,13 +3348,6 @@ ROLE_PERMISSIONS = {
         "Use AI search",
     ],
 
-    "employee": [
-        "View accessible documents",
-        "Upload documents",
-        "Download documents",
-        "Use AI assistant",
-        "Use AI search",
-    ],
 }
 
 
@@ -3546,7 +3590,7 @@ def audit_export(
 
 
 # ============================================================
-# FRONTEND CONNECTOR
+# FRONTEND PAGE ACCESS
 # ============================================================
 
 PROTECTED = {
@@ -3567,27 +3611,89 @@ PUBLIC = {
 }
 
 
+# ============================================================
+# ROLE PAGE ACCESS
+# ============================================================
+
+PAGE_ACCESS = {
+
+    # 9 pages
+    "admin": {
+        "dashboard",
+        "documents",
+        "assistant",
+        "search",
+        "users",
+        "roles",
+        "audit",
+        "settings",
+        "profile",
+    },
+
+    # 5 pages
+    "executive": {
+        "dashboard",
+        "documents",
+        "assistant",
+        "search",
+        "profile",
+    },
+
+    # 4 pages
+    "visitor": {
+        "dashboard",
+        "documents",
+        "assistant",
+        "search",
+    },
+
+}
+
+
+# ============================================================
+# FRONTEND CONNECTOR
+# ============================================================
+
 COMMON = r"""
-const $=s=>document.querySelector(s);
+/*
+ * SecureDocs common frontend connector.
+ *
+ * Everything is attached to window instead of declaring
+ * global const/let variables. This prevents collisions
+ * with the JavaScript already inside the new HTML pages.
+ */
 
-let CSRF="";
-let ME=null;
+window.$ = window.$ || function(s){
+    return document.querySelector(s);
+};
 
-const mk=(t,c,x)=>{
-    const e=document.createElement(t);
-    if(c)e.className=c;
-    if(x!=null)e.textContent=x;
+window.CSRF = "";
+window.ME = null;
+
+window.mk = function(t,c,x){
+
+    const e = document.createElement(t);
+
+    if(c)
+        e.className = c;
+
+    if(x != null)
+        e.textContent = x;
+
     return e;
 };
 
-async function api(p,o={}){
 
-    o.headers=Object.assign(
-        {"X-CSRF":CSRF},
-        o.headers||{}
+window.api = async function(p,o={}){
+
+    o.headers = Object.assign(
+        {
+            "X-CSRF": window.CSRF
+        },
+        o.headers || {}
     );
 
-    const r=await fetch(
+    const r = await fetch(
         p,
         Object.assign(
             {
@@ -3597,16 +3703,17 @@ async function api(p,o={}){
         )
     );
 
-    if(r.status===401){
+    if(r.status === 401){
 
-        location.href="login.html";
+        location.href =
+            "/login.html";
 
         throw new Error(
             "Please sign in."
         );
     }
 
-    if(r.status===403){
+    if(r.status === 403){
 
         throw new Error(
             "You do not have permission to perform this action."
@@ -3615,16 +3722,19 @@ async function api(p,o={}){
 
     if(!r.ok){
 
-        let m="Something went wrong.";
+        let m =
+            "Something went wrong.";
 
         try{
 
-            const j=await r.json();
+            const j =
+                await r.json();
 
             if(
-                typeof j.detail==="string"
-            )
-                m=j.detail;
+                typeof j.detail === "string"
+            ){
+                m = j.detail;
+            }
 
         }catch(e){}
 
@@ -3632,56 +3742,63 @@ async function api(p,o={}){
     }
 
     return r;
-}
+};
 
-const fmt=b=>
-    b<1024
-        ?b+" B"
-        :b<1048576
-            ?(b/1024).toFixed(1)+" KB"
-            :(b/1048576).toFixed(1)+" MB";
 
-function ago(t){
+window.fmt = function(b){
 
-    const s=Math.max(
+    return b < 1024
+        ? b + " B"
+        : b < 1048576
+            ? (b / 1024).toFixed(1) + " KB"
+            : (b / 1048576).toFixed(1) + " MB";
+};
+
+
+window.ago = function(t){
+
+    const s = Math.max(
         0,
-        Date.now()/1000-t
+        Date.now() / 1000 - t
     );
 
-    if(s<60)
+    if(s < 60)
         return "Just now";
 
-    if(s<3600)
+    if(s < 3600)
         return Math.floor(
-            s/60
-        )+" minutes ago";
+            s / 60
+        ) + " minutes ago";
 
-    if(s<86400)
+    if(s < 86400)
         return Math.floor(
-            s/3600
-        )+" hours ago";
+            s / 3600
+        ) + " hours ago";
 
     return Math.floor(
-        s/86400
-    )+" days ago";
-}
+        s / 86400
+    ) + " days ago";
+};
 
-function docRow(d,extra){
 
-    const r=mk(
+window.docRow = function(d,extra){
+
+    const r = window.mk(
         "div",
         "document"
     );
 
-    const l=mk(
+    const l = window.mk(
         "div",
         "doc-left"
     );
 
-    const w=mk("div");
+    const w = window.mk(
+        "div"
+    );
 
     l.append(
-        mk(
+        window.mk(
             "div",
             "doc-icon",
             d.ext
@@ -3689,21 +3806,23 @@ function docRow(d,extra){
     );
 
     w.append(
-        mk(
+        window.mk(
             "div",
             "doc-name",
             d.name
         ),
 
-        mk(
+        window.mk(
             "div",
             "doc-meta",
-            fmt(d.size)
-            +" · "
-            +ago(d.ts)
-            +(extra
-                ?" · "+extra
-                :"")
+            window.fmt(d.size)
+            + " · "
+            + window.ago(d.ts)
+            + (
+                extra
+                    ? " · " + extra
+                    : ""
+            )
         )
     );
 
@@ -3712,42 +3831,46 @@ function docRow(d,extra){
     r.append(
         l,
 
-        mk(
+        window.mk(
             "div",
             "status",
             d.restricted
-                ?"Restricted"
-                :"Indexed"
+                ? "Restricted"
+                : "Indexed"
         )
     );
 
-    r.title="Click to download";
-    r.style.cursor="pointer";
+    r.title =
+        "Click to download";
 
-    r.onclick=()=>{
+    r.style.cursor =
+        "pointer";
 
-        location.href=
+    r.onclick = () => {
+
+        location.href =
             "/api/files/"
-            +d.id
-            +"/download";
+            + d.id
+            + "/download";
 
     };
 
     return r;
-}
+};
 
-const ready=fetch(
+
+window.ready = fetch(
     "/api/me",
     {
         credentials:
             "same-origin"
     }
 )
-.then(r=>{
+.then(r => {
 
     if(!r.ok){
 
-        location.href=
+        location.href =
             "login.html";
 
         throw 0;
@@ -3756,65 +3879,92 @@ const ready=fetch(
     return r.json();
 
 })
-.then(d=>{
+.then(d => {
 
-    ME=d;
-    CSRF=d.csrf;
+    window.ME = d;
+    window.CSRF = d.csrf;
 
-    const avatar=
-        $(".avatar");
+    const avatar =
+        window.$(".avatar");
 
     if(avatar)
-        avatar.textContent=
+        avatar.textContent =
             d.email
                 .slice(0,2)
                 .toUpperCase();
 
-    const strong=
-        $(".user-info strong");
+    const strong =
+        window.$(
+            ".user-info strong"
+        );
 
     if(strong)
-        strong.textContent=
+        strong.textContent =
             d.full_name
             ||
             d.email.split("@")[0];
 
-    const span=
-        $(".user-info span");
+    const span =
+        window.$(
+            ".user-info span"
+        );
 
-    if(span)
-        span.textContent=
-            d.role==="admin"
-                ?"Administrator"
-                :"Secure account";
+    if(span){
 
-    const m=
-        $(".user-mini");
+        if(d.role === "admin"){
+
+            span.textContent =
+                "Administrator";
+
+        }else if(
+            d.role === "executive"
+        ){
+
+            span.textContent =
+                "Executive";
+
+        }else if(
+            d.role === "visitor"
+        ){
+
+            span.textContent =
+                "Visitor";
+
+        }else{
+
+            span.textContent =
+                "Secure account";
+        }
+    }
+
+    const m =
+        window.$(".user-mini");
 
     if(m){
 
-        m.style.cursor=
+        m.style.cursor =
             "pointer";
 
-        m.title=
+        m.title =
             "Click to sign out";
 
-        m.onclick=async()=>{
+        m.onclick = async () => {
 
             if(confirm("Sign out?")){
 
-                await api(
+                await window.api(
                     "/api/logout",
                     {
                         method:"POST"
                     }
                 );
 
-                location.href=
+                location.href =
                     "login.html";
             }
         };
     }
+
 });
 """
 
@@ -3824,6 +3974,7 @@ const ready=fetch(
 # ============================================================
 
 PAGE_JS = {
+
 
 "login": r"""
 const $=s=>document.querySelector(s);
@@ -3960,23 +4111,23 @@ document.addEventListener(
 "dashboard": r"""
 (async()=>{
 
-    await ready;
+    await window.ready;
 
-    const f=
+    const f =
         await(
-            await api(
+            await window.api(
                 "/api/files"
             )
         ).json();
 
-    const s=
+    const s =
         await(
-            await api(
+            await window.api(
                 "/api/stats"
             )
         ).json();
 
-    const h=
+    const h =
         document.querySelectorAll(
             ".stat-card h2"
         );
@@ -3990,19 +4141,21 @@ document.addEventListener(
     if(h[2])
         h[2].textContent=s.queries;
 
-    const p=
-        $(".content-grid .panel");
+    const p =
+        document.querySelector(
+            ".content-grid .panel"
+        );
 
     if(!p)
         return;
 
-    const link=
+    const link =
         p.querySelector(
             ".panel-header a"
         );
 
     if(link)
-        link.href=
+        link.href =
             "documents.html";
 
     p.querySelectorAll(
@@ -4013,13 +4166,14 @@ document.addEventListener(
 
     if(!f.length){
 
-        const e=mk(
-            "div",
-            "document"
-        );
+        const e =
+            window.mk(
+                "div",
+                "document"
+            );
 
         e.append(
-            mk(
+            window.mk(
                 "div",
                 "doc-meta",
                 "No documents yet. "
@@ -4032,7 +4186,7 @@ document.addEventListener(
 
     f.slice(0,3).forEach(
         d=>p.append(
-            docRow(d)
+            window.docRow(d)
         )
     );
 
@@ -4041,7 +4195,8 @@ document.addEventListener(
 
 
 "documents": r"""
-const list=$(".documents");
+const list =
+    window.$(".documents");
 
 let ALL=[];
 
@@ -4054,13 +4209,14 @@ function draw(items){
 
     if(!items.length){
 
-        const e=mk(
-            "div",
-            "document"
-        );
+        const e =
+            window.mk(
+                "div",
+                "document"
+            );
 
         e.append(
-            mk(
+            window.mk(
                 "div",
                 "doc-meta",
                 "No documents found."
@@ -4074,7 +4230,7 @@ function draw(items){
 
     items.forEach(
         d=>list.append(
-            docRow(
+            window.docRow(
                 d,
                 d.snippet
             )
@@ -4084,11 +4240,11 @@ function draw(items){
 
 async function load(){
 
-    await ready;
+    await window.ready;
 
-    ALL=
+    ALL =
         await(
-            await api(
+            await window.api(
                 "/api/files"
             )
         ).json();
@@ -4098,26 +4254,31 @@ async function load(){
 
 async function send(files){
 
-    await ready;
+    await window.ready;
 
     for(
         const f of files
     ){
 
-        const t=mk(
-            "div",
-            "document"
-        );
+        const t =
+            window.mk(
+                "div",
+                "document"
+            );
 
-        const l=mk(
-            "div",
-            "doc-left"
-        );
+        const l =
+            window.mk(
+                "div",
+                "doc-left"
+            );
 
-        const w=mk("div");
+        const w =
+            window.mk(
+                "div"
+            );
 
         l.append(
-            mk(
+            window.mk(
                 "div",
                 "doc-icon",
                 (
@@ -4131,16 +4292,16 @@ async function send(files){
         );
 
         w.append(
-            mk(
+            window.mk(
                 "div",
                 "doc-name",
                 f.name
             ),
 
-            mk(
+            window.mk(
                 "div",
                 "doc-meta",
-                fmt(f.size)
+                window.fmt(f.size)
                 +" · Uploading..."
             )
         );
@@ -4150,7 +4311,7 @@ async function send(files){
         t.append(
             l,
 
-            mk(
+            window.mk(
                 "div",
                 "status",
                 "Uploading"
@@ -4161,7 +4322,7 @@ async function send(files){
 
         try{
 
-            const fd=
+            const fd =
                 new FormData();
 
             fd.append(
@@ -4169,7 +4330,7 @@ async function send(files){
                 f
             );
 
-            await api(
+            await window.api(
                 "/api/upload",
                 {
                     method:"POST",
@@ -4213,8 +4374,8 @@ document.addEventListener(
     true
 );
 
-const z=
-    $(".upload-zone");
+const z =
+    window.$(".upload-zone");
 
 if(z){
 
@@ -4239,8 +4400,8 @@ if(z){
 
 let timer;
 
-const searchBox=
-    $(".search");
+const searchBox =
+    window.$(".search");
 
 if(searchBox){
 
@@ -4250,7 +4411,7 @@ if(searchBox){
 
             clearTimeout(timer);
 
-            const v=
+            const v =
                 e.target.value.trim();
 
             timer=setTimeout(
@@ -4263,13 +4424,13 @@ if(searchBox){
                         return;
                     }
 
-                    await ready;
+                    await window.ready;
 
                     try{
 
                         draw(
                             await(
-                                await api(
+                                await window.api(
                                     "/api/search?q="
                                     +encodeURIComponent(v)
                                 )
@@ -4289,10 +4450,10 @@ load();
 
 
 "assistant": r"""
-const msgs=
-    $("#messages");
+const msgs =
+    window.$("#messages");
 
-ready.then(()=>{
+window.ready.then(()=>{
 
     if(!msgs)
         return;
@@ -4317,16 +4478,18 @@ function add(
     if(!msgs)
         return;
 
-    const m=mk(
-        "div",
-        "message "+cls
-    );
+    const m =
+        window.mk(
+            "div",
+            "message "+cls
+        );
 
-    const b=mk(
-        "div",
-        "bubble",
-        text
-    );
+    const b =
+        window.mk(
+            "div",
+            "bubble",
+            text
+        );
 
     if(
         src
@@ -4335,7 +4498,7 @@ function add(
     ){
 
         b.append(
-            mk(
+            window.mk(
                 "div",
                 "source",
                 "Source · "
@@ -4348,7 +4511,7 @@ function add(
 
     msgs.append(m);
 
-    msgs.scrollTop=
+    msgs.scrollTop =
         msgs.scrollHeight;
 }
 
@@ -4364,13 +4527,13 @@ document.addEventListener(
         e.preventDefault();
         e.stopPropagation();
 
-        const i=
-            $("#chatInput");
+        const i =
+            window.$("#chatInput");
 
         if(!i)
             return;
 
-        const t=
+        const t =
             i.value.trim();
 
         if(!t)
@@ -4385,10 +4548,10 @@ document.addEventListener(
 
         try{
 
-            await ready;
+            await window.ready;
 
-            const response=
-                await api(
+            const response =
+                await window.api(
                     "/api/chat",
                     {
                         method:"POST",
@@ -4405,7 +4568,7 @@ document.addEventListener(
                     }
                 );
 
-            const j=
+            const j =
                 await response.json();
 
             add(
@@ -4431,7 +4594,7 @@ document.addEventListener(
 
 
 # ============================================================
-# PAGE LOADING — ROBUST VERSION
+# PAGE LOADING
 # ============================================================
 
 ALLOWED_PAGES = {
@@ -4450,79 +4613,76 @@ ALLOWED_PAGES = {
 
 
 def find_page_file(name: str):
-    """
-    Find an HTML page regardless of whether it is located in:
-    
-        DocumentManager/pages/
-        DocumentManager/
-        DocumentManager/DocumentManager/pages/
-        DocumentManager/DocumentManager/
-        
-    This makes deployment much more tolerant of the
-    GitHub/FastAPI Cloud folder structure.
-    """
 
     if name not in ALLOWED_PAGES:
         return None
 
     filename = f"{name}.html"
 
-    # Normal locations first
     candidates = [
+
         BASE / "pages" / filename,
+
         BASE / filename,
 
-        # In case the repository/application directory
-        # contains another DocumentManager folder.
         BASE / "DocumentManager" / "pages" / filename,
+
         BASE / "DocumentManager" / filename,
 
         BASE.parent / "pages" / filename,
+
         BASE.parent / filename,
 
         BASE.parent / "DocumentManager" / "pages" / filename,
+
         BASE.parent / "DocumentManager" / filename,
+
     ]
 
     for path in candidates:
+
         try:
+
             if path.is_file():
                 return path
+
         except Exception:
+
             continue
 
-    # Final fallback: search nearby directories.
-    # The page name is restricted by ALLOWED_PAGES above,
-    # so arbitrary files cannot be requested.
     search_roots = [
         BASE,
         BASE.parent,
     ]
 
     for root in search_roots:
+
         try:
+
             for path in root.rglob(filename):
+
                 if path.is_file():
                     return path
+
         except Exception:
+
             continue
 
     return None
 
 
 def load_page(name: str):
-    """
-    Load an allowed HTML page and inject the required
-    JavaScript connector.
-    """
 
     if name not in ALLOWED_PAGES:
+
         raise HTTPException(
             404,
             "Page not found.",
         )
 
-    page_path = find_page_file(name)
+    page_path = find_page_file(
+        name
+    )
 
     if page_path is None:
 
@@ -4533,23 +4693,34 @@ def load_page(name: str):
             <head>
                 <meta charset="UTF-8">
                 <title>SecureDocs</title>
+
                 <style>
+
                     body {{
                         font-family:
                             Arial,
                             sans-serif;
+
                         background:#0b0d10;
+
                         color:white;
+
                         display:flex;
+
                         align-items:center;
+
                         justify-content:center;
+
                         min-height:100vh;
+
                         margin:0;
                     }}
 
                     .box {{
                         max-width:650px;
+
                         padding:40px;
+
                         text-align:center;
                     }}
 
@@ -4559,13 +4730,16 @@ def load_page(name: str):
 
                     p {{
                         color:#aaa;
+
                         line-height:1.6;
                     }}
 
                     code {{
                         color:#fff;
                     }}
+
                 </style>
+
             </head>
 
             <body>
@@ -4590,6 +4764,7 @@ def load_page(name: str):
                 </div>
 
             </body>
+
             </html>
             """,
             status_code=500,
@@ -4614,18 +4789,10 @@ def load_page(name: str):
             status_code=500,
         )
 
-    # --------------------------------------------------------
-    # PAGE-SPECIFIC JAVASCRIPT
-    # --------------------------------------------------------
-
     js = PAGE_JS.get(
         name,
         "",
     )
-
-    # --------------------------------------------------------
-    # PROTECTED PAGE CONNECTOR
-    # --------------------------------------------------------
 
     if name in PROTECTED:
 
@@ -4634,10 +4801,6 @@ def load_page(name: str):
             + "\n"
             + js
         )
-
-    # --------------------------------------------------------
-    # INJECT JAVASCRIPT BEFORE </body>
-    # --------------------------------------------------------
 
     if js.strip():
 
@@ -4672,7 +4835,32 @@ def load_page(name: str):
 
 
 # ============================================================
-# PAGE ROUTES
+# PAGE ACCESS CHECK
+# ============================================================
+
+def page_allowed(
+    name,
+    user,
+):
+
+    if name not in PROTECTED:
+        return True
+
+    role = user.get(
+        "role",
+        "visitor",
+    )
+
+    allowed = PAGE_ACCESS.get(
+        role,
+        set(),
+    )
+
+    return name in allowed
+
+
+# ============================================================
+# HOME
 # ============================================================
 
 @app.get("/")
@@ -4683,20 +4871,9 @@ def home():
     )
 
 
-# ------------------------------------------------------------
-# Normal routes:
-#
-# /login.html
-# /dashboard.html
-# /documents.html
-# /assistant.html
-# /search.html
-# /users.html
-# /roles.html
-# /audit.html
-# /settings.html
-# /profile.html
-# ------------------------------------------------------------
+# ============================================================
+# NORMAL PAGE ROUTES
+# ============================================================
 
 @app.get("/{name}.html")
 def page(
@@ -4704,7 +4881,6 @@ def page(
     request: Request,
 ):
 
-    # Only allow our known pages.
     if name not in ALLOWED_PAGES:
 
         raise HTTPException(
@@ -4712,19 +4888,11 @@ def page(
             "Not found",
         )
 
-    # --------------------------------------------------------
-    # PUBLIC PAGES
-    # --------------------------------------------------------
-
     if name in PUBLIC:
 
         return load_page(
             name
         )
-
-    # --------------------------------------------------------
-    # PROTECTED PAGES
-    # --------------------------------------------------------
 
     if name in PROTECTED:
 
@@ -4741,7 +4909,6 @@ def page(
 
             db.close()
 
-        # Not logged in
         if not user:
 
             return RedirectResponse(
@@ -4749,23 +4916,19 @@ def page(
                 status_code=303,
             )
 
-        # ----------------------------------------------------
-        # ADMIN-ONLY PAGES
-        # ----------------------------------------------------
+        # ====================================================
+        # ROLE-BASED PAGE ACCESS
+        # ====================================================
 
-        if name in {
-            "users",
-            "roles",
-            "audit",
-            "settings",
-        }:
+        if not page_allowed(
+            name,
+            user,
+        ):
 
-            if user["role"] != "admin":
-
-                return RedirectResponse(
-                    "/dashboard.html",
-                    status_code=303,
-                )
+            return RedirectResponse(
+                "/dashboard.html",
+                status_code=303,
+            )
 
     return load_page(
         name
@@ -4773,16 +4936,7 @@ def page(
 
 
 # ============================================================
-# EXTRA PAGE ROUTE
-# ============================================================
-#
-# Also supports links such as:
-#
-# /pages/search.html
-# /pages/profile.html
-#
-# This is useful if any of your HTML sidebar links
-# accidentally contain "pages/".
+# /pages/*.html ROUTES
 # ============================================================
 
 @app.get("/pages/{name}.html")
@@ -4826,19 +4980,19 @@ def page_from_pages_folder(
                 status_code=303,
             )
 
-        if name in {
-            "users",
-            "roles",
-            "audit",
-            "settings",
-        }:
+        # ====================================================
+        # ROLE-BASED PAGE ACCESS
+        # ====================================================
 
-            if user["role"] != "admin":
+        if not page_allowed(
+            name,
+            user,
+        ):
 
-                return RedirectResponse(
-                    "/dashboard.html",
-                    status_code=303,
-                )
+            return RedirectResponse(
+                "/dashboard.html",
+                status_code=303,
+            )
 
     return load_page(
         name
