@@ -2206,6 +2206,11 @@ def auth(
         {
             "created": created,
             "csrf": csrf,
+            "email": user.email,
+            "role": user.role,
+            "full_name": user.full_name or "",
+            "department": user.department or "",
+            "job_title": user.job_title or "",
         }
     )
 
@@ -2227,7 +2232,7 @@ def auth(
         max_age=SESSION_TTL,
         httponly=True,
         samesite="lax",
-        secure=COOKIE_SECURE,
+        secure=(COOKIE_SECURE and request.url.scheme == "https"),
         path="/",
     )
 
