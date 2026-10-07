@@ -1312,21 +1312,18 @@ def gemini_answer(
         context_parts
     )
 
-    prompt = f"""
+prompt = f"""
 You are SecureDocs AI.
 
-Answer the user's question using the supplied
-document context.
+Answer the user's question using the supplied document context.
 
 Important rules:
 1. Prefer information from the documents.
 2. Do not invent facts that are not supported.
-3. If the documents do not contain the answer,
-   clearly say that.
+3. If the documents do not contain the answer, clearly say that.
 4. Be concise but useful.
 5. If appropriate, mention the document name.
-6. Do not expose encryption keys, passwords,
-   session tokens, or internal secrets.
+6. Do not expose encryption keys, passwords, session tokens, or internal secrets.
 
 USER QUESTION:
 {query}
@@ -1335,11 +1332,7 @@ DOCUMENT CONTEXT:
 {context}
 """
 
-    return gemini_generate(
-        prompt
-    )
-
-
+return gemini_generate(prompt)
 # ============================================================
 # REQUEST MODELS
 # ============================================================
