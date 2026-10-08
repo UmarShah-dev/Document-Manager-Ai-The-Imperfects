@@ -400,10 +400,6 @@ animation-duration:.01ms!important;animation-iteration-count:1!important;transit
 
 <div class="toast-wrap" id="toastWrap"></div>
 
-<script src="auth.js"></script>
-<script>
-SecureDocsAuth.guard(null);
-</script>
 <script>
 /* ============================================
    AUTH GUARD + SEARCH (IIFE)
@@ -412,7 +408,7 @@ SecureDocsAuth.guard(null);
 
     var currentUser = null;
     try {
-        currentUser = SecureDocsAuth.getCachedUser();
+        currentUser = JSON.parse(localStorage.getItem("auth_user") || "null");
     } catch(e){}
 
     if(!currentUser){
@@ -454,7 +450,8 @@ SecureDocsAuth.guard(null);
         sAvatar.title = "Click to sign out";
         sAvatar.addEventListener("click", function(){
             if(confirm("Sign out of SecureDocs?")){
-                SecureDocsAuth.logout();
+                localStorage.removeItem("auth_user");
+                window.location.href = "login.html";
             }
         });
     }
@@ -784,8 +781,7 @@ SecureDocsAuth.guard(null);
         }
     });
 
-}
-)();
+})();
 </script>
 </body>
 </html>
