@@ -3448,11 +3448,11 @@ ROLE_PERMISSIONS = {
     ],
 
     "visitor": [
-        "View accessible documents",
-        "Upload documents",
-        "Download documents",
-        "Use AI assistant",
-        "Use AI search",
+        "dashboard",
+        "documents",
+        "assistant",
+        "search",
+        "profile",
     ],
 
 }
