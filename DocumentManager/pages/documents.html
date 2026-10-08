@@ -468,75 +468,48 @@ animation-duration:.01ms!important;animation-iteration-count:1!important;transit
 
 <script>
 /* ============================================
-   SECUREDOCS AUTH
-   Backend signed sid cookie + /api/me.
-   Backend session is authoritative; localStorage is only document storage.
+   AUTH GUARD
 ============================================ */
 var currentUser = null;
+try {
+    currentUser = JSON.parse(localStorage.getItem("auth_user") || "null");
+} catch(e){}
 
-function secureDocsLogout(){
-    fetch("/api/logout", {
-        method:"POST",
-        credentials:"same-origin",
-        headers:{
-            "X-CSRF":window.CSRF || ""
-        },
-        cache:"no-store"
-    }).finally(function(){
-        window.location.replace("/login.html");
-    });
+if(!currentUser){
+    window.location.href = "login.html";
+    throw new Error("__STOP__");
 }
 
-function applyUserSession(user){
-    currentUser = user || null;
-    if(!currentUser) return;
+var ROLE_PAGES = {
+    admin:     ["overview","documents","search","assistant","users","roles","audit","settings","profile"],
+    executive: ["overview","documents","search","assistant","profile"],
+    visitor:   ["overview","documents","search","profile"]
+};
+var PAGE_KEY = {
+    "dashboard":"overview","documents":"documents","search":"search","assistant":"assistant",
+    "users":"users","roles":"roles","audit":"audit","settings":"settings","profile":"profile"
+};
+var allowed = ROLE_PAGES[currentUser.role] || ROLE_PAGES.visitor;
 
-    var displayName =
-        currentUser.full_name ||
-        currentUser.name ||
-        currentUser.email ||
-        "User";
+document.querySelectorAll(".nav a").forEach(function(link){
+    var href = (link.getAttribute("href") || "").replace(".html","");
+    var key = PAGE_KEY[href];
+    if(key && allowed.indexOf(key) === -1){
+        link.style.display = "none";
+    }
+});
 
-    var initials =
-        currentUser.initials ||
-        displayName
-            .split(/\s+/)
-            .filter(Boolean)
-            .map(function(x){ return x.charAt(0); })
-            .join("")
-            .slice(0,2)
-            .toUpperCase() || "U";
-
-    var ROLE_PAGES = {
-        admin:     ["overview","documents","search","assistant","users","roles","audit","settings","profile"],
-        executive: ["overview","documents","search","assistant","profile"],
-        visitor:   ["overview","documents","search","assistant"]
-    };
-    var PAGE_KEY = {
-        "dashboard":"overview", "documents":"documents", "search":"search",
-        "assistant":"assistant", "users":"users", "roles":"roles",
-        "audit":"audit", "settings":"settings", "profile":"profile"
-    };
-    var allowed = ROLE_PAGES[currentUser.role] || ROLE_PAGES.visitor;
-
-    document.querySelectorAll(".nav a").forEach(function(link){
-        var href = (link.getAttribute("href") || "").replace(".html","");
-        var key = PAGE_KEY[href];
-        if(key && allowed.indexOf(key) === -1){
-            link.style.display = "none";
-        }
-    });
-
+/* Sidebar user info */
+(function(){
     var sName = document.getElementById("sidebarName");
     var sRole = document.getElementById("sidebarRole");
     var sAvatar = document.getElementById("sidebarAvatar");
 
-    if(sName) sName.textContent = displayName;
-    if(sAvatar) sAvatar.textContent = initials;
+    if(sName) sName.textContent = currentUser.name;
+    if(sAvatar) sAvatar.textContent = currentUser.initials;
     if(sRole){
-        var role = String(currentUser.role || "visitor");
-        sRole.textContent =
-            role.charAt(0).toUpperCase() + role.slice(1) + " account";
+        var rl = currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1);
+        sRole.textContent = rl + " account";
     }
 
     if(sAvatar){
@@ -544,44 +517,13 @@ function applyUserSession(user){
         sAvatar.title = "Click to sign out";
         sAvatar.addEventListener("click", function(){
             if(confirm("Sign out of SecureDocs?")){
-                secureDocsLogout();
+                localStorage.removeItem("auth_user");
+                window.location.href = "login.html";
             }
         });
     }
-}
+})();
 
-async function secureDocsAuthCheck(){
-    try{
-        var response = await fetch("/api/me", {
-            method:"GET",
-            credentials:"same-origin",
-            cache:"no-store"
-        });
-
-        if(!response.ok){
-            window.location.replace("/login.html");
-            return false;
-        }
-
-        var user = await response.json();
-        if(!user || !user.email){
-            window.location.replace("/login.html");
-            return false;
-        }
-
-        window.ME = user;
-        window.CSRF = user.csrf || "";
-        applyUserSession(user);
-        return true;
-    }catch(error){
-        console.error("SecureDocs authentication check failed:", error);
-        window.location.replace("/login.html");
-        return false;
-    }
-}
-
-secureDocsAuthCheck();
-</script>
 /* ============================================
    STORAGE
 ============================================ */
