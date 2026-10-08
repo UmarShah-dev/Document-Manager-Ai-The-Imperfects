@@ -580,24 +580,53 @@ animation-duration:.01ms!important;animation-iteration-count:1!important;transit
 
 </div>
 
-<script src="auth.js"></script>
-<script>
-SecureDocsAuth.guard(null);
-</script>
 <script>
 /* ============================================
-   AUTH GUARD + DASHBOARD (IIFE)
+   AUTH + DASHBOARD (SELF-CONTAINED)
+   No external auth.js dependency.
 ============================================ */
-(function(){
+(async function(){
 
     /* ---------- AUTH ---------- */
     var currentUser = null;
-    try {
-        currentUser = SecureDocsAuth.getCachedUser();
-    } catch(e){}
 
-    if(!currentUser){
-        window.location.href = "login.html";
+    try {
+        var authResponse = await fetch("/api/me", {
+            method: "GET",
+            credentials: "same-origin",
+            cache: "no-store"
+        });
+
+        if(!authResponse.ok){
+            window.location.replace("/login.html");
+            return;
+        }
+
+        var me = await authResponse.json();
+
+        currentUser = {
+            email: me.email || "",
+            role: me.role || "visitor",
+            csrf: me.csrf || "",
+            name: me.full_name || (me.email || "User").split("@")[0],
+            initials: ""
+        };
+
+        var nameForInitials = currentUser.name || currentUser.email || "U";
+        currentUser.initials = nameForInitials
+            .split(/\s+/)
+            .filter(Boolean)
+            .slice(0, 2)
+            .map(function(part){ return part.charAt(0); })
+            .join("")
+            .toUpperCase();
+
+        window.ME = me;
+        window.CSRF = me.csrf || "";
+
+    } catch(e){
+        console.error("SecureDocs authentication check failed:", e);
+        window.location.replace("/login.html");
         return;
     }
 
@@ -641,9 +670,35 @@ SecureDocsAuth.guard(null);
         sAvatar.title = "Click to sign out";
         sAvatar.addEventListener("click", function(){
             if(confirm("Sign out of SecureDocs?")){
-                SecureDocsAuth.logout();
+                logoutCurrentUser();
             }
         });
+    }
+
+    /* ---------- LOGOUT ---------- */
+    async function logoutCurrentUser(){
+        try{
+            var response = await fetch("/api/logout", {
+                method: "POST",
+                credentials: "same-origin",
+                headers: {
+                    "X-CSRF": currentUser.csrf || window.CSRF || ""
+                }
+            });
+
+            if(response.ok){
+                window.location.replace("/login.html");
+                return;
+            }
+
+            var data = {};
+            try { data = await response.json(); } catch(e){}
+
+            alert(data.detail || "Could not sign out. Please reload and try again.");
+        }catch(e){
+            console.error("Logout failed:", e);
+            alert("Could not sign out. Please check your connection and try again.");
+        }
     }
 
     /* ============================================
