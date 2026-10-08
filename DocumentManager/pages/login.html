@@ -1,28 +1,43 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SecureDocs — Sign In</title>
+
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 html{scroll-behavior:smooth}
+
 body{
 min-height:100vh;
 font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
 color:#f4f7ff;
-display:grid;place-items:center;overflow:hidden;
+display:grid;
+place-items:center;
+overflow:hidden;
 background:
 radial-gradient(circle at 10% 10%,rgba(37,99,235,.18),transparent 30%),
 radial-gradient(circle at 90% 90%,rgba(124,58,237,.18),transparent 32%),
 linear-gradient(135deg,#030612 0%,#071022 50%,#050816 100%);
 }
+
 button,input{font:inherit}
 a{color:inherit;text-decoration:none}
 
-.background{position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:0}
+.background{
+position:fixed;
+inset:0;
+overflow:hidden;
+pointer-events:none;
+z-index:0
+}
+
 .background::before{
-content:"";position:absolute;inset:0;
+content:"";
+position:absolute;
+inset:0;
 background-image:
 linear-gradient(rgba(255,255,255,0.025) 1px,transparent 1px),
 linear-gradient(90deg,rgba(255,255,255,0.025) 1px,transparent 1px);
@@ -30,122 +45,387 @@ background-size:70px 70px;
 mask-image:linear-gradient(to bottom,black,transparent 90%);
 -webkit-mask-image:linear-gradient(to bottom,black,transparent 90%);
 }
+
 .background::after{
-content:"";position:absolute;
-width:650px;height:650px;left:50%;top:50%;
+content:"";
+position:absolute;
+width:650px;
+height:650px;
+left:50%;
+top:50%;
 transform:translate(-50%,-50%);
 background:radial-gradient(circle,rgba(37,99,235,0.08),transparent 65%);
 filter:blur(25px);
 }
-.orb{position:absolute;border-radius:50%;filter:blur(100px);opacity:0.32}
-.orb.one{width:430px;height:430px;background:#1d4ed8;top:-190px;left:-140px;animation:floatOne 9s ease-in-out infinite}
-.orb.two{width:380px;height:380px;background:#6d28d9;bottom:-180px;right:-120px;animation:floatTwo 11s ease-in-out infinite}
-.orb.three{width:190px;height:190px;background:#0ea5e9;top:38%;right:25%;opacity:0.10;animation:floating 8s ease-in-out infinite}
 
-.page{width:min(440px,92%);position:relative;z-index:2;animation:pageIn 0.9s cubic-bezier(.2,.8,.2,1) both}
-.brand{display:flex;align-items:center;justify-content:center;gap:11px;margin-bottom:25px}
-.brand-icon{
-width:43px;height:43px;border-radius:14px;
-background:linear-gradient(145deg,#2563eb,#4f46e5 55%,#7c3aed);
-color:white;display:grid;place-items:center;
-font-size:15px;font-weight:900;
-border:1px solid rgba(255,255,255,0.18);
-box-shadow:0 18px 40px rgba(37,99,235,0.28),inset 0 1px 1px rgba(255,255,255,0.30);
-position:relative;overflow:hidden;
+.orb{
+position:absolute;
+border-radius:50%;
+filter:blur(100px);
+opacity:0.32
 }
+
+.orb.one{
+width:430px;
+height:430px;
+background:#1d4ed8;
+top:-190px;
+left:-140px;
+animation:floatOne 9s ease-in-out infinite
+}
+
+.orb.two{
+width:380px;
+height:380px;
+background:#6d28d9;
+bottom:-180px;
+right:-120px;
+animation:floatTwo 11s ease-in-out infinite
+}
+
+.orb.three{
+width:190px;
+height:190px;
+background:#0ea5e9;
+top:38%;
+right:25%;
+opacity:0.10;
+animation:floating 8s ease-in-out infinite
+}
+
+.page{
+width:min(440px,92%);
+position:relative;
+z-index:2;
+animation:pageIn 0.9s cubic-bezier(.2,.8,.2,1) both
+}
+
+.brand{
+display:flex;
+align-items:center;
+justify-content:center;
+gap:11px;
+margin-bottom:25px
+}
+
+.brand-icon{
+width:43px;
+height:43px;
+border-radius:14px;
+background:linear-gradient(145deg,#2563eb,#4f46e5 55%,#7c3aed);
+color:white;
+display:grid;
+place-items:center;
+font-size:15px;
+font-weight:900;
+border:1px solid rgba(255,255,255,0.18);
+box-shadow:
+0 18px 40px rgba(37,99,235,0.28),
+inset 0 1px 1px rgba(255,255,255,0.30);
+position:relative;
+overflow:hidden;
+}
+
 .brand-icon::after{
-content:"";position:absolute;width:90px;height:20px;
+content:"";
+position:absolute;
+width:90px;
+height:20px;
 background:rgba(255,255,255,.25);
 transform:translateX(-110px) rotate(-45deg);
 animation:shine 4s ease-in-out infinite;
 }
-.brand-name strong{display:block;font-size:14px;letter-spacing:-.02em}
-.brand-name span{display:block;margin-top:2px;font-size:10px;color:#7f8ba3}
+
+.brand-name strong{
+display:block;
+font-size:14px;
+letter-spacing:-.02em
+}
+
+.brand-name span{
+display:block;
+margin-top:2px;
+font-size:10px;
+color:#7f8ba3
+}
 
 .card{
-padding:40px;border-radius:30px;
-background:linear-gradient(145deg,rgba(15,23,42,0.88),rgba(15,23,42,0.65));
+padding:40px;
+border-radius:30px;
+background:
+linear-gradient(
+145deg,
+rgba(15,23,42,0.88),
+rgba(15,23,42,0.65)
+);
 border:1px solid rgba(148,163,184,0.15);
-backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);
-box-shadow:0 40px 110px rgba(0,0,0,.38),inset 0 1px 0 rgba(255,255,255,.07);
+backdrop-filter:blur(30px);
+-webkit-backdrop-filter:blur(30px);
+box-shadow:
+0 40px 110px rgba(0,0,0,.38),
+inset 0 1px 0 rgba(255,255,255,.07);
 }
-.eyebrow{font-size:10px;font-weight:800;letter-spacing:.18em;color:#6f83a6;margin-bottom:11px}
+
+.eyebrow{
+font-size:10px;
+font-weight:800;
+letter-spacing:.18em;
+color:#6f83a6;
+margin-bottom:11px
+}
+
 h1{
-font-size:40px;letter-spacing:-.065em;line-height:1;margin-bottom:11px;
+font-size:40px;
+letter-spacing:-.065em;
+line-height:1;
+margin-bottom:11px;
 background:linear-gradient(135deg,#ffffff,#dbeafe);
--webkit-background-clip:text;-webkit-text-fill-color:transparent;
+-webkit-background-clip:text;
+-webkit-text-fill-color:transparent;
 }
-.description{color:#8997ad;font-size:13px;line-height:1.7;max-width:350px}
+
+.description{
+color:#8997ad;
+font-size:13px;
+line-height:1.7;
+max-width:350px
+}
 
 form{margin-top:30px}
+
 .field{margin-bottom:18px}
-.field label{display:block;font-size:11px;font-weight:750;margin-bottom:8px;color:#c4cfdf}
+
+.field label{
+display:block;
+font-size:11px;
+font-weight:750;
+margin-bottom:8px;
+color:#c4cfdf
+}
+
 .input-wrapper{position:relative}
-.input-icon{position:absolute;left:15px;top:50%;transform:translateY(-50%);color:#64748b;font-size:14px;z-index:2;transition:color .25s ease}
+
+.input-icon{
+position:absolute;
+left:15px;
+top:50%;
+transform:translateY(-50%);
+color:#64748b;
+font-size:14px;
+z-index:2;
+transition:color .25s ease
+}
+
 input{
-width:100%;height:52px;
+width:100%;
+height:52px;
 border:1px solid rgba(148,163,184,0.13);
 background:rgba(2,6,23,0.48);
-border-radius:14px;outline:none;
-padding:0 15px 0 43px;color:#f1f5f9;font-size:12px;
-transition:border .25s ease,box-shadow .25s ease,background .25s ease;
+border-radius:14px;
+outline:none;
+padding:0 15px 0 43px;
+color:#f1f5f9;
+font-size:12px;
+transition:
+border .25s ease,
+box-shadow .25s ease,
+background .25s ease;
 }
+
 input::placeholder{color:#64748b}
+
 input:focus{
 background:rgba(15,23,42,0.90);
 border-color:rgba(96,165,250,0.55);
-box-shadow:0 0 0 4px rgba(37,99,235,0.10),0 10px 30px rgba(0,0,0,.15);
+box-shadow:
+0 0 0 4px rgba(37,99,235,0.10),
+0 10px 30px rgba(0,0,0,.15);
 }
-.input-wrapper:focus-within .input-icon{color:#60a5fa}
 
-.options{display:flex;justify-content:space-between;align-items:center;margin:2px 0 22px;font-size:10px}
-.remember{display:flex;align-items:center;gap:7px;color:#7f8ba3;cursor:pointer}
-.remember input{width:13px;height:13px;padding:0;accent-color:#2563eb;box-shadow:none}
-.forgot{color:#8fa1bd;font-weight:650;transition:color .2s ease}
+.input-wrapper:focus-within .input-icon{
+color:#60a5fa
+}
+
+.options{
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin:2px 0 22px;
+font-size:10px
+}
+
+.remember{
+display:flex;
+align-items:center;
+gap:7px;
+color:#7f8ba3;
+cursor:pointer
+}
+
+.remember input{
+width:13px;
+height:13px;
+padding:0;
+accent-color:#2563eb;
+box-shadow:none
+}
+
+.forgot{
+color:#8fa1bd;
+font-weight:650;
+transition:color .2s ease
+}
+
 .forgot:hover{color:#60a5fa}
 
 .login-button{
-width:100%;height:52px;border:none;border-radius:14px;
-background:linear-gradient(135deg,#2563eb,#4f46e5 55%,#7c3aed);
-color:white;font-size:12px;font-weight:750;cursor:pointer;
-display:flex;align-items:center;justify-content:center;gap:12px;
+width:100%;
+height:52px;
+border:none;
+border-radius:14px;
+background:linear-gradient(
+135deg,
+#2563eb,
+#4f46e5 55%,
+#7c3aed
+);
+color:white;
+font-size:12px;
+font-weight:750;
+cursor:pointer;
+display:flex;
+align-items:center;
+justify-content:center;
+gap:12px;
 border:1px solid rgba(255,255,255,0.16);
-box-shadow:0 16px 35px rgba(37,99,235,.25),inset 0 1px 1px rgba(255,255,255,.25);
-transition:transform .3s ease,box-shadow .3s ease;
+box-shadow:
+0 16px 35px rgba(37,99,235,.25),
+inset 0 1px 1px rgba(255,255,255,.25);
+transition:
+transform .3s ease,
+box-shadow .3s ease,
+opacity .3s ease;
 }
-.login-button:hover{transform:translateY(-3px) scale(1.01);box-shadow:0 22px 48px rgba(37,99,235,.38)}
-.login-button span{font-size:16px;transition:transform .3s ease}
-.login-button:hover span{transform:translateX(5px)}
+
+.login-button:hover{
+transform:translateY(-3px) scale(1.01);
+box-shadow:0 22px 48px rgba(37,99,235,.38)
+}
+
+.login-button span{
+font-size:16px;
+transition:transform .3s ease
+}
+
+.login-button:hover span{
+transform:translateX(5px)
+}
+
+.login-button:disabled{
+opacity:.65;
+cursor:not-allowed;
+transform:none;
+}
 
 .security{
-margin-top:22px;padding:13px 14px;border-radius:13px;
-background:rgba(2,6,23,.38);border:1px solid rgba(148,163,184,.10);
-display:flex;align-items:center;gap:9px;color:#71809a;font-size:9px;line-height:1.5;
+margin-top:22px;
+padding:13px 14px;
+border-radius:13px;
+background:rgba(2,6,23,.38);
+border:1px solid rgba(148,163,184,.10);
+display:flex;
+align-items:center;
+gap:9px;
+color:#71809a;
+font-size:9px;
+line-height:1.5;
 }
+
 .security-dot{
-width:7px;height:7px;flex:0 0 7px;border-radius:50%;background:#22c55e;
-box-shadow:0 0 0 5px rgba(34,197,94,.07),0 0 15px rgba(34,197,94,.25);
+width:7px;
+height:7px;
+flex:0 0 7px;
+border-radius:50%;
+background:#22c55e;
+box-shadow:
+0 0 0 5px rgba(34,197,94,.07),
+0 0 15px rgba(34,197,94,.25);
 animation:securityPulse 2s infinite;
 }
-.footer{text-align:center;color:#53617a;font-size:9px;margin-top:17px}
 
-@keyframes pageIn{from{opacity:0;transform:translateY(28px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
-@keyframes floatOne{0%,100%{transform:translate(0,0)}50%{transform:translate(35px,25px)}}
-@keyframes floatTwo{0%,100%{transform:translate(0,0)}50%{transform:translate(-30px,-30px)}}
-@keyframes floating{0%,100%{transform:translateY(0)}50%{transform:translateY(-22px)}}
-@keyframes shine{0%,60%{transform:translateX(-100px) rotate(-45deg)}100%{transform:translateX(150px) rotate(-45deg)}}
-@keyframes securityPulse{0%,100%{box-shadow:0 0 0 5px rgba(34,197,94,.07),0 0 12px rgba(34,197,94,.15)}50%{box-shadow:0 0 0 9px rgba(34,197,94,.015),0 0 20px rgba(34,197,94,.28)}}
+.footer{
+text-align:center;
+color:#53617a;
+font-size:9px;
+margin-top:17px
+}
+
+@keyframes pageIn{
+from{
+opacity:0;
+transform:translateY(28px) scale(.96)
+}
+to{
+opacity:1;
+transform:translateY(0) scale(1)
+}
+}
+
+@keyframes floatOne{
+0%,100%{transform:translate(0,0)}
+50%{transform:translate(35px,25px)}
+}
+
+@keyframes floatTwo{
+0%,100%{transform:translate(0,0)}
+50%{transform:translate(-30px,-30px)}
+}
+
+@keyframes floating{
+0%,100%{transform:translateY(0)}
+50%{transform:translateY(-22px)}
+}
+
+@keyframes shine{
+0%,60%{transform:translateX(-100px) rotate(-45deg)}
+100%{transform:translateX(150px) rotate(-45deg)}
+}
+
+@keyframes securityPulse{
+0%,100%{
+box-shadow:
+0 0 0 5px rgba(34,197,94,.07),
+0 0 12px rgba(34,197,94,.15)
+}
+50%{
+box-shadow:
+0 0 0 9px rgba(34,197,94,.015),
+0 0 20px rgba(34,197,94,.28)
+}
+}
 
 @media(max-width:500px){
-.card{padding:29px 22px;border-radius:24px}
-h1{font-size:35px}
-.page{width:min(430px,94%)}
+.card{
+padding:29px 22px;
+border-radius:24px
 }
+
+h1{font-size:35px}
+
+.page{
+width:min(430px,94%)
+}
+}
+
 @media(prefers-reduced-motion:reduce){
-*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important}
+*,*::before,*::after{
+animation-duration:.01ms!important;
+animation-iteration-count:1!important
+}
 }
 </style>
 </head>
+
 <body>
 
 <div class="background">
@@ -158,6 +438,7 @@ h1{font-size:35px}
 
     <div class="brand">
         <div class="brand-icon">S</div>
+
         <div class="brand-name">
             <strong>SecureDocs</strong>
             <span>AI Document Portal</span>
@@ -167,235 +448,479 @@ h1{font-size:35px}
     <section class="card">
 
         <div class="eyebrow">SECURE INTERNAL ACCESS</div>
-        <h1>Welcome back.</h1>
-        <p class="description">Sign in to securely access your private documents and AI-powered knowledge workspace.</p>
 
-        <form id="loginForm" onsubmit="return false;">
+        <h1>Welcome back.</h1>
+
+        <p class="description">
+            Sign in to securely access your private documents
+            and AI-powered knowledge workspace.
+        </p>
+
+        <form id="loginForm" onsubmit="doLogin(); return false;">
 
             <div class="field">
                 <label for="email">Email address</label>
+
                 <div class="input-wrapper">
                     <span class="input-icon">@</span>
-                    <input id="email" type="email" placeholder="you@company.com" autocomplete="email">
+
+                    <input
+                        id="email"
+                        type="email"
+                        placeholder="you@company.com"
+                        autocomplete="email"
+                    >
                 </div>
             </div>
 
             <div class="field">
                 <label for="password">Password</label>
+
                 <div class="input-wrapper">
                     <span class="input-icon">•</span>
-                    <input id="password" type="password" placeholder="Enter your password" autocomplete="current-password">
+
+                    <input
+                        id="password"
+                        type="password"
+                        placeholder="Enter your password"
+                        autocomplete="current-password"
+                    >
                 </div>
             </div>
 
             <div class="options">
+
                 <label class="remember">
-                    <input type="checkbox">
+                    <input type="checkbox" id="rememberMe">
                     Remember me
                 </label>
-                <a href="#" class="forgot">Forgot password?</a>
+
+                <a href="#" class="forgot">
+                    Forgot password?
+                </a>
+
             </div>
 
-            <button type="button" class="login-button" onclick="doLogin()">
-                Sign in
-                <span>→</span>
+            <button
+                type="submit"
+                id="loginButton"
+                class="login-button"
+            >
+                <span id="loginText">Sign in</span>
+                <span id="loginArrow">→</span>
             </button>
 
         </form>
 
         <div class="security">
             <span class="security-dot"></span>
-            Your workspace is protected with role-based access and secure document handling.
+
+            Your workspace is protected with role-based access
+            and secure document handling.
         </div>
 
     </section>
 
-    <div class="footer">SecureDocs © 2026 · Private knowledge. Intelligent access.</div>
+    <div class="footer">
+        SecureDocs © 2026 · Private knowledge. Intelligent access.
+    </div>
 
 </main>
 
 <script>
-/* ============================================
-   DEFAULT USERS (agar Users page se kuch save na ho)
-   Ye sirf fallback hain — pehli baar ke liye.
-============================================ */
-var DEFAULT_USERS = [
-    {
-        id: 1,
-        name: "Sarah Connor",
-        email: "admin@securedocs.com",
-        password: "admin123",
-        role: "admin",
-        status: "active"
-    },
-    {
-        id: 2,
-        name: "John Mercer",
-        email: "executive@securedocs.com",
-        password: "exec123",
-        role: "exec",
-        status: "active"
-    },
-    {
-        id: 3,
-        name: "Guest User",
-        email: "visitor@securedocs.com",
-        password: "visit123",
-        role: "viewer",
-        status: "idle"
-    }
-];
 
-/* ============================================
+/* ============================================================
+   SECUREDOCS API
+   IMPORTANT:
+   Use /api for the deployed FastAPI Cloud application.
+   Do NOT use http://localhost:8000/api on the live website.
+============================================================ */
+
+var API_BASE = "/api";
+
+
+/* ============================================================
    HELPERS
-============================================ */
-function makeInitials(name){
-    var parts = (name || "U").trim().split(/\s+/);
-    if(parts.length === 0) return "U";
-    if(parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-    return (parts[0].charAt(0) + parts[parts.length - 1].charAt(0)).toUpperCase();
-}
+============================================================ */
 
-/* Map user role → internal role */
-function mapRole(userRole){
-    var r = (userRole || "").toLowerCase();
-    if(r === "admin") return "admin";
-    if(r === "exec" || r === "executive") return "executive";
-    /* analyst, viewer, visitor, etc. → visitor */
-    return "visitor";
-}
+function showError(msg){
 
-/* Load users from localStorage or fallback */
-function getAllUsers(){
-    try {
-        var raw = localStorage.getItem("securedocs_users");
-        if(raw){
-            var parsed = JSON.parse(raw);
-            if(Array.isArray(parsed) && parsed.length > 0){
-                return parsed;
+    var existing = document.getElementById("loginError");
+
+    if(existing){
+        existing.remove();
+    }
+
+    var el = document.createElement("div");
+
+    el.id = "loginError";
+
+    el.style.cssText =
+        "position:fixed;" +
+        "bottom:24px;" +
+        "right:24px;" +
+        "max-width:360px;" +
+        "padding:14px 18px;" +
+        "border-radius:12px;" +
+        "background:linear-gradient(145deg,rgba(40,15,20,.96),rgba(20,8,15,.96));" +
+        "border:1px solid rgba(239,68,68,.35);" +
+        "color:#fca5a5;" +
+        "font-size:12px;" +
+        "font-weight:600;" +
+        "box-shadow:0 20px 50px rgba(0,0,0,.40);" +
+        "z-index:999;" +
+        "display:flex;" +
+        "align-items:center;" +
+        "gap:10px";
+
+    el.innerHTML =
+        '<span style="' +
+        'width:4px;' +
+        'height:22px;' +
+        'border-radius:2px;' +
+        'background:linear-gradient(180deg,#ef4444,#f59e0b);' +
+        'display:inline-block;' +
+        'flex:0 0 4px' +
+        '"></span>' +
+        '<span>' +
+        msg +
+        '</span>';
+
+    document.body.appendChild(el);
+
+    setTimeout(function(){
+
+        el.style.transition =
+            "opacity .3s, transform .3s";
+
+        el.style.opacity = "0";
+        el.style.transform = "translateX(30px)";
+
+        setTimeout(function(){
+            if(el.parentNode){
+                el.remove();
             }
-        }
-    } catch(e){}
-    return DEFAULT_USERS.slice();
+        },300);
+
+    },2600);
 }
 
-/* ============================================
-   LOGIN
-============================================ */
-function doLogin(){
-    var emailEl = document.getElementById("email");
-    var passEl = document.getElementById("password");
-    var email = (emailEl.value || "").trim().toLowerCase();
-    var password = (passEl.value || "").trim();
+
+function setLoading(loading){
+
+    var button = document.getElementById("loginButton");
+    var text = document.getElementById("loginText");
+    var arrow = document.getElementById("loginArrow");
+
+    if(loading){
+
+        button.disabled = true;
+        text.textContent = "Signing in...";
+        arrow.textContent = "•••";
+
+    }else{
+
+        button.disabled = false;
+        text.textContent = "Sign in";
+        arrow.textContent = "→";
+
+    }
+}
+
+
+/* ============================================================
+   BACKEND LOGIN
+============================================================ */
+
+async function doLogin(){
+
+    var emailEl =
+        document.getElementById("email");
+
+    var passEl =
+        document.getElementById("password");
+
+    var email =
+        (emailEl.value || "")
+        .trim()
+        .toLowerCase();
+
+    var password =
+        passEl.value || "";
+
+    /* --------------------------------------------------------
+       Basic validation
+    -------------------------------------------------------- */
 
     if(!email || !password){
-        showError("Please enter email and password");
+
+        showError(
+            "Please enter email and password."
+        );
+
         return;
     }
 
     if(!/^\S+@\S+\.\S+$/.test(email)){
-        showError("Please enter a valid email address");
+
+        showError(
+            "Please enter a valid email address."
+        );
+
         return;
     }
 
-    /* Load all registered users */
-    var users = getAllUsers();
 
-    /* Find user by email */
-    var user = null;
-    for(var i = 0; i < users.length; i++){
-        if((users[i].email || "").toLowerCase() === email){
-            user = users[i];
-            break;
+    /* --------------------------------------------------------
+       Disable button
+    -------------------------------------------------------- */
+
+    setLoading(true);
+
+
+    try{
+
+        /* ----------------------------------------------------
+           Authenticate against FastAPI backend.
+
+           credentials:"same-origin" is IMPORTANT because
+           FastAPI sets the securedocs_sid HTTP-only cookie.
+        ---------------------------------------------------- */
+
+        var response = await fetch(
+            API_BASE + "/auth",
+            {
+                method:"POST",
+
+                credentials:"same-origin",
+
+                cache:"no-store",
+
+                headers:{
+                    "Content-Type":"application/json"
+                },
+
+                body:JSON.stringify({
+                    email:email,
+                    password:password
+                })
+            }
+        );
+
+
+        /* ----------------------------------------------------
+           Read response
+        ---------------------------------------------------- */
+
+        var data = {};
+
+        try{
+
+            data = await response.json();
+
+        }catch(e){
+
+            data = {};
+
         }
+
+
+        /* ----------------------------------------------------
+           Login failed
+        ---------------------------------------------------- */
+
+        if(!response.ok){
+
+            var message =
+                data.detail ||
+                "Unable to sign in. Please check your credentials.";
+
+            showError(message);
+
+            setLoading(false);
+
+            return;
+        }
+
+
+        /* ----------------------------------------------------
+           Backend login succeeded.
+
+           The backend should now have set:
+
+           securedocs_sid
+
+           as an HTTP-only cookie.
+        ---------------------------------------------------- */
+
+        try{
+
+            if(data.email){
+
+                localStorage.setItem(
+                    "auth_user",
+                    JSON.stringify({
+                        email:data.email,
+                        name:data.full_name || "User",
+                        role:data.role || "visitor",
+                        loginAt:Date.now()
+                    })
+                );
+
+            }
+
+        }catch(e){
+            /* Local cache is optional.
+               Server cookie is the real session. */
+        }
+
+
+        /* ----------------------------------------------------
+           Verify the session BEFORE redirecting.
+
+           This catches the exact situation where:
+           /api/auth = 200
+           but /api/me = 401
+        ---------------------------------------------------- */
+
+        var meResponse = await fetch(
+            API_BASE + "/me",
+            {
+                method:"GET",
+                credentials:"same-origin",
+                cache:"no-store"
+            }
+        );
+
+
+        if(!meResponse.ok){
+
+            showError(
+                "Login succeeded, but the secure session could not be verified."
+            );
+
+            setLoading(false);
+
+            return;
+        }
+
+
+        var meData = await meResponse.json();
+
+
+        /* ----------------------------------------------------
+           Save the server-confirmed user.
+
+           This is only a UI cache.
+           Authentication still comes from the server cookie.
+        ---------------------------------------------------- */
+
+        try{
+
+            localStorage.setItem(
+                "auth_user",
+                JSON.stringify({
+                    email:meData.email || email,
+                    name:meData.full_name || "User",
+                    role:meData.role || "visitor",
+                    csrf:meData.csrf || "",
+                    loginAt:Date.now()
+                })
+            );
+
+        }catch(e){}
+
+
+        /* ----------------------------------------------------
+           Everything is confirmed.
+           Go to dashboard.
+        ---------------------------------------------------- */
+
+        window.location.replace(
+            "/dashboard.html"
+        );
+
+    }catch(error){
+
+        console.error(
+            "SecureDocs login error:",
+            error
+        );
+
+        showError(
+            "Unable to connect to the SecureDocs server."
+        );
+
+        setLoading(false);
     }
-
-    if(!user){
-        showError("This email is not registered in the workspace");
-        return;
-    }
-
-    /* Check password */
-    var correctPassword = user.password;
-    /* Fallback: password stored separately via profile change */
-    try {
-        var altPwd = localStorage.getItem("user_password_" + email);
-        if(altPwd) correctPassword = altPwd;
-    } catch(e){}
-
-    if(!correctPassword){
-        showError("No password set for this account. Contact admin.");
-        return;
-    }
-
-    if(password !== correctPassword){
-        showError("Incorrect password");
-        return;
-    }
-
-    /* Build session */
-    var sessionUser = {
-        email: user.email,
-        name: user.name || "User",
-        role: mapRole(user.role),
-        initials: makeInitials(user.name || "User"),
-        loginAt: Date.now()
-    };
-
-    try {
-        localStorage.setItem("auth_user", JSON.stringify(sessionUser));
-    } catch(e){
-        showError("Could not save session — storage full");
-        return;
-    }
-
-    /* Redirect */
-    window.location.href = "dashboard.html";
 }
 
-/* ============================================
-   ERROR TOAST
-============================================ */
-function showError(msg){
-    var existing = document.getElementById("loginError");
-    if(existing) existing.remove();
 
-    var el = document.createElement("div");
-    el.id = "loginError";
-    el.style.cssText =
-        "position:fixed;bottom:24px;right:24px;" +
-        "padding:14px 18px;border-radius:12px;" +
-        "background:linear-gradient(145deg,rgba(40,15,20,.96),rgba(20,8,15,.96));" +
-        "border:1px solid rgba(239,68,68,.35);" +
-        "color:#fca5a5;font-size:12px;font-weight:600;" +
-        "box-shadow:0 20px 50px rgba(0,0,0,.40);z-index:999;" +
-        "display:flex;align-items:center;gap:10px";
-    el.innerHTML = '<span style="width:4px;height:22px;border-radius:2px;' +
-                    'background:linear-gradient(180deg,#ef4444,#f59e0b);display:inline-block"></span>' +
-                    msg;
-    document.body.appendChild(el);
-
-    setTimeout(function(){
-        el.style.transition = "opacity .3s, transform .3s";
-        el.style.opacity = "0";
-        el.style.transform = "translateX(30px)";
-        setTimeout(function(){ el.remove(); }, 300);
-    }, 2600);
-}
-
-/* ============================================
+/* ============================================================
    ENTER KEY
-============================================ */
-document.addEventListener("keydown", function(e){
-    if(e.key === "Enter"){
-        var a = document.activeElement;
-        if(a && (a.id === "email" || a.id === "password")){
+============================================================ */
+
+document.addEventListener(
+    "keydown",
+    function(e){
+
+        if(e.key !== "Enter"){
+            return;
+        }
+
+        var active =
+            document.activeElement;
+
+        if(
+            active &&
+            (
+                active.id === "email" ||
+                active.id === "password"
+            )
+        ){
+
             e.preventDefault();
+
             doLogin();
         }
     }
-});
+);
+
+
+/* ============================================================
+   AUTO FOCUS
+============================================================ */
+
+window.addEventListener(
+    "load",
+    function(){
+
+        var email =
+            document.getElementById("email");
+
+        if(email){
+            email.focus();
+        }
+
+    }
+);
+
 </script>
 
 </body>
 </html>
+```
+
+**Important:** this version intentionally uses:
+
+```javascript
+var API_BASE = "/api";
+```
+
+not `http://localhost:8000/api`, because your live FastAPI Cloud frontend and backend are on the same deployed origin.
+
+After replacing `login.html`, **redeploy**, then test the login. The new flow is:
+
+`POST /api/auth` → cookie created → `GET /api/me` → session verified → `/dashboard.html`.
+
+If `/api/me` still returns `401`, then the problem is definitively in the backend cookie/session handling rather than this login page.
