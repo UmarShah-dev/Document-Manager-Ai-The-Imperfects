@@ -3,273 +3,938 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SecureDocs — Sign In</title>
+<title>Users — SecureDocs</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
+:root{
+--bg:#050816;--panel:rgba(13,18,38,.72);--border:rgba(255,255,255,.09);
+--text:#f5f7ff;--muted:#8991ad;--blue:#4f8cff;--violet:#8b5cf6;
+}
 html{scroll-behavior:smooth}
 body{
-min-height:100vh;
 font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
-color:#f4f7ff;
-display:grid;place-items:center;overflow:hidden;
 background:
-radial-gradient(circle at 10% 10%,rgba(37,99,235,.18),transparent 30%),
-radial-gradient(circle at 90% 90%,rgba(124,58,237,.18),transparent 32%),
-linear-gradient(135deg,#030612 0%,#071022 50%,#050816 100%);
+radial-gradient(circle at 75% 5%,rgba(79,140,255,.14),transparent 28%),
+radial-gradient(circle at 15% 85%,rgba(139,92,246,.11),transparent 30%),
+var(--bg);
+color:var(--text);min-height:100vh;overflow-x:hidden;
 }
-button,input{font:inherit}
-a{color:inherit;text-decoration:none}
-
-.background{position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:0}
-.background::before{
-content:"";position:absolute;inset:0;
+body::before{
+content:"";position:fixed;inset:0;pointer-events:none;
 background-image:
-linear-gradient(rgba(255,255,255,0.025) 1px,transparent 1px),
-linear-gradient(90deg,rgba(255,255,255,0.025) 1px,transparent 1px);
-background-size:70px 70px;
-mask-image:linear-gradient(to bottom,black,transparent 90%);
--webkit-mask-image:linear-gradient(to bottom,black,transparent 90%);
+linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),
+linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);
+background-size:55px 55px;
+mask-image:linear-gradient(to bottom,black,transparent 92%);
+-webkit-mask-image:linear-gradient(to bottom,black,transparent 92%);
 }
-.background::after{
-content:"";position:absolute;
-width:650px;height:650px;left:50%;top:50%;
-transform:translate(-50%,-50%);
-background:radial-gradient(circle,rgba(37,99,235,0.08),transparent 65%);
-filter:blur(25px);
-}
-.orb{position:absolute;border-radius:50%;filter:blur(100px);opacity:0.32}
-.orb.one{width:430px;height:430px;background:#1d4ed8;top:-190px;left:-140px;animation:floatOne 9s ease-in-out infinite}
-.orb.two{width:380px;height:380px;background:#6d28d9;bottom:-180px;right:-120px;animation:floatTwo 11s ease-in-out infinite}
-.orb.three{width:190px;height:190px;background:#0ea5e9;top:38%;right:25%;opacity:0.10;animation:floating 8s ease-in-out infinite}
+.app{display:flex;min-height:100vh}
 
-.page{width:min(440px,92%);position:relative;z-index:2;animation:pageIn 0.9s cubic-bezier(.2,.8,.2,1) both}
-.brand{display:flex;align-items:center;justify-content:center;gap:11px;margin-bottom:25px}
-.brand-icon{
-width:43px;height:43px;border-radius:14px;
-background:linear-gradient(145deg,#2563eb,#4f46e5 55%,#7c3aed);
-color:white;display:grid;place-items:center;
-font-size:15px;font-weight:900;
-border:1px solid rgba(255,255,255,0.18);
-box-shadow:0 18px 40px rgba(37,99,235,0.28),inset 0 1px 1px rgba(255,255,255,0.30);
-position:relative;overflow:hidden;
+/* SIDEBAR */
+.sidebar{
+width:255px;background:rgba(5,8,22,.82);
+backdrop-filter:blur(25px);-webkit-backdrop-filter:blur(25px);
+border-right:1px solid var(--border);padding:25px 17px;
+position:fixed;inset:0 auto 0 0;display:flex;flex-direction:column;z-index:20;
 }
-.brand-icon::after{
-content:"";position:absolute;width:90px;height:20px;
-background:rgba(255,255,255,.25);
-transform:translateX(-110px) rotate(-45deg);
-animation:shine 4s ease-in-out infinite;
+.brand{display:flex;align-items:center;gap:12px;padding:5px 10px;margin-bottom:52px}
+.brand-mark{
+width:40px;height:40px;display:grid;place-items:center;border-radius:12px;
+font-size:14px;font-weight:800;color:white;
+background:linear-gradient(135deg,var(--blue),var(--violet));
+box-shadow:0 0 25px rgba(79,140,255,.28);position:relative;
 }
-.brand-name strong{display:block;font-size:14px;letter-spacing:-.02em}
-.brand-name span{display:block;margin-top:2px;font-size:10px;color:#7f8ba3}
+.brand-mark::after{
+content:"";position:absolute;inset:1px;border-radius:11px;
+border:1px solid rgba(255,255,255,.25);
+}
+.brand-name{font-size:16px;font-weight:700;letter-spacing:-.4px}
+.nav-label{
+color:#626b87;font-size:10px;text-transform:uppercase;
+letter-spacing:1.7px;padding:0 12px;margin-bottom:12px;
+}
+.nav{display:flex;flex-direction:column;gap:7px}
+.nav a{
+text-decoration:none;color:#7f88a4;padding:13px;border-radius:12px;
+font-size:13px;display:flex;align-items:center;gap:10px;
+border:1px solid transparent;
+transition:transform .25s ease,background .25s ease,color .25s ease,border .25s ease;
+}
+.nav a:hover{
+color:white;background:rgba(255,255,255,.045);
+border-color:rgba(255,255,255,.07);transform:translateX(3px);
+}
+.nav a.active{
+color:white;
+background:linear-gradient(90deg,rgba(79,140,255,.15),rgba(139,92,246,.10));
+border-color:rgba(79,140,255,.20);
+box-shadow:inset 3px 0 0 var(--blue),0 8px 25px rgba(0,0,0,.12);
+}
+.nav a span{flex:1}
+.nav a .badge{
+flex:0 0 auto;font-style:normal;font-size:8px;font-weight:800;
+letter-spacing:.7px;padding:3px 6px;border-radius:5px;
+background:linear-gradient(135deg,rgba(139,92,246,.22),rgba(79,140,255,.18));
+color:#c4b5fd;border:1px solid rgba(139,92,246,.28);
+}
+.sidebar-bottom{margin-top:auto}
+.user-mini{
+border-top:1px solid var(--border);padding:18px 8px 4px;
+display:flex;align-items:center;gap:11px;
+}
+.avatar{
+width:36px;height:36px;border-radius:50%;display:grid;place-items:center;
+font-size:11px;font-weight:800;color:white;
+background:linear-gradient(135deg,#1d4ed8,#7c3aed);
+box-shadow:0 0 20px rgba(79,140,255,.18);
+}
+.user-info strong{display:block;font-size:12px}
+.user-info span{color:#626b87;font-size:10px}
 
-.card{
-padding:40px;border-radius:30px;
-background:linear-gradient(145deg,rgba(15,23,42,0.88),rgba(15,23,42,0.65));
-border:1px solid rgba(148,163,184,0.15);
-backdrop-filter:blur(30px);-webkit-backdrop-filter:blur(30px);
-box-shadow:0 40px 110px rgba(0,0,0,.38),inset 0 1px 0 rgba(255,255,255,.07);
+.main{
+margin-left:255px;width:calc(100% - 255px);
+padding:40px 48px;animation:pageIn .7s ease both;
 }
-.eyebrow{font-size:10px;font-weight:800;letter-spacing:.18em;color:#6f83a6;margin-bottom:11px}
-h1{
-font-size:40px;letter-spacing:-.065em;line-height:1;margin-bottom:11px;
-background:linear-gradient(135deg,#ffffff,#dbeafe);
--webkit-background-clip:text;-webkit-text-fill-color:transparent;
+.topbar{
+display:flex;justify-content:space-between;align-items:flex-start;
+margin-bottom:28px;gap:20px;
 }
-.description{color:#8997ad;font-size:13px;line-height:1.7;max-width:350px}
+.heading small{
+color:#69738f;font-size:10px;letter-spacing:1.7px;font-weight:600;
+}
+.heading h1{
+margin-top:7px;font-size:34px;letter-spacing:-1.7px;font-weight:650;
+}
+.heading p{margin-top:9px;color:#7d87a3;font-size:12px}
+.primary-btn{
+padding:12px 18px;border-radius:11px;color:white;font-size:12px;
+font-weight:600;font-family:inherit;cursor:pointer;
+background:linear-gradient(135deg,var(--blue),var(--violet));
+border:1px solid rgba(255,255,255,.12);
+box-shadow:0 10px 30px rgba(79,140,255,.18);
+transition:transform .25s ease,box-shadow .25s ease;
+}
+.primary-btn:hover{
+transform:translateY(-3px);
+box-shadow:0 15px 35px rgba(79,140,255,.28);
+}
 
-form{margin-top:30px}
-.field{margin-bottom:18px}
-.field label{display:block;font-size:11px;font-weight:750;margin-bottom:8px;color:#c4cfdf}
-.input-wrapper{position:relative}
-.input-icon{position:absolute;left:15px;top:50%;transform:translateY(-50%);color:#64748b;font-size:14px;z-index:2;transition:color .25s ease}
-input{
-width:100%;height:52px;
-border:1px solid rgba(148,163,184,0.13);
-background:rgba(2,6,23,0.48);
-border-radius:14px;outline:none;
-padding:0 15px 0 43px;color:#f1f5f9;font-size:12px;
+.stats{
+display:grid;grid-template-columns:repeat(4,1fr);
+gap:16px;margin-bottom:24px;
+}
+.stat{
+position:relative;overflow:hidden;padding:20px;border-radius:16px;
+background:linear-gradient(145deg,rgba(19,27,53,.82),rgba(9,13,29,.72));
+border:1px solid var(--border);backdrop-filter:blur(18px);
+transition:transform .3s ease,border .3s ease;
+}
+.stat::before{
+content:"";position:absolute;width:120px;height:120px;
+right:-60px;top:-60px;border-radius:50%;
+background:var(--blue);filter:blur(50px);opacity:.14;
+}
+.stat:hover{transform:translateY(-4px);border-color:rgba(79,140,255,.20)}
+.stat span{color:var(--muted);font-size:11px}
+.stat h2{font-size:26px;margin-top:10px;letter-spacing:-1px}
+
+.toolbar{
+display:flex;justify-content:space-between;align-items:center;
+margin-bottom:14px;gap:14px;
+}
+.toolbar h3{font-size:15px;font-weight:600}
+.search{
+width:240px;padding:10px 14px;outline:none;color:white;
+font-size:11px;font-family:inherit;border-radius:10px;
+border:1px solid var(--border);background:rgba(255,255,255,.035);
 transition:border .25s ease,box-shadow .25s ease,background .25s ease;
 }
-input::placeholder{color:#64748b}
-input:focus{
-background:rgba(15,23,42,0.90);
-border-color:rgba(96,165,250,0.55);
-box-shadow:0 0 0 4px rgba(37,99,235,0.10),0 10px 30px rgba(0,0,0,.15);
+.search::placeholder{color:#626b87}
+.search:focus{
+border-color:rgba(79,140,255,.45);background:rgba(79,140,255,.045);
+box-shadow:0 0 0 3px rgba(79,140,255,.08);
 }
-.input-wrapper:focus-within .input-icon{color:#60a5fa}
 
-.options{display:flex;justify-content:space-between;align-items:center;margin:2px 0 22px;font-size:10px}
-.remember{display:flex;align-items:center;gap:7px;color:#7f8ba3;cursor:pointer}
-.remember input{width:13px;height:13px;padding:0;accent-color:#2563eb;box-shadow:none}
-.forgot{color:#8fa1bd;font-weight:650;transition:color .2s ease}
-.forgot:hover{color:#60a5fa}
-
-.login-button{
-width:100%;height:52px;border:none;border-radius:14px;
-background:linear-gradient(135deg,#2563eb,#4f46e5 55%,#7c3aed);
-color:white;font-size:12px;font-weight:750;cursor:pointer;
-display:flex;align-items:center;justify-content:center;gap:12px;
-border:1px solid rgba(255,255,255,0.16);
-box-shadow:0 16px 35px rgba(37,99,235,.25),inset 0 1px 1px rgba(255,255,255,.25);
-transition:transform .3s ease,box-shadow .3s ease;
+.table-wrap{
+background:linear-gradient(145deg,rgba(17,24,47,.82),rgba(8,12,27,.76));
+border:1px solid var(--border);border-radius:18px;overflow:hidden;
+backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+box-shadow:0 20px 60px rgba(0,0,0,.18);
 }
-.login-button:hover{transform:translateY(-3px) scale(1.01);box-shadow:0 22px 48px rgba(37,99,235,.38)}
-.login-button span{font-size:16px;transition:transform .3s ease}
-.login-button:hover span{transform:translateX(5px)}
-
-.security{
-margin-top:22px;padding:13px 14px;border-radius:13px;
-background:rgba(2,6,23,.38);border:1px solid rgba(148,163,184,.10);
-display:flex;align-items:center;gap:9px;color:#71809a;font-size:9px;line-height:1.5;
+.table-scroll{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:800px}
+thead{background:rgba(255,255,255,.02)}
+th{
+text-align:left;padding:14px 20px;font-size:10px;font-weight:700;
+letter-spacing:1px;color:#69738f;text-transform:uppercase;
+border-bottom:1px solid rgba(255,255,255,.06);
 }
-.security-dot{
-width:7px;height:7px;flex:0 0 7px;border-radius:50%;background:#22c55e;
-box-shadow:0 0 0 5px rgba(34,197,94,.07),0 0 15px rgba(34,197,94,.25);
-animation:securityPulse 2s infinite;
+td{
+padding:15px 20px;font-size:12px;
+border-bottom:1px solid rgba(255,255,255,.05);
+color:#cbd2e5;
 }
-.footer{text-align:center;color:#53617a;font-size:9px;margin-top:17px}
+tr:last-child td{border-bottom:none}
+tbody tr{transition:background .25s ease}
+tbody tr:hover{background:rgba(255,255,255,.025)}
 
-@keyframes pageIn{from{opacity:0;transform:translateY(28px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
-@keyframes floatOne{0%,100%{transform:translate(0,0)}50%{transform:translate(35px,25px)}}
-@keyframes floatTwo{0%,100%{transform:translate(0,0)}50%{transform:translate(-30px,-30px)}}
-@keyframes floating{0%,100%{transform:translateY(0)}50%{transform:translateY(-22px)}}
-@keyframes shine{0%,60%{transform:translateX(-100px) rotate(-45deg)}100%{transform:translateX(150px) rotate(-45deg)}}
-@keyframes securityPulse{0%,100%{box-shadow:0 0 0 5px rgba(34,197,94,.07),0 0 12px rgba(34,197,94,.15)}50%{box-shadow:0 0 0 9px rgba(34,197,94,.015),0 0 20px rgba(34,197,94,.28)}}
+.user-cell{display:flex;align-items:center;gap:12px}
+.user-avatar{
+width:36px;height:36px;border-radius:50%;display:grid;place-items:center;
+font-size:12px;font-weight:800;color:white;
+background:linear-gradient(135deg,#1d4ed8,#7c3aed);flex:0 0 36px;
+}
+.user-name{font-size:12px;font-weight:600}
+.user-email{font-size:10px;color:#66708d;margin-top:3px}
 
-@media(max-width:500px){
-.card{padding:29px 22px;border-radius:24px}
-h1{font-size:35px}
-.page{width:min(430px,94%)}
+.role-badge{
+padding:5px 10px;border-radius:20px;font-size:9px;
+font-weight:700;letter-spacing:.3px;display:inline-block;
+border:1px solid;
+}
+.role-admin{background:rgba(139,92,246,.13);color:#c4b5fd;border-color:rgba(139,92,246,.28)}
+.role-exec{background:rgba(79,140,255,.13);color:#93b4ff;border-color:rgba(79,140,255,.28)}
+.role-analyst{background:rgba(14,165,233,.13);color:#7dd3fc;border-color:rgba(14,165,233,.28)}
+.role-viewer{background:rgba(148,163,184,.10);color:#cbd5e1;border-color:rgba(148,163,184,.22)}
+
+.pass-cell{display:flex;align-items:center;gap:8px}
+.pass-text{
+font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+font-size:11px;color:#cbd2e5;letter-spacing:1px;
+max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.pass-text.hidden{letter-spacing:2px;color:#93b4ff}
+.eye-btn{
+width:26px;height:26px;border-radius:7px;display:grid;place-items:center;
+cursor:pointer;font-size:11px;font-family:inherit;
+background:rgba(255,255,255,.04);border:1px solid var(--border);
+color:#8993ae;flex:0 0 26px;
+transition:all .2s ease;
+}
+.eye-btn:hover{background:rgba(79,140,255,.10);color:#93b4ff;border-color:rgba(79,140,255,.28)}
+
+.status-cell{display:flex;align-items:center;gap:7px;font-size:11px;color:#a7b2c8}
+.status-dot{width:7px;height:7px;border-radius:50%}
+.dot-active{background:#22c55e;box-shadow:0 0 10px rgba(34,197,94,.5)}
+.dot-idle{background:#f59e0b;box-shadow:0 0 10px rgba(245,158,11,.5)}
+.dot-off{background:#64748b}
+
+.actions{display:flex;gap:6px;justify-content:flex-end}
+.icon-btn{
+width:30px;height:30px;display:grid;place-items:center;
+border-radius:8px;cursor:pointer;font-family:inherit;
+background:rgba(255,255,255,.04);border:1px solid var(--border);
+color:#8993ae;font-size:12px;
+transition:background .25s ease,color .25s ease,border .25s ease;
+}
+.icon-btn:hover{
+background:rgba(79,140,255,.10);color:#93b4ff;
+border-color:rgba(79,140,255,.28);
+}
+.icon-btn.delete:hover{
+background:rgba(239,68,68,.12);color:#fca5a5;
+border-color:rgba(239,68,68,.28);
+}
+
+.empty-state{
+padding:50px 20px;text-align:center;color:#66708d;font-size:12px;
+}
+
+.modal-overlay{
+position:fixed;inset:0;background:rgba(3,6,18,.72);
+backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+display:none;place-items:center;z-index:100;padding:20px;
+animation:fadeIn .25s ease;
+}
+.modal-overlay.show{display:grid}
+.modal{
+width:min(480px,100%);border-radius:22px;padding:28px;
+background:
+radial-gradient(circle at 0% 0%,rgba(79,140,255,.14),transparent 45%),
+linear-gradient(145deg,rgba(17,24,47,.96),rgba(8,12,27,.96));
+border:1px solid var(--border);
+box-shadow:0 40px 110px rgba(0,0,0,.55);
+animation:modalIn .35s cubic-bezier(.2,.8,.2,1);
+max-height:92vh;overflow-y:auto;
+}
+.modal-head{
+display:flex;justify-content:space-between;align-items:flex-start;
+margin-bottom:22px;
+}
+.modal-head h2{font-size:19px;letter-spacing:-.6px;font-weight:650}
+.modal-head p{color:#7d87a3;font-size:11px;margin-top:6px}
+.close-x{
+width:32px;height:32px;border-radius:9px;display:grid;place-items:center;
+background:rgba(255,255,255,.04);border:1px solid var(--border);
+color:#8993ae;cursor:pointer;font-size:14px;font-family:inherit;
+transition:all .25s ease;
+}
+.close-x:hover{background:rgba(239,68,68,.10);color:#fca5a5;border-color:rgba(239,68,68,.22)}
+
+.field{margin-bottom:16px}
+.field label{
+display:block;font-size:11px;font-weight:600;
+color:#c4cfdf;margin-bottom:8px;
+}
+.field input,.field select{
+width:100%;padding:12px 14px;color:white;font-size:12px;
+font-family:inherit;border-radius:11px;
+border:1px solid var(--border);background:rgba(2,6,23,.48);
+outline:none;
+transition:border .25s ease,box-shadow .25s ease,background .25s ease;
+}
+.field input::placeholder{color:#626b87}
+.field input:focus,.field select:focus{
+border-color:rgba(79,140,255,.45);background:rgba(2,6,23,.72);
+box-shadow:0 0 0 3px rgba(79,140,255,.08);
+}
+.field select option{background:#0d1226}
+
+.password-wrap{position:relative}
+.password-wrap input{padding-right:46px}
+.toggle-eye{
+position:absolute;right:8px;top:50%;transform:translateY(-50%);
+width:32px;height:32px;border-radius:8px;
+display:grid;place-items:center;cursor:pointer;
+background:rgba(255,255,255,.04);border:1px solid var(--border);
+color:#8993ae;font-size:13px;
+transition:all .2s ease;
+}
+.toggle-eye:hover{background:rgba(79,140,255,.10);color:#93b4ff;border-color:rgba(79,140,255,.28)}
+.gen-btn{
+margin-top:8px;padding:7px 12px;border-radius:8px;font-size:10px;
+font-weight:600;cursor:pointer;font-family:inherit;
+background:rgba(79,140,255,.10);color:#93b4ff;
+border:1px solid rgba(79,140,255,.28);
+transition:all .2s ease;
+}
+.gen-btn:hover{background:rgba(79,140,255,.18)}
+
+.modal-actions{
+display:flex;gap:10px;margin-top:24px;
+justify-content:flex-end;
+}
+.btn{
+padding:11px 18px;border-radius:11px;font-size:12px;font-weight:600;
+font-family:inherit;cursor:pointer;border:1px solid transparent;
+transition:transform .2s ease,box-shadow .2s ease,background .2s ease;
+}
+.btn-ghost{
+background:rgba(255,255,255,.04);color:#cbd2e5;
+border-color:var(--border);
+}
+.btn-ghost:hover{background:rgba(255,255,255,.08)}
+.btn-primary{
+background:linear-gradient(135deg,var(--blue),var(--violet));
+color:white;border-color:rgba(255,255,255,.12);
+box-shadow:0 10px 25px rgba(79,140,255,.20);
+}
+.btn-primary:hover{
+transform:translateY(-2px);
+box-shadow:0 14px 30px rgba(79,140,255,.30);
+}
+.btn-danger{
+background:rgba(239,68,68,.12);color:#fca5a5;
+border-color:rgba(239,68,68,.28);
+}
+.btn-danger:hover{background:rgba(239,68,68,.20)}
+
+.toast-wrap{
+position:fixed;bottom:24px;right:24px;z-index:200;
+display:flex;flex-direction:column;gap:10px;
+}
+.toast{
+padding:14px 18px;border-radius:12px;font-size:12px;
+color:#e9effa;font-weight:600;
+background:linear-gradient(145deg,rgba(17,24,47,.96),rgba(8,12,27,.96));
+border:1px solid var(--border);
+box-shadow:0 20px 50px rgba(0,0,0,.40);
+display:flex;align-items:center;gap:10px;
+animation:toastIn .35s cubic-bezier(.2,.8,.2,1);
+min-width:260px;
+}
+.toast::before{
+content:"";width:4px;height:22px;border-radius:2px;
+background:linear-gradient(180deg,var(--blue),var(--violet));
+}
+.toast.success::before{background:linear-gradient(180deg,#22c55e,#10b981)}
+.toast.danger::before{background:linear-gradient(180deg,#ef4444,#f59e0b)}
+
+@keyframes pageIn{
+from{opacity:0;transform:translateY(14px)}
+to{opacity:1;transform:translateY(0)}
+}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes modalIn{
+from{opacity:0;transform:translateY(20px) scale(.96)}
+to{opacity:1;transform:translateY(0) scale(1)}
+}
+@keyframes toastIn{
+from{opacity:0;transform:translateX(30px)}
+to{opacity:1;transform:translateX(0)}
+}
+
+@media(max-width:1100px){.stats{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:900px){
+.sidebar{width:78px;padding:25px 10px}
+.brand-name,.nav-label,.nav a span,.user-info{display:none}
+.brand{justify-content:center;padding:0}
+.nav a{justify-content:center}
+.nav a .badge{display:none}
+.main{margin-left:78px;width:calc(100% - 78px);padding:30px}
+}
+@media(max-width:700px){
+.main{padding:20px}
+.topbar{flex-direction:column}
+.primary-btn{width:100%}
+.toolbar{flex-direction:column;align-items:stretch}
+.search{width:100%}
+th,td{padding:12px 14px;font-size:11px}
+.user-email{display:none}
+}
+@media(max-width:480px){
+.main{padding:14px}
+.modal{padding:22px}
+.modal-actions{flex-direction:column-reverse}
+.btn{width:100%}
 }
 @media(prefers-reduced-motion:reduce){
-*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important}
+*,*::before,*::after{
+animation-duration:.01ms!important;
+animation-iteration-count:1!important;
+transition-duration:.01ms!important;
+}
 }
 </style>
 </head>
 <body>
+<div class="app">
 
-<div class="background">
-    <div class="orb one"></div>
-    <div class="orb two"></div>
-    <div class="orb three"></div>
-</div>
-
-<main class="page">
-
+<!-- SIDEBAR -->
+<aside class="sidebar">
     <div class="brand">
-        <div class="brand-icon">S</div>
-        <div class="brand-name">
-            <strong>SecureDocs</strong>
-            <span>AI Document Portal</span>
+        <div class="brand-mark">S</div>
+        <div class="brand-name">SecureDocs</div>
+    </div>
+    <div class="nav-label">Workspace</div>
+    <nav class="nav">
+        <a href="dashboard.html">◉ <span>Overview</span></a>
+        <a href="documents.html">▣ <span>Documents</span></a>
+        <a href="search.html">⌕ <span>AI Search</span></a>
+        <a href="assistant.html">✦ <span>AI Chat (RAG)</span></a>
+        <a href="users.html" class="active">⬡ <span>Users</span> <em class="badge">ADMIN</em></a>
+        <a href="roles.html">⬢ <span>Roles &amp; Permissions</span> <em class="badge">ADMIN</em></a>
+        <a href="audit.html">☰ <span>Audit Logs</span> <em class="badge">ADMIN</em></a>
+        <a href="settings.html">⚙ <span>Settings</span> <em class="badge">ADMIN</em></a>
+        <a href="profile.html">◐ <span>Profile</span></a>
+    </nav>
+    <div class="sidebar-bottom">
+        <div class="user-mini">
+            <div class="avatar" id="sidebarAvatar">WS</div>
+            <div class="user-info">
+                <strong id="sidebarName">Wasif Siddiqui</strong>
+                <span id="sidebarRole">Admin account</span>
+            </div>
+        </div>
+    </div>
+</aside>
+
+<!-- MAIN -->
+<main class="main">
+
+    <div class="topbar">
+        <div class="heading">
+            <small>ACCESS CONTROL</small>
+            <h1>Users.</h1>
+            <p>Manage workspace members, roles, passwords and access.</p>
+        </div>
+        <button class="primary-btn" onclick="openInvite()">+ Invite user</button>
+    </div>
+
+    <section class="stats">
+        <div class="stat"><span>Total users</span><h2 id="statTotal">0</h2></div>
+        <div class="stat"><span>Active</span><h2 id="statActive">0</h2></div>
+        <div class="stat"><span>Admins</span><h2 id="statAdmins">0</h2></div>
+        <div class="stat"><span>Pending invites</span><h2 id="statPending">0</h2></div>
+    </section>
+
+    <div class="toolbar">
+        <h3>All users</h3>
+        <input type="search" class="search" id="userSearch" placeholder="Search users...">
+    </div>
+
+    <div class="table-wrap">
+        <div class="table-scroll">
+            <table>
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Role</th>
+                        <th>Password</th>
+                        <th>Status</th>
+                        <th>Last active</th>
+                        <th style="text-align:right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="usersBody"></tbody>
+            </table>
         </div>
     </div>
 
-    <section class="card">
-
-        <div class="eyebrow">SECURE INTERNAL ACCESS</div>
-        <h1>Welcome back.</h1>
-        <p class="description">Sign in to securely access your private documents and AI-powered knowledge workspace.</p>
-
-        <form id="loginForm" onsubmit="return false;">
-
-            <div class="field">
-                <label for="email">Email address</label>
-                <div class="input-wrapper">
-                    <span class="input-icon">@</span>
-                    <input id="email" type="email" placeholder="you@company.com" autocomplete="email">
-                </div>
-            </div>
-
-            <div class="field">
-                <label for="password">Password</label>
-                <div class="input-wrapper">
-                    <span class="input-icon">•</span>
-                    <input id="password" type="password" placeholder="Enter your password" autocomplete="current-password">
-                </div>
-            </div>
-
-            <div class="options">
-                <label class="remember">
-                    <input type="checkbox">
-                    Remember me
-                </label>
-                <a href="#" class="forgot">Forgot password?</a>
-            </div>
-
-            <button type="button" class="login-button" onclick="doLogin()">
-                Sign in
-                <span>→</span>
-            </button>
-
-        </form>
-
-        <div class="security">
-            <span class="security-dot"></span>
-            Your workspace is protected with role-based access and secure document handling.
-        </div>
-
-    </section>
-
-    <div class="footer">SecureDocs © 2026 · Private knowledge. Intelligent access.</div>
-
 </main>
 
-<script src="auth.js"></script>
+</div>
+
+<!-- MODAL: INVITE / EDIT -->
+<div class="modal-overlay" id="userModal">
+    <div class="modal">
+        <div class="modal-head">
+            <div>
+                <h2 id="modalTitle">Invite user</h2>
+                <p id="modalDesc">Send an invite to join the workspace.</p>
+            </div>
+            <button class="close-x" onclick="closeModal()">✕</button>
+        </div>
+
+        <div class="field">
+            <label>Full name</label>
+            <input type="text" id="fName" placeholder="e.g. Jane Cooper" maxlength="50">
+        </div>
+
+        <div class="field">
+            <label>Email address</label>
+            <input type="email" id="fEmail" placeholder="jane@company.com">
+        </div>
+
+        <div class="field">
+            <label>Role</label>
+            <select id="fRole">
+                <option value="admin">Admin</option>
+                <option value="exec" selected>Executive</option>
+                <option value="analyst">Analyst</option>
+                <option value="viewer">Viewer (Visitor)</option>
+            </select>
+        </div>
+
+        <div class="field">
+            <label id="passLabel">Set password</label>
+            <div class="password-wrap">
+                <input type="password" id="fPassword" placeholder="Enter password" autocomplete="new-password">
+                <span class="toggle-eye" onclick="togglePass('fPassword', this)">👁</span>
+            </div>
+            <button type="button" class="gen-btn" onclick="generatePassword()">🎲 Generate random password</button>
+        </div>
+
+        <div class="modal-actions">
+            <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+            <button class="btn btn-primary" id="modalSubmit" onclick="submitModal()">Send invite</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: DELETE -->
+<div class="modal-overlay" id="deleteModal">
+    <div class="modal">
+        <div class="modal-head">
+            <div>
+                <h2>Delete user</h2>
+                <p id="deleteDesc">Are you sure you want to remove this user?</p>
+            </div>
+            <button class="close-x" onclick="closeDelete()">✕</button>
+        </div>
+        <p style="color:#8b94ae;font-size:12px;line-height:1.7;">
+            This action cannot be undone. The user will lose access to all workspace documents immediately and will no longer be able to log in.
+        </p>
+        <div class="modal-actions">
+            <button class="btn btn-ghost" onclick="closeDelete()">Cancel</button>
+            <button class="btn btn-danger" onclick="confirmDelete()">Delete user</button>
+        </div>
+    </div>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
 <script>
 /* ============================================
-   USERS (login ke liye allowed accounts)
+   AUTH GUARD (IIFE)
 ============================================ */
-/* ============================================
-   LOGIN
-============================================ */
-function doLogin(){
-    var emailEl = document.getElementById("email");
-    var passEl = document.getElementById("password");
-    var email = (emailEl.value || "").trim().toLowerCase();
-    var password = (passEl.value || "").trim();
+(function(){
 
-    if(!email || !password){
-        showError("Please enter email and password");
+    var currentUser = null;
+    try {
+        currentUser = JSON.parse(localStorage.getItem("auth_user") || "null");
+    } catch(e){}
+
+    if(!currentUser){
+        window.location.href = "login.html";
         return;
     }
 
-    var btn = document.querySelector('button[type="submit"], button.login-btn, .login-btn');
-    if(btn) btn.disabled = true;
+    /* Only admin can access this page */
+    if(currentUser.role !== "admin"){
+        window.location.href = "dashboard.html";
+        return;
+    }
 
-    SecureDocsAuth.login(email, password)
-        .then(function(){
-            window.location.href = "dashboard.html";
-        })
-        .catch(function(error){
-            showError(error && error.message ? error.message : "Unable to sign in");
-            if(btn) btn.disabled = false;
+    /* Sidebar user info */
+    var sName = document.getElementById("sidebarName");
+    var sRole = document.getElementById("sidebarRole");
+    var sAvatar = document.getElementById("sidebarAvatar");
+    if(sName) sName.textContent = currentUser.name;
+    if(sAvatar) sAvatar.textContent = currentUser.initials;
+    if(sRole){
+        var rl = currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1);
+        sRole.textContent = rl + " account";
+    }
+    if(sAvatar){
+        sAvatar.style.cursor = "pointer";
+        sAvatar.title = "Click to sign out";
+        sAvatar.addEventListener("click", function(){
+            if(confirm("Sign out of SecureDocs?")){
+                localStorage.removeItem("auth_user");
+                window.location.href = "login.html";
+            }
         });
+    }
+})();
+
+
+/* ============================================
+   STORAGE
+============================================ */
+var STORAGE_KEY = "securedocs_users";
+
+/* Default users (agar localStorage empty ho) */
+var DEFAULT_USERS = [
+    { id:1, name:"Sarah Connor",   email:"admin@securedocs.com",     password:"admin123", role:"admin",   status:"active", last:"just now",       color:"#8b5cf6,#ec4899" },
+    { id:2, name:"John Mercer",    email:"executive@securedocs.com", password:"exec123",  role:"exec",    status:"active", last:"1 hour ago",     color:"#0ea5e9,#2563eb" },
+    { id:3, name:"Guest User",     email:"visitor@securedocs.com",   password:"visit123", role:"viewer",  status:"idle",   last:"Yesterday",      color:"#6366f1,#8b5cf6" }
+];
+
+function loadUsers(){
+    try {
+        var raw = localStorage.getItem(STORAGE_KEY);
+        if(raw){
+            var parsed = JSON.parse(raw);
+            if(Array.isArray(parsed) && parsed.length > 0){
+                return parsed;
+            }
+        }
+    } catch(e){}
+    /* Save defaults on first load */
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_USERS));
+    } catch(e){}
+    return DEFAULT_USERS.slice();
+}
+
+function saveUsers(list){
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+        return true;
+    } catch(e){
+        toast("Storage full", "danger");
+        return false;
+    }
+}
+
+var users = loadUsers();
+var nextId = users.reduce(function(m, u){ return Math.max(m, u.id || 0); }, 0) + 1;
+var editingId = null;
+var deletingId = null;
+
+/* show/hide passwords per user id */
+var visiblePasswords = {};
+
+/* ============================================
+   HELPERS
+============================================ */
+function initials(name){
+    return (name || "?").split(" ").map(function(n){ return n[0] || ""; }).slice(0,2).join("").toUpperCase();
+}
+
+function roleLabel(role){
+    return { admin:"Admin", exec:"Executive", executive:"Executive", analyst:"Analyst", viewer:"Visitor" }[role] || role;
+}
+
+function roleClass(role){
+    return {
+        admin:"role-admin", exec:"role-exec", executive:"role-exec",
+        analyst:"role-analyst", viewer:"role-viewer"
+    }[role] || "";
+}
+
+function statusLabel(s){
+    return { active:"Active", idle:"Idle", offline:"Offline" }[s] || s;
+}
+
+function statusClass(s){
+    return { active:"dot-active", idle:"dot-idle", offline:"dot-off" }[s] || "dot-off";
+}
+
+function escapeHtml(s){
+    return String(s || "").replace(/[&<>"']/g, function(c){
+        return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
 }
 
 /* ============================================
-   ERROR TOAST
+   RENDER
 ============================================ */
-function showError(msg){
-    var existing = document.getElementById("loginError");
-    if(existing) existing.remove();
+function render(){
+    var tbody = document.getElementById("usersBody");
 
+    if(users.length === 0){
+        tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state">No users found. Click "+ Invite user" to add one.</div></td></tr>';
+    } else {
+        tbody.innerHTML = users.map(function(u){
+            var pwd = u.password || "—";
+            var visible = !!visiblePasswords[u.id];
+            var shownPwd = visible ? escapeHtml(pwd) : "•".repeat(Math.min((pwd || "").length || 6, 12));
+            var eyeIcon = visible ? "🙈" : "👁";
+
+            return '<tr data-id="' + u.id + '">' +
+                '<td>' +
+                    '<div class="user-cell">' +
+                        '<div class="user-avatar" style="background:linear-gradient(135deg,' + (u.color || "#1d4ed8,#7c3aed") + ')">' + initials(u.name) + '</div>' +
+                        '<div>' +
+                            '<div class="user-name">' + escapeHtml(u.name) + '</div>' +
+                            '<div class="user-email">' + escapeHtml(u.email) + '</div>' +
+                        '</div>' +
+                    '</div>' +
+                '</td>' +
+                '<td><span class="role-badge ' + roleClass(u.role) + '">' + roleLabel(u.role) + '</span></td>' +
+                '<td>' +
+                    '<div class="pass-cell">' +
+                        '<span class="pass-text ' + (visible ? "" : "hidden") + '">' + shownPwd + '</span>' +
+                        '<button class="eye-btn" onclick="toggleRowPass(' + u.id + ')" title="' + (visible ? "Hide" : "Show") + ' password">' + eyeIcon + '</button>' +
+                    '</div>' +
+                '</td>' +
+                '<td><div class="status-cell"><span class="status-dot ' + statusClass(u.status) + '"></span>' + statusLabel(u.status) + '</div></td>' +
+                '<td>' + escapeHtml(u.last || "—") + '</td>' +
+                '<td>' +
+                    '<div class="actions">' +
+                        '<button class="icon-btn" title="Edit" onclick="openEdit(' + u.id + ')">✎</button>' +
+                        '<button class="icon-btn delete" title="Delete" onclick="openDelete(' + u.id + ')">🗑</button>' +
+                    '</div>' +
+                '</td>' +
+            '</tr>';
+        }).join("");
+    }
+
+    updateStats();
+    applySearch();
+}
+
+function updateStats(){
+    document.getElementById("statTotal").textContent = users.length;
+    document.getElementById("statActive").textContent = users.filter(function(u){ return u.status === "active"; }).length;
+    document.getElementById("statAdmins").textContent = users.filter(function(u){ return u.role === "admin"; }).length;
+    document.getElementById("statPending").textContent = 0;
+}
+
+/* ============================================
+   TOGGLE PASSWORD
+============================================ */
+function toggleRowPass(id){
+    visiblePasswords[id] = !visiblePasswords[id];
+    render();
+}
+
+function togglePass(inputId, el){
+    var input = document.getElementById(inputId);
+    if(input.type === "password"){
+        input.type = "text";
+        el.textContent = "🙈";
+    } else {
+        input.type = "password";
+        el.textContent = "👁";
+    }
+}
+
+function generatePassword(){
+    var chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%";
+    var pwd = "";
+    for(var i = 0; i < 10; i++){
+        pwd += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    var input = document.getElementById("fPassword");
+    input.value = pwd;
+    input.type = "text";
+    var eye = input.parentNode.querySelector(".toggle-eye");
+    if(eye) eye.textContent = "🙈";
+    toast("Random password generated", "success");
+}
+
+/* ============================================
+   SEARCH
+============================================ */
+var searchInput = document.getElementById("userSearch");
+searchInput.addEventListener("input", applySearch);
+
+function applySearch(){
+    var q = searchInput.value.toLowerCase().trim();
+    document.querySelectorAll("#usersBody tr").forEach(function(tr){
+        if(!tr.dataset.id) return;
+        var match = tr.textContent.toLowerCase().indexOf(q) !== -1;
+        tr.style.display = match ? "" : "none";
+    });
+}
+
+/* ============================================
+   MODALS
+============================================ */
+function openInvite(){
+    editingId = null;
+    document.getElementById("modalTitle").textContent = "Invite user";
+    document.getElementById("modalDesc").textContent = "Send an invite to join the workspace.";
+    document.getElementById("modalSubmit").textContent = "Send invite";
+    document.getElementById("fName").value = "";
+    document.getElementById("fEmail").value = "";
+    document.getElementById("fRole").value = "exec";
+    document.getElementById("fPassword").value = "";
+    document.getElementById("fPassword").type = "password";
+    var eye = document.getElementById("fPassword").parentNode.querySelector(".toggle-eye");
+    if(eye) eye.textContent = "👁";
+    document.getElementById("passLabel").textContent = "Set password";
+    document.getElementById("userModal").classList.add("show");
+    setTimeout(function(){ document.getElementById("fName").focus(); }, 100);
+}
+
+function openEdit(id){
+    var u = users.find(function(x){ return x.id === id; });
+    if(!u) return;
+
+    editingId = id;
+    document.getElementById("modalTitle").textContent = "Edit user";
+    document.getElementById("modalDesc").textContent = "Update user information, role and password.";
+    document.getElementById("modalSubmit").textContent = "Save changes";
+    document.getElementById("fName").value = u.name;
+    document.getElementById("fEmail").value = u.email;
+    document.getElementById("fRole").value = u.role;
+    document.getElementById("fPassword").value = u.password || "";
+    document.getElementById("fPassword").type = "password";
+    var eye = document.getElementById("fPassword").parentNode.querySelector(".toggle-eye");
+    if(eye) eye.textContent = "👁";
+    document.getElementById("passLabel").textContent = "Password (change if needed)";
+    document.getElementById("userModal").classList.add("show");
+    setTimeout(function(){ document.getElementById("fName").focus(); }, 100);
+}
+
+function closeModal(){
+    document.getElementById("userModal").classList.remove("show");
+    editingId = null;
+}
+
+/* ============================================
+   SUBMIT
+============================================ */
+function submitModal(){
+    var name = document.getElementById("fName").value.trim();
+    var email = document.getElementById("fEmail").value.trim().toLowerCase();
+    var role = document.getElementById("fRole").value;
+    var password = document.getElementById("fPassword").value.trim();
+
+    if(!name){ toast("Please enter a name", "danger"); return; }
+    if(!email || !/^\S+@\S+\.\S+$/.test(email)){ toast("Please enter a valid email", "danger"); return; }
+    if(password.length < 4){ toast("Password must be at least 4 characters", "danger"); return; }
+
+    /* duplicate email check */
+    var dup = users.some(function(u){
+        return u.email.toLowerCase() === email && u.id !== editingId;
+    });
+    if(dup){ toast("A user with this email already exists", "danger"); return; }
+
+    if(editingId){
+        var u = users.find(function(x){ return x.id === editingId; });
+        var oldEmail = u.email;
+        u.name = name;
+        u.email = email;
+        u.role = role;
+        u.password = password;
+
+        /* migrate stored password if email changed */
+        if(oldEmail !== email){
+            try {
+                localStorage.removeItem("user_password_" + oldEmail);
+            } catch(e){}
+        }
+        try {
+            localStorage.setItem("user_password_" + email, password);
+        } catch(e){}
+
+        toast("User updated successfully", "success");
+    } else {
+        var colors = ["#1d4ed8,#7c3aed","#0ea5e9,#2563eb","#8b5cf6,#ec4899",
+                      "#f59e0b,#ef4444","#10b981,#0ea5e9","#6366f1,#8b5cf6"];
+        users.push({
+            id: nextId++,
+            name: name,
+            email: email,
+            password: password,
+            role: role,
+            status: "idle",
+            last: "Invited · just now",
+            color: colors[users.length % colors.length]
+        });
+
+        try {
+            localStorage.setItem("user_password_" + email, password);
+        } catch(e){}
+
+        toast("Invitation sent to " + email, "success");
+    }
+
+    saveUsers(users);
+    closeModal();
+    render();
+}
+
+/* ============================================
+   DELETE
+============================================ */
+function openDelete(id){
+    var u = users.find(function(x){ return x.id === id; });
+    if(!u) return;
+    deletingId = id;
+    document.getElementById("deleteDesc").textContent = "Are you sure you want to remove " + u.name + "?";
+    document.getElementById("deleteModal").classList.add("show");
+}
+
+function closeDelete(){
+    document.getElementById("deleteModal").classList.remove("show");
+    deletingId = null;
+}
+
+function confirmDelete(){
+    if(!deletingId) return;
+    var u = users.find(function(x){ return x.id === deletingId; });
+    users = users.filter(function(x){ return x.id !== deletingId; });
+
+    /* Clean up stored password */
+    if(u && u.email){
+        try {
+            localStorage.removeItem("user_password_" + u.email);
+        } catch(e){}
+    }
+
+    saveUsers(users);
+    toast((u ? u.name : "User") + " removed", "danger");
+    closeDelete();
+    render();
+}
+
+/* ============================================
+   TOAST
+============================================ */
+function toast(msg, type){
+    var wrap = document.getElementById("toastWrap");
     var el = document.createElement("div");
-    el.id = "loginError";
-    el.style.cssText =
-        "position:fixed;bottom:24px;right:24px;" +
-        "padding:14px 18px;border-radius:12px;" +
-        "background:linear-gradient(145deg,rgba(40,15,20,.96),rgba(20,8,15,.96));" +
-        "border:1px solid rgba(239,68,68,.35);" +
-        "color:#fca5a5;font-size:12px;font-weight:600;" +
-        "box-shadow:0 20px 50px rgba(0,0,0,.40);z-index:999;" +
-        "display:flex;align-items:center;gap:10px";
-    el.innerHTML = '<span style="width:4px;height:22px;border-radius:2px;' +
-                    'background:linear-gradient(180deg,#ef4444,#f59e0b);display:inline-block"></span>' +
-                    msg;
-    document.body.appendChild(el);
-
+    el.className = "toast " + (type || "");
+    el.textContent = msg;
+    wrap.appendChild(el);
     setTimeout(function(){
-        el.style.transition = "opacity .3s, transform .3s";
+        el.style.transition = "opacity .3s ease, transform .3s ease";
         el.style.opacity = "0";
         el.style.transform = "translateX(30px)";
         setTimeout(function(){ el.remove(); }, 300);
@@ -277,18 +942,22 @@ function showError(msg){
 }
 
 /* ============================================
-   ENTER KEY
+   INIT
 ============================================ */
+render();
+
 document.addEventListener("keydown", function(e){
-    if(e.key === "Enter"){
-        var a = document.activeElement;
-        if(a && (a.id === "email" || a.id === "password")){
-            e.preventDefault();
-            doLogin();
-        }
+    if(e.key === "Escape"){
+        closeModal();
+        closeDelete();
     }
 });
+document.getElementById("userModal").addEventListener("click", function(e){
+    if(e.target.id === "userModal") closeModal();
+});
+document.getElementById("deleteModal").addEventListener("click", function(e){
+    if(e.target.id === "deleteModal") closeDelete();
+});
 </script>
-
 </body>
 </html>
