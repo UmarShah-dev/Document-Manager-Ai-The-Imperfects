@@ -579,288 +579,246 @@ animation-duration:.01ms!important;animation-iteration-count:1!important;transit
 <div class="toast-wrap" id="toastWrap"></div>
 
 <script>
-/* ============================================
-   SECUREDOCS BACKEND AUTH + PROFILE
-============================================ */
-var currentUser = null;
+/* ===== SecureDocs profile page (backend-connected) ===== */
 var csrfToken = "";
-var profile = {
-    first: "User", last: "", email: "", title: "Member", dept: "Operations", bio: "", phone: ""
-};
+var currentUser = null;
+var sessions = [
+    { id: 1, name: "This browser", meta: "Current session", current: true, icon: "▣" }
+];
 
 var ROLE_PAGES = {
-    admin:     ["overview","documents","search","assistant","users","roles","audit","settings","profile"],
-    executive: ["overview","documents","search","assistant","profile"],
-    visitor:   ["overview","documents","search"]
-};
-var PAGE_KEY = {
-    "dashboard":"overview","documents":"documents","search":"search","assistant":"assistant",
-    "users":"users","roles":"roles","audit":"audit","settings":"settings","profile":"profile"
+    admin:     ["dashboard","documents","search","assistant","users","roles","audit","settings","profile"],
+    executive: ["dashboard","documents","search","assistant","profile"],
+    visitor:   ["dashboard","documents","search"]
 };
 
-function api(url, options){
+/* Own helper, separate from any window.api the backend injects. */
+async function apiFetch(url, options) {
     options = options || {};
     options.credentials = "same-origin";
     options.cache = "no-store";
     options.headers = options.headers || {};
-    if(csrfToken && !options.headers["X-CSRF"] && !options.headers["x-csrf"]){
+    if (csrfToken && options.method && options.method !== "GET") {
         options.headers["X-CSRF"] = csrfToken;
     }
-    return fetch(url, options);
+    var res = await fetch(url, options);
+    var data = await res.json().catch(function () { return {}; });
+    if (res.status === 401) {
+        window.location.replace("/login.html");
+        throw new Error("Please sign in again.");
+    }
+    if (!res.ok) {
+        throw new Error(typeof data.detail === "string" ? data.detail : "Request failed (" + res.status + ")");
+    }
+    return data;
 }
 
-function initials(f, l){
-    return ((f||"").charAt(0) + ((l||"").charAt(0) || "")).toUpperCase() || "U";
+function initials(first, last) {
+    return (((first || "").charAt(0)) + ((last || "").charAt(0))).toUpperCase() || "U";
 }
 
-function roleTitle(role){
+function roleTitle(role) {
     return role === "admin" ? "Administrator" : role === "executive" ? "Executive" : "Visitor";
 }
 
-function applyNavigation(){
-    var allowed = ROLE_PAGES[currentUser.role] || ROLE_PAGES.visitor;
-    document.querySelectorAll(".nav a").forEach(function(link){
-        var href = (link.getAttribute("href") || "").replace(".html","");
-        var key = PAGE_KEY[href];
-        if(key && allowed.indexOf(key) === -1) link.style.display = "none";
+function setText(id, value) {
+    var el = document.getElementById(id);
+    if (el) el.textContent = value;
+}
+
+function setValue(id, value) {
+    var el = document.getElementById(id);
+    if (el) el.value = value || "";
+}
+
+function applyNavigation(role) {
+    var allowed = ROLE_PAGES[role] || ROLE_PAGES.visitor;
+    document.querySelectorAll(".nav a").forEach(function (link) {
+        var page = (link.getAttribute("href") || "").replace(".html", "");
+        if (!allowed.includes(page)) link.style.display = "none";
     });
 }
 
-function updateUI(){
-    var ini = initials(profile.first, profile.last);
-    document.getElementById("sidebarAvatar").textContent = ini;
-    document.getElementById("sidebarName").textContent = (profile.first + " " + profile.last).trim();
-    document.getElementById("sidebarRole").textContent = profile.title + " account";
-    document.getElementById("bigAvatar").innerHTML = ini + '<span class="online"></span>';
-    document.getElementById("heroName").textContent = (profile.first + " " + profile.last).trim();
-    document.getElementById("heroEmail").textContent = profile.email;
-    document.getElementById("heroRole").textContent = "★ " + profile.title;
+function showError(msg) {
+    toast(msg, "danger");
+    console.error("[profile]", msg);
 }
 
-function populateProfile(data){
-    var parts = (data.full_name || currentUser.full_name || "User").trim().split(/\s+/);
-    profile.first = parts[0] || "User";
-    profile.last = parts.slice(1).join(" ");
-    profile.email = data.email || currentUser.email || "";
-    profile.title = data.job_title || roleTitle(currentUser.role);
-    profile.dept = data.department || "Operations";
-    profile.bio = data.bio || "";
-    profile.phone = data.phone || "";
-
-    document.getElementById("fFirst").value = profile.first;
-    document.getElementById("fLast").value = profile.last;
-    document.getElementById("fEmail").value = profile.email;
-    document.getElementById("fTitle").value = profile.title;
-    document.getElementById("fDept").value = profile.dept;
-    document.getElementById("fBio").value = profile.bio;
-    updateUI();
-}
-
-async function loadProfile(){
-    try{
-        var meResponse = await fetch("/api/me", {credentials:"same-origin", cache:"no-store"});
-        if(!meResponse.ok){
-            window.location.replace("/login.html");
-            return;
-        }
-        currentUser = await meResponse.json();
+async function loadProfile() {
+    try {
+        currentUser = await apiFetch("/api/me");
         csrfToken = currentUser.csrf || "";
-        window.ME = currentUser;
-        window.CSRF = csrfToken;
 
-        applyNavigation();
+        applyNavigation(currentUser.role);
 
-        var profileResponse = await api("/api/profile");
-        var data = await profileResponse.json().catch(function(){ return {}; });
-        if(!profileResponse.ok){ throw new Error(data.detail || "Could not load profile"); }
-        populateProfile(data);
+        var p = await apiFetch("/api/profile");
 
-        var avatar = document.getElementById("sidebarAvatar");
-        if(avatar){
-            avatar.style.cursor = "pointer";
-            avatar.title = "Click to sign out";
-            avatar.addEventListener("click", function(){
-                if(confirm("Sign out of SecureDocs?")) logoutCurrentUser();
-            });
-        }
+        var fullName = (p.full_name || currentUser.full_name || currentUser.email.split("@")[0]).trim();
+        var parts = fullName.split(/\s+/);
+        var first = parts[0] || "";
+        var last = parts.slice(1).join(" ");
+        var title = p.job_title || roleTitle(currentUser.role);
+        var ini = initials(first, last);
+
+        setValue("fFirst", first);
+        setValue("fLast", last);
+        setValue("fEmail", p.email);
+        setValue("fTitle", title);
+        setValue("fBio", p.bio);
+        document.getElementById("fDept").value = p.department || "Operations";
+
+        setText("sidebarAvatar", ini);
+        setText("sidebarName", fullName);
+        setText("sidebarRole", roleTitle(currentUser.role) + " account");
+        document.getElementById("bigAvatar").innerHTML = ini + '<span class="online"></span>';
+        setText("heroName", fullName);
+        setText("heroEmail", p.email);
+        setText("heroRole", "★ " + roleTitle(currentUser.role));
+
         renderSessions();
-    }catch(error){
-        console.error("Profile load failed:", error);
-        toast(error && error.message ? error.message : "Could not load profile", "danger");
+    } catch (err) {
+        showError("Could not load profile: " + err.message);
+        setText("heroName", "Could not load profile");
     }
 }
 
-async function logoutCurrentUser(){
-    try { await api("/api/logout", {method:"POST"}); }
-    finally { window.location.replace("/login.html"); }
-}
-
-/* Sessions — visual demo list; authentication is handled by the server. */
-var sessions = [
-    { id:1, name:"Chrome · This device", meta:"Current session", current:true, icon:"▣" },
-    { id:2, name:"Safari · iPhone", meta:"Karachi, PK", current:false, icon:"▢" },
-    { id:3, name:"Edge · Windows", meta:"Lahore, PK", current:false, icon:"▢" }
-];
-
-function renderSessions(){
+function renderSessions() {
     var wrap = document.getElementById("sessionsWrap");
-    if(!wrap) return;
-    if(sessions.length === 0){
-        wrap.innerHTML = '<div style="color:#66708d;font-size:11px;text-align:center;padding:20px 0;">No active sessions.</div>';
-        return;
-    }
-    var html = "";
-    sessions.forEach(function(s){
-        html += '<div class="session"><div class="session-icon">' + s.icon + '</div>' +
+    wrap.innerHTML = sessions.map(function (s) {
+        return '<div class="session"><div class="session-icon">' + s.icon + '</div>' +
             '<div class="session-body"><div class="session-name">' + s.name + '</div>' +
             '<div class="session-meta">' + s.meta + '</div></div>' +
-            (s.current ? '<span class="current-tag">Current</span>' : '<button class="revoke-btn" onclick="revokeSession(' + s.id + ')">Revoke</button>') +
-            '</div>';
-    });
-    wrap.innerHTML = html;
+            '<span class="current-tag">Current</span></div>';
+    }).join("");
 }
 
-/* ============================================
-   SAVE PROFILE
-============================================ */
-async function saveProfile(){
+async function saveProfile() {
     var first = document.getElementById("fFirst").value.trim();
     var last = document.getElementById("fLast").value.trim();
-    var email = document.getElementById("fEmail").value.trim();
     var title = document.getElementById("fTitle").value.trim();
     var dept = document.getElementById("fDept").value;
     var bio = document.getElementById("fBio").value.trim();
 
-    if(!first){ toast("First name cannot be empty", "danger"); return; }
-    if(!email || !/^\S+@\S+\.\S+$/.test(email)){ toast("Please enter a valid email", "danger"); return; }
+    if (!first) { toast("First name cannot be empty", "danger"); return; }
 
     var btn = document.getElementById("saveBtn");
-    if(btn) btn.disabled = true;
-    try{
-        var response = await api("/api/profile", {
-            method:"PUT",
-            headers:{"Content-Type":"application/json"},
-            body:JSON.stringify({
-                full_name:(first + " " + last).trim(),
-                department:dept,
-                job_title:title || "Member",
-                phone:profile.phone || "",
-                bio:bio
+    btn.disabled = true;
+    try {
+        await apiFetch("/api/profile", {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                full_name: (first + " " + last).trim(),
+                department: dept,
+                job_title: title,
+                phone: "",
+                bio: bio
             })
         });
-        var data = await response.json().catch(function(){ return {}; });
-        if(!response.ok) throw new Error(data.detail || "Profile update failed");
-
-        profile.first = first;
-        profile.last = last;
-        profile.email = email;
-        profile.title = title || "Member";
-        profile.dept = dept;
-        profile.bio = bio;
-        updateUI();
-
-        if(btn){
-            btn.textContent = "✓ Saved";
-            btn.classList.add("saved");
-            setTimeout(function(){ btn.textContent = "Save changes"; btn.classList.remove("saved"); }, 1800);
-        }
+        await loadProfile();
+        btn.textContent = "✓ Saved";
+        btn.classList.add("saved");
+        setTimeout(function () { btn.textContent = "Save changes"; btn.classList.remove("saved"); }, 1800);
         toast("Profile updated successfully", "success");
-    }catch(error){
-        toast(error && error.message ? error.message : "Profile update failed", "danger");
-    }finally{
-        if(btn) btn.disabled = false;
+    } catch (err) {
+        showError("Save failed: " + err.message);
+    } finally {
+        btn.disabled = false;
     }
 }
 
-/* ============================================
-   SHOW / HIDE PASSWORD
-============================================ */
-function togglePass(id, el){
-    var input = document.getElementById(id);
-    if(input.type === "password"){ input.type = "text"; el.textContent = "🙈"; }
-    else { input.type = "password"; el.textContent = "👁"; }
+async function savePassword() {
+    var cur = document.getElementById("pCurrent").value;
+    var nw = document.getElementById("pNew").value;
+    var cf = document.getElementById("pConfirm").value;
+
+    if (!cur || !nw || !cf) { toast("Please fill all password fields", "danger"); return; }
+    if (nw.length < 8) { toast("New password must be at least 8 characters", "danger"); return; }
+    if (nw !== cf) { toast("New passwords do not match", "danger"); return; }
+    if (nw === cur) { toast("New password must be different from current", "danger"); return; }
+
+    var btn = document.getElementById("savePassBtn");
+    btn.disabled = true;
+    try {
+        await apiFetch("/api/profile/password", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ current_password: cur, new_password: nw })
+        });
+        ["pCurrent", "pNew", "pConfirm"].forEach(function (id) {
+            document.getElementById(id).value = "";
+        });
+        checkStrength();
+        toast("Password updated successfully", "success");
+    } catch (err) {
+        showError("Password change failed: " + err.message);
+    } finally {
+        btn.disabled = false;
+    }
 }
 
-/* ============================================
-   PASSWORD STRENGTH
-============================================ */
-function checkStrength(){
+function togglePass(id, el) {
+    var input = document.getElementById(id);
+    input.type = input.type === "password" ? "text" : "password";
+    el.textContent = input.type === "password" ? "👁" : "🙈";
+}
+
+function checkStrength() {
     var p = document.getElementById("pNew").value;
     var fill = document.getElementById("strengthFill");
     var text = document.getElementById("strengthText");
     var score = 0;
-    if(p.length >= 6) score++;
-    if(p.length >= 10) score++;
-    if(/[A-Z]/.test(p) && /[a-z]/.test(p)) score++;
-    if(/[0-9]/.test(p)) score++;
-    if(/[^A-Za-z0-9]/.test(p)) score++;
-    var pct=0, label="—", color="transparent";
-    if(p.length===0){ pct=0; label="—"; color="transparent"; }
-    else if(score<=1){ pct=25; label="Weak"; color="#ef4444"; }
-    else if(score===2){ pct=50; label="Fair"; color="#f59e0b"; }
-    else if(score===3){ pct=75; label="Good"; color="#4f8cff"; }
-    else { pct=100; label="Strong"; color="#22c55e"; }
-    fill.style.width=pct+"%";
-    fill.style.background="linear-gradient(90deg,"+color+","+color+")";
-    text.textContent=label;
-    text.style.color=color;
+    if (p.length >= 6) score++;
+    if (p.length >= 10) score++;
+    if (/[A-Z]/.test(p) && /[a-z]/.test(p)) score++;
+    if (/[0-9]/.test(p)) score++;
+    if (/[^A-Za-z0-9]/.test(p)) score++;
+
+    var pct = 0, label = "—", color = "transparent";
+    if (p.length === 0) { }
+    else if (score <= 1) { pct = 25;  label = "Weak";   color = "#ef4444"; }
+    else if (score === 2) { pct = 50;  label = "Fair";   color = "#f59e0b"; }
+    else if (score === 3) { pct = 75;  label = "Good";   color = "#4f8cff"; }
+    else { pct = 100; label = "Strong"; color = "#22c55e"; }
+
+    fill.style.width = pct + "%";
+    fill.style.background = color;
+    text.textContent = label;
+    text.style.color = color;
 }
 
-/* ============================================
-   SAVE PASSWORD
-============================================ */
-async function savePassword(){
-    var cur=document.getElementById("pCurrent").value;
-    var nw=document.getElementById("pNew").value;
-    var cf=document.getElementById("pConfirm").value;
-    if(!cur||!nw||!cf){toast("Please fill all password fields","danger");return;}
-    if(nw.length<8){toast("New password must be at least 8 characters","danger");return;}
-    if(nw!==cf){toast("New passwords do not match","danger");return;}
-    if(nw===cur){toast("New password must be different from current","danger");return;}
-    var btn=document.getElementById("savePassBtn");
-    if(btn) btn.disabled=true;
-    try{
-        var response=await api("/api/profile/password",{
-            method:"POST",
-            headers:{"Content-Type":"application/json"},
-            body:JSON.stringify({current_password:cur,new_password:nw})
-        });
-        var data=await response.json().catch(function(){return {};});
-        if(!response.ok) throw new Error(data.detail||"Password update failed");
-        document.getElementById("pCurrent").value="";
-        document.getElementById("pNew").value="";
-        document.getElementById("pConfirm").value="";
-        checkStrength();
-        if(btn){btn.textContent="✓ Password updated";btn.classList.add("saved");setTimeout(function(){btn.textContent="Update password";btn.classList.remove("saved");},2000);}
-        toast("Password updated successfully","success");
-    }catch(error){toast(error&&error.message?error.message:"Password update failed","danger");}
-    finally{if(btn)btn.disabled=false;}
+function openDelete()  { document.getElementById("deleteModal").classList.add("show"); }
+function closeDelete() { document.getElementById("deleteModal").classList.remove("show"); }
+function confirmDelete() {
+    closeDelete();
+    toast("Account deletion is not connected to the backend yet.", "danger");
 }
 
-function revokeSession(id){
-    var s=sessions.find(function(x){return x.id===id;});
-    sessions=sessions.filter(function(x){return x.id!==id;});
-    renderSessions();
-    toast("Session revoked: "+(s?s.name:""),"danger");
+function toast(msg, type) {
+    var wrap = document.getElementById("toastWrap");
+    var el = document.createElement("div");
+    el.className = "toast " + (type || "");
+    el.textContent = msg;
+    wrap.appendChild(el);
+    setTimeout(function () {
+        el.style.transition = "opacity .3s ease, transform .3s ease";
+        el.style.opacity = "0";
+        el.style.transform = "translateX(30px)";
+        setTimeout(function () { el.remove(); }, 300);
+    }, 3200);
 }
 
-function openDelete(){document.getElementById("deleteModal").classList.add("show");}
-function closeDelete(){document.getElementById("deleteModal").classList.remove("show");}
-function confirmDelete(){closeDelete();toast("Account deletion requires email confirmation (demo)","danger");}
-
-function toast(msg,type){
-    var wrap=document.getElementById("toastWrap"), el=document.createElement("div");
-    el.className="toast "+(type||""); el.textContent=msg; wrap.appendChild(el);
-    setTimeout(function(){el.style.transition="opacity .3s ease, transform .3s ease";el.style.opacity="0";el.style.transform="translateX(30px)";setTimeout(function(){el.remove();},300);},2400);
-}
-
-/* INIT */
-loadProfile();
-document.addEventListener("keydown",function(e){if(e.key==="Escape")closeDelete();});
-document.getElementById("deleteModal").addEventListener("click",function(e){if(e.target.id==="deleteModal")closeDelete();});
-document.querySelectorAll(".field input").forEach(function(inp){
-    inp.addEventListener("keydown",function(e){if(e.key==="Enter"&&inp.id.indexOf("p")!==0){e.preventDefault();saveProfile();}});
+document.getElementById("saveBtn").addEventListener("click", saveProfile);
+document.getElementById("savePassBtn").addEventListener("click", savePassword);
+document.getElementById("deleteModal").addEventListener("click", function (e) {
+    if (e.target.id === "deleteModal") closeDelete();
 });
+document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") closeDelete();
+});
+
+loadProfile();
+</script>
 </script>
 </body>
 </html>
