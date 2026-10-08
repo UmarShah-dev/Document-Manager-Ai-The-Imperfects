@@ -578,28 +578,19 @@ animation-duration:.01ms!important;animation-iteration-count:1!important;transit
 <!-- TOASTS -->
 <div class="toast-wrap" id="toastWrap"></div>
 
-<script src="auth.js"></script>
-<script>
-SecureDocsAuth.guard(null);
-</script>
 <script>
 /* ============================================
    AUTH GUARD
 ============================================ */
 var currentUser = null;
 try {
-    currentUser = SecureDocsAuth.getCachedUser();
+    currentUser = JSON.parse(localStorage.getItem("auth_user") || "null");
 } catch(e){}
 
 if(!currentUser){
     window.location.href = "login.html";
     throw new Error("Not authenticated — redirecting to login");
 }
-
-/* Server session is authoritative; localStorage is only a UI cache. */
-SecureDocsAuth.init().catch(function(error){
-    if(error && error.message === "AUTH_REQUIRED") window.location.replace("login.html");
-});
 
 var ROLE_PAGES = {
     admin:     ["overview","documents","search","assistant","users","roles","audit","settings","profile"],
@@ -646,8 +637,13 @@ var sessions = [
     { id:3, name:"Edge · Windows",        meta:"Lahore, PK",      current:false, icon:"▢" }
 ];
 
-/* Password changes are handled by the server; no password is stored in browser storage. */
-var storedPass = null;
+/* Stored password */
+var storedPass = localStorage.getItem("user_password_" + currentUser.email);
+if(!storedPass){
+    storedPass = currentUser.role === "admin" ? "admin123"
+              : currentUser.role === "executive" ? "exec123"
+              : "visit123";
+}
 
 /* ============================================
    HELPERS
@@ -669,7 +665,7 @@ function updateUI(){
     /* save back to auth_user */
     currentUser.name = profile.first + " " + profile.last;
     currentUser.initials = ini;
-    SecureDocsAuth.setCachedUser(currentUser);
+    localStorage.setItem("auth_user", JSON.stringify(currentUser));
 }
 
 function renderSessions(){
@@ -788,41 +784,28 @@ function savePassword(){
     var cf  = document.getElementById("pConfirm").value;
 
     if(!cur || !nw || !cf){ toast("Please fill all password fields", "danger"); return; }
-    if(nw.length < 8){ toast("New password must be at least 8 characters", "danger"); return; }
+    if(cur !== storedPass){ toast("Current password is incorrect", "danger"); return; }
+    if(nw.length < 6){ toast("New password must be at least 6 characters", "danger"); return; }
     if(nw !== cf){ toast("New passwords do not match", "danger"); return; }
     if(nw === cur){ toast("New password must be different from current", "danger"); return; }
 
-    var btn = document.getElementById("savePassBtn");
-    if(btn) btn.disabled = true;
+    storedPass = nw;
+    localStorage.setItem("user_password_" + currentUser.email, nw);
 
-    SecureDocsAuth.request("/api/profile/password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ current_password: cur, new_password: nw })
-    }).then(function(response){
-        return response.json().catch(function(){ return {}; }).then(function(data){
-            if(!response.ok){ throw new Error(data.detail || "Password update failed"); }
-            return data;
-        });
-    }).then(function(){
-        document.getElementById("pCurrent").value = "";
-        document.getElementById("pNew").value = "";
-        document.getElementById("pConfirm").value = "";
-        checkStrength();
-        if(btn){
-            btn.textContent = "✓ Password updated";
-            btn.classList.add("saved");
-            setTimeout(function(){
-                btn.textContent = "Update password";
-                btn.classList.remove("saved");
-            }, 2000);
-        }
-        toast("Password updated successfully", "success");
-    }).catch(function(error){
-        toast(error && error.message ? error.message : "Password update failed", "danger");
-    }).finally(function(){
-        if(btn) btn.disabled = false;
-    });
+    document.getElementById("pCurrent").value = "";
+    document.getElementById("pNew").value = "";
+    document.getElementById("pConfirm").value = "";
+    checkStrength();
+
+    var btn = document.getElementById("savePassBtn");
+    btn.textContent = "✓ Password updated";
+    btn.classList.add("saved");
+    setTimeout(function(){
+        btn.textContent = "Update password";
+        btn.classList.remove("saved");
+    }, 2000);
+
+    toast("Password updated successfully", "success");
 }
 
 /* ============================================
@@ -877,7 +860,8 @@ document.getElementById("sidebarAvatar").style.cursor = "pointer";
 document.getElementById("sidebarAvatar").title = "Click to sign out";
 document.getElementById("sidebarAvatar").addEventListener("click", function(){
     if(confirm("Sign out of SecureDocs?")){
-        SecureDocsAuth.logout();
+        localStorage.removeItem("auth_user");
+        window.location.href = "login.html";
     }
 });
 
