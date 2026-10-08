@@ -91,6 +91,7 @@ box-shadow:0 0 20px rgba(79,140,255,.18);
 .user-info strong{display:block;font-size:12px}
 .user-info span{color:#626b87;font-size:10px}
 
+/* MAIN */
 .main{
 margin-left:255px;width:calc(100% - 255px);
 padding:40px 48px;animation:pageIn .7s ease both;
@@ -119,6 +120,7 @@ transform:translateY(-3px);
 box-shadow:0 15px 35px rgba(79,140,255,.28);
 }
 
+/* STATS */
 .stats{
 display:grid;grid-template-columns:repeat(4,1fr);
 gap:16px;margin-bottom:24px;
@@ -138,6 +140,7 @@ background:var(--blue);filter:blur(50px);opacity:.14;
 .stat span{color:var(--muted);font-size:11px}
 .stat h2{font-size:26px;margin-top:10px;letter-spacing:-1px}
 
+/* TOOLBAR */
 .toolbar{
 display:flex;justify-content:space-between;align-items:center;
 margin-bottom:14px;gap:14px;
@@ -155,14 +158,14 @@ border-color:rgba(79,140,255,.45);background:rgba(79,140,255,.045);
 box-shadow:0 0 0 3px rgba(79,140,255,.08);
 }
 
+/* TABLE */
 .table-wrap{
 background:linear-gradient(145deg,rgba(17,24,47,.82),rgba(8,12,27,.76));
 border:1px solid var(--border);border-radius:18px;overflow:hidden;
 backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
 box-shadow:0 20px 60px rgba(0,0,0,.18);
 }
-.table-scroll{overflow-x:auto}
-table{width:100%;border-collapse:collapse;min-width:800px}
+table{width:100%;border-collapse:collapse}
 thead{background:rgba(255,255,255,.02)}
 th{
 text-align:left;padding:14px 20px;font-size:10px;font-weight:700;
@@ -197,22 +200,6 @@ border:1px solid;
 .role-analyst{background:rgba(14,165,233,.13);color:#7dd3fc;border-color:rgba(14,165,233,.28)}
 .role-viewer{background:rgba(148,163,184,.10);color:#cbd5e1;border-color:rgba(148,163,184,.22)}
 
-.pass-cell{display:flex;align-items:center;gap:8px}
-.pass-text{
-font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
-font-size:11px;color:#cbd2e5;letter-spacing:1px;
-max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
-}
-.pass-text.hidden{letter-spacing:2px;color:#93b4ff}
-.eye-btn{
-width:26px;height:26px;border-radius:7px;display:grid;place-items:center;
-cursor:pointer;font-size:11px;font-family:inherit;
-background:rgba(255,255,255,.04);border:1px solid var(--border);
-color:#8993ae;flex:0 0 26px;
-transition:all .2s ease;
-}
-.eye-btn:hover{background:rgba(79,140,255,.10);color:#93b4ff;border-color:rgba(79,140,255,.28)}
-
 .status-cell{display:flex;align-items:center;gap:7px;font-size:11px;color:#a7b2c8}
 .status-dot{width:7px;height:7px;border-radius:50%}
 .dot-active{background:#22c55e;box-shadow:0 0 10px rgba(34,197,94,.5)}
@@ -240,6 +227,7 @@ border-color:rgba(239,68,68,.28);
 padding:50px 20px;text-align:center;color:#66708d;font-size:12px;
 }
 
+/* MODAL */
 .modal-overlay{
 position:fixed;inset:0;background:rgba(3,6,18,.72);
 backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
@@ -255,7 +243,6 @@ linear-gradient(145deg,rgba(17,24,47,.96),rgba(8,12,27,.96));
 border:1px solid var(--border);
 box-shadow:0 40px 110px rgba(0,0,0,.55);
 animation:modalIn .35s cubic-bezier(.2,.8,.2,1);
-max-height:92vh;overflow-y:auto;
 }
 .modal-head{
 display:flex;justify-content:space-between;align-items:flex-start;
@@ -290,26 +277,6 @@ box-shadow:0 0 0 3px rgba(79,140,255,.08);
 }
 .field select option{background:#0d1226}
 
-.password-wrap{position:relative}
-.password-wrap input{padding-right:46px}
-.toggle-eye{
-position:absolute;right:8px;top:50%;transform:translateY(-50%);
-width:32px;height:32px;border-radius:8px;
-display:grid;place-items:center;cursor:pointer;
-background:rgba(255,255,255,.04);border:1px solid var(--border);
-color:#8993ae;font-size:13px;
-transition:all .2s ease;
-}
-.toggle-eye:hover{background:rgba(79,140,255,.10);color:#93b4ff;border-color:rgba(79,140,255,.28)}
-.gen-btn{
-margin-top:8px;padding:7px 12px;border-radius:8px;font-size:10px;
-font-weight:600;cursor:pointer;font-family:inherit;
-background:rgba(79,140,255,.10);color:#93b4ff;
-border:1px solid rgba(79,140,255,.28);
-transition:all .2s ease;
-}
-.gen-btn:hover{background:rgba(79,140,255,.18)}
-
 .modal-actions{
 display:flex;gap:10px;margin-top:24px;
 justify-content:flex-end;
@@ -339,6 +306,7 @@ border-color:rgba(239,68,68,.28);
 }
 .btn-danger:hover{background:rgba(239,68,68,.20)}
 
+/* TOAST */
 .toast-wrap{
 position:fixed;bottom:24px;right:24px;z-index:200;
 display:flex;flex-direction:column;gap:10px;
@@ -360,6 +328,7 @@ background:linear-gradient(180deg,var(--blue),var(--violet));
 .toast.success::before{background:linear-gradient(180deg,#22c55e,#10b981)}
 .toast.danger::before{background:linear-gradient(180deg,#ef4444,#f59e0b)}
 
+/* ANIMATIONS */
 @keyframes pageIn{
 from{opacity:0;transform:translateY(14px)}
 to{opacity:1;transform:translateY(0)}
@@ -374,6 +343,7 @@ from{opacity:0;transform:translateX(30px)}
 to{opacity:1;transform:translateX(0)}
 }
 
+/* RESPONSIVE */
 @media(max-width:1100px){.stats{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:900px){
 .sidebar{width:78px;padding:25px 10px}
@@ -412,11 +382,14 @@ transition-duration:.01ms!important;
 
 <!-- SIDEBAR -->
 <aside class="sidebar">
+
     <div class="brand">
         <div class="brand-mark">S</div>
         <div class="brand-name">SecureDocs</div>
     </div>
+
     <div class="nav-label">Workspace</div>
+
     <nav class="nav">
         <a href="dashboard.html">◉ <span>Overview</span></a>
         <a href="documents.html">▣ <span>Documents</span></a>
@@ -428,15 +401,17 @@ transition-duration:.01ms!important;
         <a href="settings.html">⚙ <span>Settings</span> <em class="badge">ADMIN</em></a>
         <a href="profile.html">◐ <span>Profile</span></a>
     </nav>
+
     <div class="sidebar-bottom">
         <div class="user-mini">
-            <div class="avatar" id="sidebarAvatar">WS</div>
+            <div class="avatar">WS</div>
             <div class="user-info">
-                <strong id="sidebarName">Wasif Siddiqui</strong>
-                <span id="sidebarRole">Admin account</span>
+                <strong>Wasif Siddiqui</strong>
+                <span>Secure account</span>
             </div>
         </div>
     </div>
+
 </aside>
 
 <!-- MAIN -->
@@ -446,39 +421,39 @@ transition-duration:.01ms!important;
         <div class="heading">
             <small>ACCESS CONTROL</small>
             <h1>Users.</h1>
-            <p>Manage workspace members, roles, passwords and access.</p>
+            <p>Manage workspace members, roles and access to documents.</p>
         </div>
         <button class="primary-btn" onclick="openInvite()">+ Invite user</button>
     </div>
 
+    <!-- STATS -->
     <section class="stats">
-        <div class="stat"><span>Total users</span><h2 id="statTotal">0</h2></div>
-        <div class="stat"><span>Active</span><h2 id="statActive">0</h2></div>
-        <div class="stat"><span>Admins</span><h2 id="statAdmins">0</h2></div>
+        <div class="stat"><span>Total users</span><h2 id="statTotal">6</h2></div>
+        <div class="stat"><span>Active</span><h2 id="statActive">4</h2></div>
+        <div class="stat"><span>Admins</span><h2 id="statAdmins">1</h2></div>
         <div class="stat"><span>Pending invites</span><h2 id="statPending">0</h2></div>
     </section>
 
+    <!-- TOOLBAR -->
     <div class="toolbar">
         <h3>All users</h3>
         <input type="search" class="search" id="userSearch" placeholder="Search users...">
     </div>
 
+    <!-- TABLE -->
     <div class="table-wrap">
-        <div class="table-scroll">
-            <table>
-                <thead>
-                    <tr>
-                        <th>User</th>
-                        <th>Role</th>
-                        <th>Password</th>
-                        <th>Status</th>
-                        <th>Last active</th>
-                        <th style="text-align:right">Actions</th>
-                    </tr>
-                </thead>
-                <tbody id="usersBody"></tbody>
-            </table>
-        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Last active</th>
+                    <th style="text-align:right">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="usersBody"></tbody>
+        </table>
     </div>
 
 </main>
@@ -498,7 +473,7 @@ transition-duration:.01ms!important;
 
         <div class="field">
             <label>Full name</label>
-            <input type="text" id="fName" placeholder="e.g. Jane Cooper" maxlength="50">
+            <input type="text" id="fName" placeholder="e.g. Jane Cooper">
         </div>
 
         <div class="field">
@@ -512,17 +487,8 @@ transition-duration:.01ms!important;
                 <option value="admin">Admin</option>
                 <option value="exec" selected>Executive</option>
                 <option value="analyst">Analyst</option>
-                <option value="viewer">Viewer (Visitor)</option>
+                <option value="viewer">Viewer</option>
             </select>
-        </div>
-
-        <div class="field">
-            <label id="passLabel">Set password</label>
-            <div class="password-wrap">
-                <input type="password" id="fPassword" placeholder="Enter password" autocomplete="new-password">
-                <span class="toggle-eye" onclick="togglePass('fPassword', this)">👁</span>
-            </div>
-            <button type="button" class="gen-btn" onclick="generatePassword()">🎲 Generate random password</button>
         </div>
 
         <div class="modal-actions">
@@ -543,7 +509,7 @@ transition-duration:.01ms!important;
             <button class="close-x" onclick="closeDelete()">✕</button>
         </div>
         <p style="color:#8b94ae;font-size:12px;line-height:1.7;">
-            This action cannot be undone. The user will lose access to all workspace documents immediately and will no longer be able to log in.
+            This action cannot be undone. The user will lose access to all workspace documents immediately.
         </p>
         <div class="modal-actions">
             <button class="btn btn-ghost" onclick="closeDelete()">Cancel</button>
@@ -552,174 +518,138 @@ transition-duration:.01ms!important;
     </div>
 </div>
 
+<!-- TOASTS -->
 <div class="toast-wrap" id="toastWrap"></div>
 
 <script>
-/* ============================================
-   AUTH GUARD (IIFE)
-============================================ */
-(function(){
-
-    var currentUser = null;
+/* =========================
+   BACKEND AUTH GUARD
+========================== */
+(async function(){
     try {
-        currentUser = JSON.parse(localStorage.getItem("auth_user") || "null");
-    } catch(e){}
-
-    if(!currentUser){
-        window.location.href = "login.html";
-        return;
-    }
-
-    /* Only admin can access this page */
-    if(currentUser.role !== "admin"){
-        window.location.href = "dashboard.html";
-        return;
-    }
-
-    /* Sidebar user info */
-    var sName = document.getElementById("sidebarName");
-    var sRole = document.getElementById("sidebarRole");
-    var sAvatar = document.getElementById("sidebarAvatar");
-    if(sName) sName.textContent = currentUser.name;
-    if(sAvatar) sAvatar.textContent = currentUser.initials;
-    if(sRole){
-        var rl = currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1);
-        sRole.textContent = rl + " account";
-    }
-    if(sAvatar){
-        sAvatar.style.cursor = "pointer";
-        sAvatar.title = "Click to sign out";
-        sAvatar.addEventListener("click", function(){
-            if(confirm("Sign out of SecureDocs?")){
-                localStorage.removeItem("auth_user");
-                window.location.href = "login.html";
-            }
+        const response = await fetch("/api/me", {
+            credentials: "same-origin",
+            cache: "no-store"
         });
+
+        if(!response.ok){
+            window.location.replace("/login.html");
+            return;
+        }
+
+        const me = await response.json();
+        if(String(me.role || "").toLowerCase() !== "admin"){
+            window.location.replace("/dashboard.html");
+            return;
+        }
+
+        window.ME = me;
+        window.CSRF = me.csrf || "";
+
+        const displayName = me.full_name || me.name || me.email || "Admin";
+        const initialsText = displayName.split(/\s+/).filter(Boolean).slice(0,2).map(function(part){
+            return part.charAt(0);
+        }).join("").toUpperCase();
+
+        const sName = document.getElementById("sidebarName");
+        const sRole = document.getElementById("sidebarRole");
+        const sAvatar = document.getElementById("sidebarAvatar");
+
+        if(sName) sName.textContent = displayName;
+        if(sAvatar) sAvatar.textContent = initialsText || "A";
+        if(sRole) sRole.textContent = "Admin account";
+
+        if(sAvatar){
+            sAvatar.style.cursor = "pointer";
+            sAvatar.title = "Click to sign out";
+            sAvatar.addEventListener("click", async function(){
+                if(!confirm("Sign out of SecureDocs?")) return;
+                try {
+                    await fetch("/api/logout", {
+                        method: "POST",
+                        credentials: "same-origin",
+                        headers: {"X-CSRF": window.CSRF || ""}
+                    });
+                } finally {
+                    window.location.replace("/login.html");
+                }
+            });
+        }
+    } catch(e){
+        window.location.replace("/login.html");
     }
 })();
 
-
-/* ============================================
-   STORAGE
-============================================ */
-var STORAGE_KEY = "securedocs_users";
-
-/* Default users (agar localStorage empty ho) */
-var DEFAULT_USERS = [
-    { id:1, name:"Sarah Connor",   email:"admin@securedocs.com",     password:"admin123", role:"admin",   status:"active", last:"just now",       color:"#8b5cf6,#ec4899" },
-    { id:2, name:"John Mercer",    email:"executive@securedocs.com", password:"exec123",  role:"exec",    status:"active", last:"1 hour ago",     color:"#0ea5e9,#2563eb" },
-    { id:3, name:"Guest User",     email:"visitor@securedocs.com",   password:"visit123", role:"viewer",  status:"idle",   last:"Yesterday",      color:"#6366f1,#8b5cf6" }
+/* =========================
+   DATA
+========================== */
+let users = [
+    { id:1, name:"Wasif Siddiqui", email:"wasif@company.com", role:"admin", status:"active", last:"2 minutes ago", color:"#1d4ed8,#7c3aed" },
+    { id:2, name:"John Mercer", email:"john@company.com", role:"exec", status:"active", last:"1 hour ago", color:"#0ea5e9,#2563eb" },
+    { id:3, name:"Amelia Rivera", email:"amelia@company.com", role:"analyst", status:"idle", last:"Yesterday", color:"#8b5cf6,#ec4899" },
+    { id:4, name:"David Kim", email:"david@company.com", role:"viewer", status:"active", last:"3 hours ago", color:"#f59e0b,#ef4444" },
+    { id:5, name:"Nadia Patel", email:"nadia@company.com", role:"analyst", status:"offline", last:"2 days ago", color:"#10b981,#0ea5e9" },
+    { id:6, name:"Liam Turner", email:"liam@company.com", role:"viewer", status:"active", last:"30 minutes ago", color:"#6366f1,#8b5cf6" }
 ];
 
-function loadUsers(){
-    try {
-        var raw = localStorage.getItem(STORAGE_KEY);
-        if(raw){
-            var parsed = JSON.parse(raw);
-            if(Array.isArray(parsed) && parsed.length > 0){
-                return parsed;
-            }
-        }
-    } catch(e){}
-    /* Save defaults on first load */
-    try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(DEFAULT_USERS));
-    } catch(e){}
-    return DEFAULT_USERS.slice();
-}
+let nextId = 7;
+let editingId = null;
+let deletingId = null;
 
-function saveUsers(list){
-    try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
-        return true;
-    } catch(e){
-        toast("Storage full", "danger");
-        return false;
-    }
-}
-
-var users = loadUsers();
-var nextId = users.reduce(function(m, u){ return Math.max(m, u.id || 0); }, 0) + 1;
-var editingId = null;
-var deletingId = null;
-
-/* show/hide passwords per user id */
-var visiblePasswords = {};
-
-/* ============================================
+/* =========================
    HELPERS
-============================================ */
+========================== */
 function initials(name){
-    return (name || "?").split(" ").map(function(n){ return n[0] || ""; }).slice(0,2).join("").toUpperCase();
+    return name.split(" ").map(n => n[0]).slice(0,2).join("").toUpperCase();
 }
 
 function roleLabel(role){
-    return { admin:"Admin", exec:"Executive", executive:"Executive", analyst:"Analyst", viewer:"Visitor" }[role] || role;
+    return { admin:"Admin", exec:"Executive", analyst:"Analyst", viewer:"Viewer" }[role] || role;
 }
 
 function roleClass(role){
-    return {
-        admin:"role-admin", exec:"role-exec", executive:"role-exec",
-        analyst:"role-analyst", viewer:"role-viewer"
-    }[role] || "";
+    return { admin:"role-admin", exec:"role-exec", analyst:"role-analyst", viewer:"role-viewer" }[role] || "";
 }
 
-function statusLabel(s){
-    return { active:"Active", idle:"Idle", offline:"Offline" }[s] || s;
+function statusLabel(status){
+    return { active:"Active", idle:"Idle", offline:"Offline" }[status] || status;
 }
 
-function statusClass(s){
-    return { active:"dot-active", idle:"dot-idle", offline:"dot-off" }[s] || "dot-off";
+function statusClass(status){
+    return { active:"dot-active", idle:"dot-idle", offline:"dot-off" }[status] || "dot-off";
 }
 
-function escapeHtml(s){
-    return String(s || "").replace(/[&<>"']/g, function(c){
-        return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
-    });
-}
-
-/* ============================================
+/* =========================
    RENDER
-============================================ */
+========================== */
 function render(){
-    var tbody = document.getElementById("usersBody");
+    const tbody = document.getElementById("usersBody");
 
     if(users.length === 0){
-        tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state">No users found. Click "+ Invite user" to add one.</div></td></tr>';
+        tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state">No users found. Click "+ Invite user" to add one.</div></td></tr>`;
     } else {
-        tbody.innerHTML = users.map(function(u){
-            var pwd = u.password || "—";
-            var visible = !!visiblePasswords[u.id];
-            var shownPwd = visible ? escapeHtml(pwd) : "•".repeat(Math.min((pwd || "").length || 6, 12));
-            var eyeIcon = visible ? "🙈" : "👁";
-
-            return '<tr data-id="' + u.id + '">' +
-                '<td>' +
-                    '<div class="user-cell">' +
-                        '<div class="user-avatar" style="background:linear-gradient(135deg,' + (u.color || "#1d4ed8,#7c3aed") + ')">' + initials(u.name) + '</div>' +
-                        '<div>' +
-                            '<div class="user-name">' + escapeHtml(u.name) + '</div>' +
-                            '<div class="user-email">' + escapeHtml(u.email) + '</div>' +
-                        '</div>' +
-                    '</div>' +
-                '</td>' +
-                '<td><span class="role-badge ' + roleClass(u.role) + '">' + roleLabel(u.role) + '</span></td>' +
-                '<td>' +
-                    '<div class="pass-cell">' +
-                        '<span class="pass-text ' + (visible ? "" : "hidden") + '">' + shownPwd + '</span>' +
-                        '<button class="eye-btn" onclick="toggleRowPass(' + u.id + ')" title="' + (visible ? "Hide" : "Show") + ' password">' + eyeIcon + '</button>' +
-                    '</div>' +
-                '</td>' +
-                '<td><div class="status-cell"><span class="status-dot ' + statusClass(u.status) + '"></span>' + statusLabel(u.status) + '</div></td>' +
-                '<td>' + escapeHtml(u.last || "—") + '</td>' +
-                '<td>' +
-                    '<div class="actions">' +
-                        '<button class="icon-btn" title="Edit" onclick="openEdit(' + u.id + ')">✎</button>' +
-                        '<button class="icon-btn delete" title="Delete" onclick="openDelete(' + u.id + ')">🗑</button>' +
-                    '</div>' +
-                '</td>' +
-            '</tr>';
-        }).join("");
+        tbody.innerHTML = users.map(u => `
+            <tr data-id="${u.id}">
+                <td>
+                    <div class="user-cell">
+                        <div class="user-avatar" style="background:linear-gradient(135deg,${u.color})">${initials(u.name)}</div>
+                        <div>
+                            <div class="user-name">${u.name}</div>
+                            <div class="user-email">${u.email}</div>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="role-badge ${roleClass(u.role)}">${roleLabel(u.role)}</span></td>
+                <td><div class="status-cell"><span class="status-dot ${statusClass(u.status)}"></span>${statusLabel(u.status)}</div></td>
+                <td>${u.last}</td>
+                <td>
+                    <div class="actions">
+                        <button class="icon-btn" title="Edit" onclick="openEdit(${u.id})">✎</button>
+                        <button class="icon-btn delete" title="Delete" onclick="openDelete(${u.id})">🗑</button>
+                    </div>
+                </td>
+            </tr>
+        `).join("");
     }
 
     updateStats();
@@ -728,62 +658,29 @@ function render(){
 
 function updateStats(){
     document.getElementById("statTotal").textContent = users.length;
-    document.getElementById("statActive").textContent = users.filter(function(u){ return u.status === "active"; }).length;
-    document.getElementById("statAdmins").textContent = users.filter(function(u){ return u.role === "admin"; }).length;
+    document.getElementById("statActive").textContent = users.filter(u => u.status === "active").length;
+    document.getElementById("statAdmins").textContent = users.filter(u => u.role === "admin").length;
     document.getElementById("statPending").textContent = 0;
 }
 
-/* ============================================
-   TOGGLE PASSWORD
-============================================ */
-function toggleRowPass(id){
-    visiblePasswords[id] = !visiblePasswords[id];
-    render();
-}
-
-function togglePass(inputId, el){
-    var input = document.getElementById(inputId);
-    if(input.type === "password"){
-        input.type = "text";
-        el.textContent = "🙈";
-    } else {
-        input.type = "password";
-        el.textContent = "👁";
-    }
-}
-
-function generatePassword(){
-    var chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789!@#$%";
-    var pwd = "";
-    for(var i = 0; i < 10; i++){
-        pwd += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    var input = document.getElementById("fPassword");
-    input.value = pwd;
-    input.type = "text";
-    var eye = input.parentNode.querySelector(".toggle-eye");
-    if(eye) eye.textContent = "🙈";
-    toast("Random password generated", "success");
-}
-
-/* ============================================
+/* =========================
    SEARCH
-============================================ */
-var searchInput = document.getElementById("userSearch");
+========================== */
+const searchInput = document.getElementById("userSearch");
 searchInput.addEventListener("input", applySearch);
 
 function applySearch(){
-    var q = searchInput.value.toLowerCase().trim();
-    document.querySelectorAll("#usersBody tr").forEach(function(tr){
-        if(!tr.dataset.id) return;
-        var match = tr.textContent.toLowerCase().indexOf(q) !== -1;
+    const q = searchInput.value.toLowerCase().trim();
+    document.querySelectorAll("#usersBody tr").forEach(tr => {
+        if(!tr.dataset.id){ return; }
+        const match = tr.textContent.toLowerCase().includes(q);
         tr.style.display = match ? "" : "none";
     });
 }
 
-/* ============================================
-   MODALS
-============================================ */
+/* =========================
+   INVITE MODAL
+========================== */
 function openInvite(){
     editingId = null;
     document.getElementById("modalTitle").textContent = "Invite user";
@@ -792,112 +689,81 @@ function openInvite(){
     document.getElementById("fName").value = "";
     document.getElementById("fEmail").value = "";
     document.getElementById("fRole").value = "exec";
-    document.getElementById("fPassword").value = "";
-    document.getElementById("fPassword").type = "password";
-    var eye = document.getElementById("fPassword").parentNode.querySelector(".toggle-eye");
-    if(eye) eye.textContent = "👁";
-    document.getElementById("passLabel").textContent = "Set password";
     document.getElementById("userModal").classList.add("show");
-    setTimeout(function(){ document.getElementById("fName").focus(); }, 100);
+    setTimeout(() => document.getElementById("fName").focus(), 100);
 }
 
+/* =========================
+   EDIT MODAL
+========================== */
 function openEdit(id){
-    var u = users.find(function(x){ return x.id === id; });
+    const u = users.find(x => x.id === id);
     if(!u) return;
 
     editingId = id;
     document.getElementById("modalTitle").textContent = "Edit user";
-    document.getElementById("modalDesc").textContent = "Update user information, role and password.";
+    document.getElementById("modalDesc").textContent = "Update user information and role.";
     document.getElementById("modalSubmit").textContent = "Save changes";
     document.getElementById("fName").value = u.name;
     document.getElementById("fEmail").value = u.email;
     document.getElementById("fRole").value = u.role;
-    document.getElementById("fPassword").value = u.password || "";
-    document.getElementById("fPassword").type = "password";
-    var eye = document.getElementById("fPassword").parentNode.querySelector(".toggle-eye");
-    if(eye) eye.textContent = "👁";
-    document.getElementById("passLabel").textContent = "Password (change if needed)";
     document.getElementById("userModal").classList.add("show");
-    setTimeout(function(){ document.getElementById("fName").focus(); }, 100);
+    setTimeout(() => document.getElementById("fName").focus(), 100);
 }
 
+/* =========================
+   CLOSE MODAL
+========================== */
 function closeModal(){
     document.getElementById("userModal").classList.remove("show");
     editingId = null;
 }
 
-/* ============================================
-   SUBMIT
-============================================ */
+/* =========================
+   SUBMIT MODAL
+========================== */
 function submitModal(){
-    var name = document.getElementById("fName").value.trim();
-    var email = document.getElementById("fEmail").value.trim().toLowerCase();
-    var role = document.getElementById("fRole").value;
-    var password = document.getElementById("fPassword").value.trim();
+    const name = document.getElementById("fName").value.trim();
+    const email = document.getElementById("fEmail").value.trim();
+    const role = document.getElementById("fRole").value;
 
     if(!name){ toast("Please enter a name", "danger"); return; }
     if(!email || !/^\S+@\S+\.\S+$/.test(email)){ toast("Please enter a valid email", "danger"); return; }
-    if(password.length < 4){ toast("Password must be at least 4 characters", "danger"); return; }
-
-    /* duplicate email check */
-    var dup = users.some(function(u){
-        return u.email.toLowerCase() === email && u.id !== editingId;
-    });
-    if(dup){ toast("A user with this email already exists", "danger"); return; }
 
     if(editingId){
-        var u = users.find(function(x){ return x.id === editingId; });
-        var oldEmail = u.email;
+        /* UPDATE */
+        const u = users.find(x => x.id === editingId);
         u.name = name;
         u.email = email;
         u.role = role;
-        u.password = password;
-
-        /* migrate stored password if email changed */
-        if(oldEmail !== email){
-            try {
-                localStorage.removeItem("user_password_" + oldEmail);
-            } catch(e){}
-        }
-        try {
-            localStorage.setItem("user_password_" + email, password);
-        } catch(e){}
-
         toast("User updated successfully", "success");
     } else {
-        var colors = ["#1d4ed8,#7c3aed","#0ea5e9,#2563eb","#8b5cf6,#ec4899",
-                      "#f59e0b,#ef4444","#10b981,#0ea5e9","#6366f1,#8b5cf6"];
+        /* ADD */
+        const colors = ["#1d4ed8,#7c3aed","#0ea5e9,#2563eb","#8b5cf6,#ec4899","#f59e0b,#ef4444","#10b981,#0ea5e9","#6366f1,#8b5cf6"];
         users.push({
             id: nextId++,
             name: name,
             email: email,
-            password: password,
             role: role,
             status: "idle",
             last: "Invited · just now",
             color: colors[users.length % colors.length]
         });
-
-        try {
-            localStorage.setItem("user_password_" + email, password);
-        } catch(e){}
-
         toast("Invitation sent to " + email, "success");
     }
 
-    saveUsers(users);
     closeModal();
     render();
 }
 
-/* ============================================
+/* =========================
    DELETE
-============================================ */
+========================== */
 function openDelete(id){
-    var u = users.find(function(x){ return x.id === id; });
+    const u = users.find(x => x.id === id);
     if(!u) return;
     deletingId = id;
-    document.getElementById("deleteDesc").textContent = "Are you sure you want to remove " + u.name + "?";
+    document.getElementById("deleteDesc").textContent = `Are you sure you want to remove ${u.name}?`;
     document.getElementById("deleteModal").classList.add("show");
 }
 
@@ -908,54 +774,48 @@ function closeDelete(){
 
 function confirmDelete(){
     if(!deletingId) return;
-    var u = users.find(function(x){ return x.id === deletingId; });
-    users = users.filter(function(x){ return x.id !== deletingId; });
-
-    /* Clean up stored password */
-    if(u && u.email){
-        try {
-            localStorage.removeItem("user_password_" + u.email);
-        } catch(e){}
-    }
-
-    saveUsers(users);
+    const u = users.find(x => x.id === deletingId);
+    users = users.filter(x => x.id !== deletingId);
     toast((u ? u.name : "User") + " removed", "danger");
     closeDelete();
     render();
 }
 
-/* ============================================
-   TOAST
-============================================ */
+/* =========================
+   TOASTS
+========================== */
 function toast(msg, type){
-    var wrap = document.getElementById("toastWrap");
-    var el = document.createElement("div");
+    const wrap = document.getElementById("toastWrap");
+    const el = document.createElement("div");
     el.className = "toast " + (type || "");
     el.textContent = msg;
     wrap.appendChild(el);
-    setTimeout(function(){
+    setTimeout(() => {
         el.style.transition = "opacity .3s ease, transform .3s ease";
         el.style.opacity = "0";
         el.style.transform = "translateX(30px)";
-        setTimeout(function(){ el.remove(); }, 300);
+        setTimeout(() => el.remove(), 300);
     }, 2600);
 }
 
-/* ============================================
+/* =========================
    INIT
-============================================ */
+========================== */
 render();
 
-document.addEventListener("keydown", function(e){
+/* Close modal on ESC */
+document.addEventListener("keydown", e => {
     if(e.key === "Escape"){
         closeModal();
         closeDelete();
     }
 });
-document.getElementById("userModal").addEventListener("click", function(e){
+
+/* Close on overlay click */
+document.getElementById("userModal").addEventListener("click", e => {
     if(e.target.id === "userModal") closeModal();
 });
-document.getElementById("deleteModal").addEventListener("click", function(e){
+document.getElementById("deleteModal").addEventListener("click", e => {
     if(e.target.id === "deleteModal") closeDelete();
 });
 </script>
