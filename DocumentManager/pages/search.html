@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI Search — SecureDocs</title>
+<title>Users — SecureDocs</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
@@ -107,168 +107,204 @@ color:#69738f;font-size:10px;letter-spacing:1.7px;font-weight:600;
 margin-top:7px;font-size:34px;letter-spacing:-1.7px;font-weight:650;
 }
 .heading p{margin-top:9px;color:#7d87a3;font-size:12px}
-.status-pill{
-display:flex;align-items:center;gap:8px;padding:9px 13px;
-background:rgba(255,255,255,.035);border:1px solid var(--border);
-border-radius:20px;font-size:10px;color:#8993ae;
-backdrop-filter:blur(10px);white-space:nowrap;
+.primary-btn{
+padding:12px 18px;border-radius:11px;color:white;font-size:12px;
+font-weight:600;font-family:inherit;cursor:pointer;
+background:linear-gradient(135deg,var(--blue),var(--violet));
+border:1px solid rgba(255,255,255,.12);
+box-shadow:0 10px 30px rgba(79,140,255,.18);
+transition:transform .25s ease,box-shadow .25s ease;
 }
-.status-dot{
-width:7px;height:7px;border-radius:50%;background:#6ee7b7;
-box-shadow:0 0 12px rgba(110,231,183,.6);animation:pulse 1.8s infinite;
+.primary-btn:hover{
+transform:translateY(-3px);
+box-shadow:0 15px 35px rgba(79,140,255,.28);
 }
 
-/* SEARCH HERO */
-.search-hero{
-position:relative;padding:38px 34px;border-radius:22px;margin-bottom:24px;
-background:
-radial-gradient(circle at 50% 0%,rgba(79,140,255,.16),transparent 45%),
-linear-gradient(145deg,rgba(17,24,47,.86),rgba(8,12,27,.78));
-border:1px solid var(--border);overflow:hidden;
-box-shadow:0 25px 70px rgba(0,0,0,.22);
-backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+/* STATS */
+.stats{
+display:grid;grid-template-columns:repeat(4,1fr);
+gap:16px;margin-bottom:24px;
 }
-.search-hero::before{
-content:"";position:absolute;width:280px;height:280px;border-radius:50%;
-background:radial-gradient(circle,rgba(79,140,255,.18),transparent 65%);
-filter:blur(20px);top:-180px;left:50%;transform:translateX(-50%);
-pointer-events:none;
+.stat{
+position:relative;overflow:hidden;padding:20px;border-radius:16px;
+background:linear-gradient(145deg,rgba(19,27,53,.82),rgba(9,13,29,.72));
+border:1px solid var(--border);backdrop-filter:blur(18px);
+transition:transform .3s ease,border .3s ease;
 }
-.search-hero h2{
-font-size:22px;letter-spacing:-.8px;font-weight:600;position:relative;z-index:2;
+.stat::before{
+content:"";position:absolute;width:120px;height:120px;
+right:-60px;top:-60px;border-radius:50%;
+background:var(--blue);filter:blur(50px);opacity:.14;
 }
-.search-hero p{
-color:#7d87a3;font-size:12px;margin-top:8px;position:relative;z-index:2;
+.stat:hover{transform:translateY(-4px);border-color:rgba(79,140,255,.20)}
+.stat span{color:var(--muted);font-size:11px}
+.stat h2{font-size:26px;margin-top:10px;letter-spacing:-1px}
+
+/* TOOLBAR */
+.toolbar{
+display:flex;justify-content:space-between;align-items:center;
+margin-bottom:14px;gap:14px;
 }
-.search-box{
-display:flex;align-items:center;gap:10px;margin-top:22px;padding:8px;
-background:rgba(2,6,23,.55);border:1px solid rgba(148,163,184,.16);
-border-radius:14px;position:relative;z-index:2;
+.toolbar h3{font-size:15px;font-weight:600}
+.search{
+width:240px;padding:10px 14px;outline:none;color:white;
+font-size:11px;font-family:inherit;border-radius:10px;
+border:1px solid var(--border);background:rgba(255,255,255,.035);
 transition:border .25s ease,box-shadow .25s ease,background .25s ease;
 }
-.search-box:focus-within{
-border-color:rgba(79,140,255,.45);background:rgba(2,6,23,.75);
-box-shadow:0 0 0 4px rgba(79,140,255,.08),0 12px 30px rgba(0,0,0,.20);
-}
-.search-box .sicon{
-width:40px;height:40px;display:grid;place-items:center;
-color:#7f8ba3;font-size:16px;
-}
-.search-box input{
-flex:1;background:transparent;border:none;outline:none;color:white;
-font-size:13px;padding:10px 0;font-family:inherit;
-}
-.search-box input::placeholder{color:#626b87}
-.search-btn{
-padding:11px 20px;border:none;border-radius:10px;color:white;
-font-size:11px;font-weight:700;cursor:pointer;font-family:inherit;
-background:linear-gradient(135deg,var(--blue),var(--violet));
-border:1px solid rgba(255,255,255,.12);
-box-shadow:0 8px 22px rgba(79,140,255,.22);
-transition:transform .25s ease,box-shadow .25s ease;
-}
-.search-btn:hover{
-transform:translateY(-2px);
-box-shadow:0 12px 28px rgba(79,140,255,.32);
-}
-.filters{
-display:flex;gap:8px;margin-top:18px;flex-wrap:wrap;
-position:relative;z-index:2;
-}
-.chip{
-padding:7px 12px;border-radius:20px;font-size:10px;font-weight:600;
-color:#8993ae;background:rgba(255,255,255,.035);
-border:1px solid var(--border);cursor:pointer;font-family:inherit;
-transition:border .25s ease,background .25s ease,color .25s ease;
-}
-.chip:hover{
-border-color:rgba(79,140,255,.35);color:#c7d2ff;
-background:rgba(79,140,255,.07);
-}
-.chip.active{
-background:linear-gradient(135deg,rgba(79,140,255,.18),rgba(139,92,246,.14));
-color:#c7d2ff;border-color:rgba(79,140,255,.32);
+.search::placeholder{color:#626b87}
+.search:focus{
+border-color:rgba(79,140,255,.45);background:rgba(79,140,255,.045);
+box-shadow:0 0 0 3px rgba(79,140,255,.08);
 }
 
-/* RESULTS */
-.results-header{
-display:flex;justify-content:space-between;align-items:center;
-margin-bottom:14px;font-size:11px;color:#7d87a3;flex-wrap:wrap;gap:10px;
-}
-.results-header strong{color:#cbd2e5;font-weight:600}
-.results{display:flex;flex-direction:column;gap:12px}
-
-.result{
-padding:20px 22px;border-radius:16px;
+/* TABLE */
+.table-wrap{
 background:linear-gradient(145deg,rgba(17,24,47,.82),rgba(8,12,27,.76));
-border:1px solid var(--border);backdrop-filter:blur(18px);
-transition:transform .3s ease,border .3s ease,box-shadow .3s ease;
-cursor:pointer;animation:resultIn .4s ease both;
+border:1px solid var(--border);border-radius:18px;overflow:hidden;
+backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+box-shadow:0 20px 60px rgba(0,0,0,.18);
 }
-.result:hover{
-transform:translateY(-3px);border-color:rgba(79,140,255,.22);
-box-shadow:0 18px 45px rgba(0,0,0,.25),0 0 30px rgba(79,140,255,.05);
+table{width:100%;border-collapse:collapse}
+thead{background:rgba(255,255,255,.02)}
+th{
+text-align:left;padding:14px 20px;font-size:10px;font-weight:700;
+letter-spacing:1px;color:#69738f;text-transform:uppercase;
+border-bottom:1px solid rgba(255,255,255,.06);
 }
-.result-top{display:flex;align-items:center;gap:12px;margin-bottom:12px}
-.result-icon{
-width:38px;height:38px;border-radius:10px;display:grid;place-items:center;
-font-size:9px;font-weight:800;color:#b9c7ff;flex:0 0 38px;
-background:linear-gradient(135deg,rgba(79,140,255,.13),rgba(139,92,246,.12));
-border:1px solid rgba(79,140,255,.12);
+td{
+padding:15px 20px;font-size:12px;
+border-bottom:1px solid rgba(255,255,255,.05);
+color:#cbd2e5;
 }
-.result-icon.pdf{background:linear-gradient(135deg,rgba(239,68,68,.13),rgba(245,158,11,.12));color:#fca5a5;border-color:rgba(239,68,68,.18)}
-.result-icon.doc{background:linear-gradient(135deg,rgba(79,140,255,.13),rgba(139,92,246,.12));color:#b9c7ff}
-.result-icon.txt{background:linear-gradient(135deg,rgba(148,163,184,.13),rgba(100,116,139,.12));color:#cbd5e1;border-color:rgba(148,163,184,.18)}
-.result-title{font-size:13px;font-weight:600}
-.result-path{font-size:10px;color:#66708d;margin-top:3px}
-.relevance{
-margin-left:auto;font-size:9px;padding:5px 9px;border-radius:20px;
-background:rgba(34,197,94,.10);color:#6ee7b7;
-border:1px solid rgba(34,197,94,.18);font-weight:700;white-space:nowrap;
+tr:last-child td{border-bottom:none}
+tbody tr{transition:background .25s ease}
+tbody tr:hover{background:rgba(255,255,255,.025)}
+
+.user-cell{display:flex;align-items:center;gap:12px}
+.user-avatar{
+width:36px;height:36px;border-radius:50%;display:grid;place-items:center;
+font-size:12px;font-weight:800;color:white;
+background:linear-gradient(135deg,#1d4ed8,#7c3aed);flex:0 0 36px;
 }
-.result-snippet{color:#8b94ae;font-size:12px;line-height:1.75}
-.result-snippet mark{
-background:rgba(79,140,255,.25);color:#c7d2ff;
-padding:1px 4px;border-radius:4px;font-weight:600;
+.user-name{font-size:12px;font-weight:600}
+.user-email{font-size:10px;color:#66708d;margin-top:3px}
+
+.role-badge{
+padding:5px 10px;border-radius:20px;font-size:9px;
+font-weight:700;letter-spacing:.3px;display:inline-block;
+border:1px solid;
 }
-.result-footer{
-margin-top:12px;padding-top:10px;
-border-top:1px solid rgba(255,255,255,.06);
-display:flex;gap:16px;font-size:10px;color:#66708d;flex-wrap:wrap;
+.role-admin{background:rgba(139,92,246,.13);color:#c4b5fd;border-color:rgba(139,92,246,.28)}
+.role-exec{background:rgba(79,140,255,.13);color:#93b4ff;border-color:rgba(79,140,255,.28)}
+.role-analyst{background:rgba(14,165,233,.13);color:#7dd3fc;border-color:rgba(14,165,233,.28)}
+.role-viewer{background:rgba(148,163,184,.10);color:#cbd5e1;border-color:rgba(148,163,184,.22)}
+
+.status-cell{display:flex;align-items:center;gap:7px;font-size:11px;color:#a7b2c8}
+.status-dot{width:7px;height:7px;border-radius:50%}
+.dot-active{background:#22c55e;box-shadow:0 0 10px rgba(34,197,94,.5)}
+.dot-idle{background:#f59e0b;box-shadow:0 0 10px rgba(245,158,11,.5)}
+.dot-off{background:#64748b}
+
+.actions{display:flex;gap:6px;justify-content:flex-end}
+.icon-btn{
+width:30px;height:30px;display:grid;place-items:center;
+border-radius:8px;cursor:pointer;font-family:inherit;
+background:rgba(255,255,255,.04);border:1px solid var(--border);
+color:#8993ae;font-size:12px;
+transition:background .25s ease,color .25s ease,border .25s ease;
+}
+.icon-btn:hover{
+background:rgba(79,140,255,.10);color:#93b4ff;
+border-color:rgba(79,140,255,.28);
+}
+.icon-btn.delete:hover{
+background:rgba(239,68,68,.12);color:#fca5a5;
+border-color:rgba(239,68,68,.28);
 }
 
-/* EMPTY / LOADING */
 .empty-state{
-padding:70px 20px;text-align:center;
-background:linear-gradient(145deg,rgba(17,24,47,.82),rgba(8,12,27,.76));
-border:1px solid var(--border);border-radius:18px;
+padding:50px 20px;text-align:center;color:#66708d;font-size:12px;
 }
-.empty-state .big{font-size:40px;opacity:.35;margin-bottom:14px}
-.empty-state h3{font-size:15px;color:#cbd2e5;margin-bottom:8px;font-weight:600}
-.empty-state p{color:#66708d;font-size:12px;line-height:1.7}
-.empty-state a{
-display:inline-flex;align-items:center;gap:6px;
-margin-top:18px;padding:10px 16px;border-radius:9px;font-size:11px;
-font-weight:600;text-decoration:none;color:white;
-background:linear-gradient(135deg,var(--blue),var(--violet));
-border:1px solid rgba(255,255,255,.12);
-box-shadow:0 10px 25px rgba(79,140,255,.22);
-transition:transform .25s ease,box-shadow .25s ease;
-}
-.empty-state a:hover{transform:translateY(-2px);box-shadow:0 14px 30px rgba(79,140,255,.32)}
 
-.loading{
-padding:60px 20px;text-align:center;
-background:linear-gradient(145deg,rgba(17,24,47,.82),rgba(8,12,27,.76));
-border:1px solid var(--border);border-radius:18px;
+/* MODAL */
+.modal-overlay{
+position:fixed;inset:0;background:rgba(3,6,18,.72);
+backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+display:none;place-items:center;z-index:100;padding:20px;
+animation:fadeIn .25s ease;
 }
-.spinner{
-width:36px;height:36px;border-radius:50%;
-border:3px solid rgba(79,140,255,.15);
-border-top-color:var(--blue);
-margin:0 auto 14px;animation:spin .8s linear infinite;
+.modal-overlay.show{display:grid}
+.modal{
+width:min(480px,100%);border-radius:22px;padding:28px;
+background:
+radial-gradient(circle at 0% 0%,rgba(79,140,255,.14),transparent 45%),
+linear-gradient(145deg,rgba(17,24,47,.96),rgba(8,12,27,.96));
+border:1px solid var(--border);
+box-shadow:0 40px 110px rgba(0,0,0,.55);
+animation:modalIn .35s cubic-bezier(.2,.8,.2,1);
 }
-.loading p{color:#7d87a3;font-size:12px}
+.modal-head{
+display:flex;justify-content:space-between;align-items:flex-start;
+margin-bottom:22px;
+}
+.modal-head h2{font-size:19px;letter-spacing:-.6px;font-weight:650}
+.modal-head p{color:#7d87a3;font-size:11px;margin-top:6px}
+.close-x{
+width:32px;height:32px;border-radius:9px;display:grid;place-items:center;
+background:rgba(255,255,255,.04);border:1px solid var(--border);
+color:#8993ae;cursor:pointer;font-size:14px;font-family:inherit;
+transition:all .25s ease;
+}
+.close-x:hover{background:rgba(239,68,68,.10);color:#fca5a5;border-color:rgba(239,68,68,.22)}
+
+.field{margin-bottom:16px}
+.field label{
+display:block;font-size:11px;font-weight:600;
+color:#c4cfdf;margin-bottom:8px;
+}
+.field input,.field select{
+width:100%;padding:12px 14px;color:white;font-size:12px;
+font-family:inherit;border-radius:11px;
+border:1px solid var(--border);background:rgba(2,6,23,.48);
+outline:none;
+transition:border .25s ease,box-shadow .25s ease,background .25s ease;
+}
+.field input::placeholder{color:#626b87}
+.field input:focus,.field select:focus{
+border-color:rgba(79,140,255,.45);background:rgba(2,6,23,.72);
+box-shadow:0 0 0 3px rgba(79,140,255,.08);
+}
+.field select option{background:#0d1226}
+
+.modal-actions{
+display:flex;gap:10px;margin-top:24px;
+justify-content:flex-end;
+}
+.btn{
+padding:11px 18px;border-radius:11px;font-size:12px;font-weight:600;
+font-family:inherit;cursor:pointer;border:1px solid transparent;
+transition:transform .2s ease,box-shadow .2s ease,background .2s ease;
+}
+.btn-ghost{
+background:rgba(255,255,255,.04);color:#cbd2e5;
+border-color:var(--border);
+}
+.btn-ghost:hover{background:rgba(255,255,255,.08)}
+.btn-primary{
+background:linear-gradient(135deg,var(--blue),var(--violet));
+color:white;border-color:rgba(255,255,255,.12);
+box-shadow:0 10px 25px rgba(79,140,255,.20);
+}
+.btn-primary:hover{
+transform:translateY(-2px);
+box-shadow:0 14px 30px rgba(79,140,255,.30);
+}
+.btn-danger{
+background:rgba(239,68,68,.12);color:#fca5a5;
+border-color:rgba(239,68,68,.28);
+}
+.btn-danger:hover{background:rgba(239,68,68,.20)}
 
 /* TOAST */
 .toast-wrap{
@@ -276,23 +312,39 @@ position:fixed;bottom:24px;right:24px;z-index:200;
 display:flex;flex-direction:column;gap:10px;
 }
 .toast{
-padding:14px 18px;border-radius:12px;font-size:12px;color:#e9effa;font-weight:600;
+padding:14px 18px;border-radius:12px;font-size:12px;
+color:#e9effa;font-weight:600;
 background:linear-gradient(145deg,rgba(17,24,47,.96),rgba(8,12,27,.96));
-border:1px solid var(--border);box-shadow:0 20px 50px rgba(0,0,0,.40);
-display:flex;align-items:center;gap:10px;min-width:260px;
+border:1px solid var(--border);
+box-shadow:0 20px 50px rgba(0,0,0,.40);
+display:flex;align-items:center;gap:10px;
 animation:toastIn .35s cubic-bezier(.2,.8,.2,1);
+min-width:260px;
 }
-.toast::before{content:"";width:4px;height:22px;border-radius:2px;
-background:linear-gradient(180deg,var(--blue),var(--violet))}
+.toast::before{
+content:"";width:4px;height:22px;border-radius:2px;
+background:linear-gradient(180deg,var(--blue),var(--violet));
+}
 .toast.success::before{background:linear-gradient(180deg,#22c55e,#10b981)}
 .toast.danger::before{background:linear-gradient(180deg,#ef4444,#f59e0b)}
 
-@keyframes pageIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
-@keyframes pulse{0%,100%{opacity:.35;transform:scale(.9)}50%{opacity:1;transform:scale(1)}}
-@keyframes resultIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
-@keyframes spin{to{transform:rotate(360deg)}}
-@keyframes toastIn{from{opacity:0;transform:translateX(30px)}to{opacity:1;transform:translateX(0)}}
+/* ANIMATIONS */
+@keyframes pageIn{
+from{opacity:0;transform:translateY(14px)}
+to{opacity:1;transform:translateY(0)}
+}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+@keyframes modalIn{
+from{opacity:0;transform:translateY(20px) scale(.96)}
+to{opacity:1;transform:translateY(0) scale(1)}
+}
+@keyframes toastIn{
+from{opacity:0;transform:translateX(30px)}
+to{opacity:1;transform:translateX(0)}
+}
 
+/* RESPONSIVE */
+@media(max-width:1100px){.stats{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:900px){
 .sidebar{width:78px;padding:25px 10px}
 .brand-name,.nav-label,.nav a span,.user-info{display:none}
@@ -301,17 +353,26 @@ background:linear-gradient(180deg,var(--blue),var(--violet))}
 .nav a .badge{display:none}
 .main{margin-left:78px;width:calc(100% - 78px);padding:30px}
 }
-@media(max-width:650px){
+@media(max-width:700px){
 .main{padding:20px}
-.topbar{flex-direction:column;gap:15px}
-.status-pill{width:100%;justify-content:center}
-.search-hero{padding:26px 20px}
-.search-box{flex-wrap:wrap}
-.search-btn{width:100%}
+.topbar{flex-direction:column}
+.primary-btn{width:100%}
+.toolbar{flex-direction:column;align-items:stretch}
+.search{width:100%}
+th,td{padding:12px 14px;font-size:11px}
+.user-email{display:none}
+}
+@media(max-width:480px){
+.main{padding:14px}
+.modal{padding:22px}
+.modal-actions{flex-direction:column-reverse}
+.btn{width:100%}
 }
 @media(prefers-reduced-motion:reduce){
 *,*::before,*::after{
-animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;
+animation-duration:.01ms!important;
+animation-iteration-count:1!important;
+transition-duration:.01ms!important;
 }
 }
 </style>
@@ -321,31 +382,36 @@ animation-duration:.01ms!important;animation-iteration-count:1!important;transit
 
 <!-- SIDEBAR -->
 <aside class="sidebar">
+
     <div class="brand">
         <div class="brand-mark">S</div>
         <div class="brand-name">SecureDocs</div>
     </div>
+
     <div class="nav-label">Workspace</div>
+
     <nav class="nav">
         <a href="dashboard.html">◉ <span>Overview</span></a>
         <a href="documents.html">▣ <span>Documents</span></a>
-        <a href="search.html" class="active">⌕ <span>AI Search</span></a>
+        <a href="search.html">⌕ <span>AI Search</span></a>
         <a href="assistant.html">✦ <span>AI Chat (RAG)</span></a>
-        <a href="users.html">⬡ <span>Users</span> <em class="badge">ADMIN</em></a>
+        <a href="users.html" class="active">⬡ <span>Users</span> <em class="badge">ADMIN</em></a>
         <a href="roles.html">⬢ <span>Roles &amp; Permissions</span> <em class="badge">ADMIN</em></a>
         <a href="audit.html">☰ <span>Audit Logs</span> <em class="badge">ADMIN</em></a>
         <a href="settings.html">⚙ <span>Settings</span> <em class="badge">ADMIN</em></a>
         <a href="profile.html">◐ <span>Profile</span></a>
     </nav>
+
     <div class="sidebar-bottom">
         <div class="user-mini">
-            <div class="avatar" id="sidebarAvatar">WS</div>
+            <div class="avatar">WS</div>
             <div class="user-info">
-                <strong id="sidebarName">Wasif Siddiqui</strong>
-                <span id="sidebarRole">Admin account</span>
+                <strong>Wasif Siddiqui</strong>
+                <span>Secure account</span>
             </div>
         </div>
     </div>
+
 </aside>
 
 <!-- MAIN -->
@@ -353,491 +419,404 @@ animation-duration:.01ms!important;animation-iteration-count:1!important;transit
 
     <div class="topbar">
         <div class="heading">
-            <small>SEMANTIC RETRIEVAL</small>
-            <h1>AI Search.</h1>
-            <p>Search across your authorized documents using natural language.</p>
+            <small>ACCESS CONTROL</small>
+            <h1>Users.</h1>
+            <p>Manage workspace members, roles and access to documents.</p>
         </div>
-        <div class="status-pill">
-            <span class="status-dot"></span>
-            Vector index ready
-        </div>
+        <button class="primary-btn" onclick="openInvite()">+ Invite user</button>
     </div>
 
-    <section class="search-hero">
-        <h2>What are you looking for?</h2>
-        <p>Ask a question or search for a topic. Results are ranked by semantic relevance.</p>
-
-        <form class="search-box" id="searchForm">
-            <span class="sicon">⌕</span>
-            <input
-                type="text"
-                id="searchInput"
-                placeholder="e.g. remote work policy, security, handbook..."
-                autocomplete="off"
-            >
-            <button class="search-btn" type="submit">Search</button>
-        </form>
-
-        <div class="filters" id="filterChips">
-            <button class="chip active" data-cat="all">All documents</button>
-            <button class="chip" data-cat="policy">Policies</button>
-            <button class="chip" data-cat="handbook">Handbooks</button>
-            <button class="chip" data-cat="security">Security</button>
-            <button class="chip" data-cat="report">Reports</button>
-        </div>
+    <!-- STATS -->
+    <section class="stats">
+        <div class="stat"><span>Total users</span><h2 id="statTotal">6</h2></div>
+        <div class="stat"><span>Active</span><h2 id="statActive">4</h2></div>
+        <div class="stat"><span>Admins</span><h2 id="statAdmins">1</h2></div>
+        <div class="stat"><span>Pending invites</span><h2 id="statPending">0</h2></div>
     </section>
 
-    <div class="results-header">
-        <span>Showing <strong id="resultCount">0</strong> results <span id="queryLabel"></span></span>
-        <span id="timeLabel">0.00s</span>
+    <!-- TOOLBAR -->
+    <div class="toolbar">
+        <h3>All users</h3>
+        <input type="search" class="search" id="userSearch" placeholder="Search users...">
     </div>
 
-    <div class="results" id="resultsWrap"></div>
+    <!-- TABLE -->
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Last active</th>
+                    <th style="text-align:right">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="usersBody"></tbody>
+        </table>
+    </div>
 
 </main>
 
 </div>
 
+<!-- MODAL: INVITE / EDIT -->
+<div class="modal-overlay" id="userModal">
+    <div class="modal">
+        <div class="modal-head">
+            <div>
+                <h2 id="modalTitle">Invite user</h2>
+                <p id="modalDesc">Send an invite to join the workspace.</p>
+            </div>
+            <button class="close-x" onclick="closeModal()">✕</button>
+        </div>
+
+        <div class="field">
+            <label>Full name</label>
+            <input type="text" id="fName" placeholder="e.g. Jane Cooper">
+        </div>
+
+        <div class="field">
+            <label>Email address</label>
+            <input type="email" id="fEmail" placeholder="jane@company.com">
+        </div>
+
+        <div class="field">
+            <label>Role</label>
+            <select id="fRole">
+                <option value="admin">Admin</option>
+                <option value="exec" selected>Executive</option>
+                <option value="analyst">Analyst</option>
+                <option value="viewer">Viewer</option>
+            </select>
+        </div>
+
+        <div class="modal-actions">
+            <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+            <button class="btn btn-primary" id="modalSubmit" onclick="submitModal()">Send invite</button>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: DELETE -->
+<div class="modal-overlay" id="deleteModal">
+    <div class="modal">
+        <div class="modal-head">
+            <div>
+                <h2>Delete user</h2>
+                <p id="deleteDesc">Are you sure you want to remove this user?</p>
+            </div>
+            <button class="close-x" onclick="closeDelete()">✕</button>
+        </div>
+        <p style="color:#8b94ae;font-size:12px;line-height:1.7;">
+            This action cannot be undone. The user will lose access to all workspace documents immediately.
+        </p>
+        <div class="modal-actions">
+            <button class="btn btn-ghost" onclick="closeDelete()">Cancel</button>
+            <button class="btn btn-danger" onclick="confirmDelete()">Delete user</button>
+        </div>
+    </div>
+</div>
+
+<!-- TOASTS -->
 <div class="toast-wrap" id="toastWrap"></div>
 
-<script src="auth.js"></script>
 <script>
-/* ============================================
-   AUTH GUARD + SEARCH (IIFE)
-============================================ */
+/* =========================
+   BACKEND AUTH GUARD
+========================== */
 (async function(){
-
-    var currentUser = null;
-
     try {
-        var authResponse = await fetch("/api/me", {
-            method: "GET",
+        const response = await fetch("/api/me", {
             credentials: "same-origin",
             cache: "no-store"
         });
 
-        if(!authResponse.ok){
+        if(!response.ok){
             window.location.replace("/login.html");
             return;
         }
 
-        var me = await authResponse.json();
-        var displayName = me.full_name || (me.email || "User").split("@")[0];
-        var nameForInitials = displayName || me.email || "U";
-        var initials = nameForInitials
-            .split(/\s+/)
-            .filter(Boolean)
-            .slice(0, 2)
-            .map(function(part){ return part.charAt(0); })
-            .join("")
-            .toUpperCase();
-
-        currentUser = {
-            email: me.email || "",
-            role: me.role || "visitor",
-            csrf: me.csrf || "",
-            name: displayName,
-            initials: initials
-        };
+        const me = await response.json();
+        if(String(me.role || "").toLowerCase() !== "admin"){
+            window.location.replace("/dashboard.html");
+            return;
+        }
 
         window.ME = me;
         window.CSRF = me.csrf || "";
 
+        const displayName = me.full_name || me.name || me.email || "Admin";
+        const initialsText = displayName.split(/\s+/).filter(Boolean).slice(0,2).map(function(part){
+            return part.charAt(0);
+        }).join("").toUpperCase();
+
+        const sName = document.getElementById("sidebarName");
+        const sRole = document.getElementById("sidebarRole");
+        const sAvatar = document.getElementById("sidebarAvatar");
+
+        if(sName) sName.textContent = displayName;
+        if(sAvatar) sAvatar.textContent = initialsText || "A";
+        if(sRole) sRole.textContent = "Admin account";
+
+        if(sAvatar){
+            sAvatar.style.cursor = "pointer";
+            sAvatar.title = "Click to sign out";
+            sAvatar.addEventListener("click", async function(){
+                if(!confirm("Sign out of SecureDocs?")) return;
+                try {
+                    await fetch("/api/logout", {
+                        method: "POST",
+                        credentials: "same-origin",
+                        headers: {"X-CSRF": window.CSRF || ""}
+                    });
+                } finally {
+                    window.location.replace("/login.html");
+                }
+            });
+        }
     } catch(e){
-        console.error("SecureDocs authentication check failed:", e);
         window.location.replace("/login.html");
-        return;
+    }
+})();
+
+/* =========================
+   DATA
+========================== */
+let users = [
+    { id:1, name:"Wasif Siddiqui", email:"wasif@company.com", role:"admin", status:"active", last:"2 minutes ago", color:"#1d4ed8,#7c3aed" },
+    { id:2, name:"John Mercer", email:"john@company.com", role:"exec", status:"active", last:"1 hour ago", color:"#0ea5e9,#2563eb" },
+    { id:3, name:"Amelia Rivera", email:"amelia@company.com", role:"analyst", status:"idle", last:"Yesterday", color:"#8b5cf6,#ec4899" },
+    { id:4, name:"David Kim", email:"david@company.com", role:"viewer", status:"active", last:"3 hours ago", color:"#f59e0b,#ef4444" },
+    { id:5, name:"Nadia Patel", email:"nadia@company.com", role:"analyst", status:"offline", last:"2 days ago", color:"#10b981,#0ea5e9" },
+    { id:6, name:"Liam Turner", email:"liam@company.com", role:"viewer", status:"active", last:"30 minutes ago", color:"#6366f1,#8b5cf6" }
+];
+
+let nextId = 7;
+let editingId = null;
+let deletingId = null;
+
+/* =========================
+   HELPERS
+========================== */
+function initials(name){
+    return name.split(" ").map(n => n[0]).slice(0,2).join("").toUpperCase();
+}
+
+function roleLabel(role){
+    return { admin:"Admin", exec:"Executive", analyst:"Analyst", viewer:"Viewer" }[role] || role;
+}
+
+function roleClass(role){
+    return { admin:"role-admin", exec:"role-exec", analyst:"role-analyst", viewer:"role-viewer" }[role] || "";
+}
+
+function statusLabel(status){
+    return { active:"Active", idle:"Idle", offline:"Offline" }[status] || status;
+}
+
+function statusClass(status){
+    return { active:"dot-active", idle:"dot-idle", offline:"dot-off" }[status] || "dot-off";
+}
+
+/* =========================
+   RENDER
+========================== */
+function render(){
+    const tbody = document.getElementById("usersBody");
+
+    if(users.length === 0){
+        tbody.innerHTML = `<tr><td colspan="5"><div class="empty-state">No users found. Click "+ Invite user" to add one.</div></td></tr>`;
+    } else {
+        tbody.innerHTML = users.map(u => `
+            <tr data-id="${u.id}">
+                <td>
+                    <div class="user-cell">
+                        <div class="user-avatar" style="background:linear-gradient(135deg,${u.color})">${initials(u.name)}</div>
+                        <div>
+                            <div class="user-name">${u.name}</div>
+                            <div class="user-email">${u.email}</div>
+                        </div>
+                    </div>
+                </td>
+                <td><span class="role-badge ${roleClass(u.role)}">${roleLabel(u.role)}</span></td>
+                <td><div class="status-cell"><span class="status-dot ${statusClass(u.status)}"></span>${statusLabel(u.status)}</div></td>
+                <td>${u.last}</td>
+                <td>
+                    <div class="actions">
+                        <button class="icon-btn" title="Edit" onclick="openEdit(${u.id})">✎</button>
+                        <button class="icon-btn delete" title="Delete" onclick="openDelete(${u.id})">🗑</button>
+                    </div>
+                </td>
+            </tr>
+        `).join("");
     }
 
-var ROLE_PAGES = {
-        admin:     ["overview","documents","search","assistant","users","roles","audit","settings","profile"],
-        executive: ["overview","documents","search","assistant","profile"],
-        visitor:   ["overview","documents","search","profile"]
-    };
-    var PAGE_KEY = {
-        "dashboard":"overview","documents":"documents","search":"search","assistant":"assistant",
-        "users":"users","roles":"roles","audit":"audit","settings":"settings","profile":"profile"
-    };
-    var allowed = ROLE_PAGES[currentUser.role] || ROLE_PAGES.visitor;
+    updateStats();
+    applySearch();
+}
 
-    document.querySelectorAll(".nav a").forEach(function(link){
-        var href = (link.getAttribute("href") || "").replace(".html","");
-        var key = PAGE_KEY[href];
-        if(key && allowed.indexOf(key) === -1){
-            link.style.display = "none";
-        }
+function updateStats(){
+    document.getElementById("statTotal").textContent = users.length;
+    document.getElementById("statActive").textContent = users.filter(u => u.status === "active").length;
+    document.getElementById("statAdmins").textContent = users.filter(u => u.role === "admin").length;
+    document.getElementById("statPending").textContent = 0;
+}
+
+/* =========================
+   SEARCH
+========================== */
+const searchInput = document.getElementById("userSearch");
+searchInput.addEventListener("input", applySearch);
+
+function applySearch(){
+    const q = searchInput.value.toLowerCase().trim();
+    document.querySelectorAll("#usersBody tr").forEach(tr => {
+        if(!tr.dataset.id){ return; }
+        const match = tr.textContent.toLowerCase().includes(q);
+        tr.style.display = match ? "" : "none";
     });
+}
 
-    /* Sidebar user info */
-    var sName = document.getElementById("sidebarName");
-    var sRole = document.getElementById("sidebarRole");
-    var sAvatar = document.getElementById("sidebarAvatar");
-    if(sName) sName.textContent = currentUser.name;
-    if(sAvatar) sAvatar.textContent = currentUser.initials;
-    if(sRole){
-        var rl = currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1);
-        sRole.textContent = rl + " account";
-    }
-    if(sAvatar){
-        sAvatar.style.cursor = "pointer";
-        sAvatar.title = "Click to sign out";
-        sAvatar.addEventListener("click", function(){
-            if(confirm("Sign out of SecureDocs?")){
-                logoutCurrentUser();
-            }
+/* =========================
+   INVITE MODAL
+========================== */
+function openInvite(){
+    editingId = null;
+    document.getElementById("modalTitle").textContent = "Invite user";
+    document.getElementById("modalDesc").textContent = "Send an invite to join the workspace.";
+    document.getElementById("modalSubmit").textContent = "Send invite";
+    document.getElementById("fName").value = "";
+    document.getElementById("fEmail").value = "";
+    document.getElementById("fRole").value = "exec";
+    document.getElementById("userModal").classList.add("show");
+    setTimeout(() => document.getElementById("fName").focus(), 100);
+}
+
+/* =========================
+   EDIT MODAL
+========================== */
+function openEdit(id){
+    const u = users.find(x => x.id === id);
+    if(!u) return;
+
+    editingId = id;
+    document.getElementById("modalTitle").textContent = "Edit user";
+    document.getElementById("modalDesc").textContent = "Update user information and role.";
+    document.getElementById("modalSubmit").textContent = "Save changes";
+    document.getElementById("fName").value = u.name;
+    document.getElementById("fEmail").value = u.email;
+    document.getElementById("fRole").value = u.role;
+    document.getElementById("userModal").classList.add("show");
+    setTimeout(() => document.getElementById("fName").focus(), 100);
+}
+
+/* =========================
+   CLOSE MODAL
+========================== */
+function closeModal(){
+    document.getElementById("userModal").classList.remove("show");
+    editingId = null;
+}
+
+/* =========================
+   SUBMIT MODAL
+========================== */
+function submitModal(){
+    const name = document.getElementById("fName").value.trim();
+    const email = document.getElementById("fEmail").value.trim();
+    const role = document.getElementById("fRole").value;
+
+    if(!name){ toast("Please enter a name", "danger"); return; }
+    if(!email || !/^\S+@\S+\.\S+$/.test(email)){ toast("Please enter a valid email", "danger"); return; }
+
+    if(editingId){
+        /* UPDATE */
+        const u = users.find(x => x.id === editingId);
+        u.name = name;
+        u.email = email;
+        u.role = role;
+        toast("User updated successfully", "success");
+    } else {
+        /* ADD */
+        const colors = ["#1d4ed8,#7c3aed","#0ea5e9,#2563eb","#8b5cf6,#ec4899","#f59e0b,#ef4444","#10b981,#0ea5e9","#6366f1,#8b5cf6"];
+        users.push({
+            id: nextId++,
+            name: name,
+            email: email,
+            role: role,
+            status: "idle",
+            last: "Invited · just now",
+            color: colors[users.length % colors.length]
         });
+        toast("Invitation sent to " + email, "success");
     }
 
-    /* ---------- LOGOUT ---------- */
-    async function logoutCurrentUser(){
-        try{
-            var response = await fetch("/api/logout", {
-                method: "POST",
-                credentials: "same-origin",
-                headers: {
-                    "X-CSRF": currentUser.csrf || window.CSRF || ""
-                }
-            });
-
-            if(response.ok){
-                window.location.replace("/login.html");
-                return;
-            }
-
-            var data = {};
-            try { data = await response.json(); } catch(e){}
-            alert(data.detail || "Could not sign out. Please reload and try again.");
-        }catch(e){
-            console.error("Logout failed:", e);
-            alert("Could not sign out. Please check your connection and try again.");
-        }
-    }
-
-    /* ============================================
-       LOAD REAL DOCUMENTS
-    ============================================ */
-    function getDocuments(){
-        try {
-            var raw = localStorage.getItem("securedocs_documents");
-            return raw ? JSON.parse(raw) : [];
-        } catch(e){ return []; }
-    }
-
-    /* Determine category from extension */
-    function getCategory(ext){
-        if(!ext) return "other";
-        var e = ext.toUpperCase();
-        if(e === "PDF") return "pdf";
-        if(e === "DOC" || e === "DOCX") return "doc";
-        if(e === "TXT") return "txt";
-        return "other";
-    }
-
-    /* Generate a fake snippet from filename (since we don't have file content) */
-    function buildSnippet(doc){
-        var name = (doc.name || "").replace(/\.[^.]+$/, "").replace(/[-_]/g, " ");
-        var parts = [
-            "This document contains information related to " + name + ".",
-            "Uploaded " + formatDate(doc.uploadedAt) + " by workspace member.",
-            "Type: " + (doc.ext || "unknown").toUpperCase() + " · Size: " + formatSize(doc.size || 0)
-        ];
-        return parts.join(" ");
-    }
-
-    function formatDate(ts){
-        if(!ts) return "—";
-        return new Date(ts).toLocaleDateString();
-    }
-
-    function formatSize(bytes){
-        if(!bytes && bytes !== 0) return "—";
-        if(bytes < 1024) return bytes + " B";
-        if(bytes < 1024*1024) return (bytes/1024).toFixed(1) + " KB";
-        if(bytes < 1024*1024*1024) return (bytes/(1024*1024)).toFixed(1) + " MB";
-        return (bytes/(1024*1024*1024)).toFixed(2) + " GB";
-    }
-
-    function timeAgo(ts){
-        if(!ts) return "—";
-        var diff = Date.now() - ts;
-        var min = Math.floor(diff/60000);
-        if(min < 1) return "just now";
-        if(min < 60) return min + " min ago";
-        var hr = Math.floor(min/60);
-        if(hr < 24) return hr + " hr ago";
-        var day = Math.floor(hr/24);
-        if(day < 7) return day + " day" + (day > 1 ? "s" : "") + " ago";
-        return new Date(ts).toLocaleDateString();
-    }
-
-    function iconClass(ext){
-        if(ext === "PDF") return "pdf";
-        if(ext === "DOC" || ext === "DOCX") return "doc";
-        if(ext === "TXT") return "txt";
-        return "";
-    }
-
-    /* ============================================
-       STATE
-    ============================================ */
-    var currentQuery = "";
-    var currentCategory = "all";
-
-    /* ============================================
-       HELPERS
-    ============================================ */
-    function escapeHtml(str){
-        return String(str || "").replace(/[&<>"']/g, function(s){
-            return { "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[s];
-        });
-    }
-
-    function escapeRegex(str){
-        return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    }
-
-    function highlight(text, query){
-        var safe = escapeHtml(text);
-        if(!query) return safe;
-        var q = escapeRegex(query);
-        var re = new RegExp("(" + q + ")", "gi");
-        return safe.replace(re, "<mark>$1</mark>");
-    }
-
-    function scoreDoc(doc, query){
-        if(!query) return null;
-        var q = query.toLowerCase();
-        var text = (
-            (doc.name || "") + " " +
-            (doc.ext || "") + " " +
-            (doc.category || "")
-        ).toLowerCase();
-
-        var words = q.split(/\s+/).filter(Boolean);
-        if(words.length === 0) return null;
-
-        var hits = 0;
-        words.forEach(function(w){
-            if(text.indexOf(w) !== -1) hits++;
-        });
-        if(hits === 0) return null;
-
-        var base = Math.round((hits / words.length) * 90);
-        var nameBonus = (doc.name || "").toLowerCase().indexOf(q) !== -1 ? 8 : 0;
-
-        return Math.min(99, base + nameBonus);
-    }
-
-    /* ============================================
-       RENDER
-    ============================================ */
-    function render(){
-        var start = performance.now();
-
-        var docs = getDocuments();
-
-        /* Add computed fields */
-        docs = docs.map(function(d){
-            return {
-                id: d.id,
-                name: d.name || "Untitled",
-                ext: (d.ext || "").toUpperCase(),
-                size: d.size || 0,
-                uploadedAt: d.uploadedAt || 0,
-                category: getCategory(d.ext)
-            };
-        });
-
-        /* Category filter */
-        var results = docs.slice();
-        if(currentCategory !== "all"){
-            results = results.filter(function(d){
-                if(currentCategory === "policy"){
-                    return d.name.toLowerCase().indexOf("policy") !== -1;
-                }
-                if(currentCategory === "handbook"){
-                    return d.name.toLowerCase().indexOf("handbook") !== -1;
-                }
-                if(currentCategory === "security"){
-                    return d.name.toLowerCase().indexOf("security") !== -1;
-                }
-                if(currentCategory === "report"){
-                    return d.name.toLowerCase().indexOf("report") !== -1;
-                }
-                return true;
-            });
-        }
-
-        /* Search query */
-        if(currentQuery){
-            var q = currentQuery.toLowerCase();
-            results = results.filter(function(d){
-                var text = (
-                    d.name + " " +
-                    d.ext + " " +
-                    d.category
-                ).toLowerCase();
-                var words = q.split(/\s+/).filter(Boolean);
-                return words.every(function(w){ return text.indexOf(w) !== -1; });
-            });
-
-            /* Score and sort */
-            results.forEach(function(d){ d._score = scoreDoc(d, q); });
-            results.sort(function(a,b){ return (b._score || 0) - (a._score || 0); });
-        } else {
-            /* Sort by newest */
-            results.sort(function(a,b){ return (b.uploadedAt || 0) - (a.uploadedAt || 0); });
-        }
-
-        var elapsed = ((performance.now() - start) / 1000).toFixed(2);
-
-        document.getElementById("resultCount").textContent = results.length;
-        document.getElementById("timeLabel").textContent = elapsed + "s";
-
-        /* Query label */
-        var qLabel = document.getElementById("queryLabel");
-        if(currentQuery){
-            qLabel.innerHTML = 'for "<strong>' + escapeHtml(currentQuery) + '</strong>"';
-        } else {
-            qLabel.textContent = "";
-        }
-
-        var wrap = document.getElementById("resultsWrap");
-
-        /* Empty states */
-        if(docs.length === 0){
-            wrap.innerHTML =
-                '<div class="empty-state">' +
-                    '<div class="big">▣</div>' +
-                    '<h3>No documents in your workspace</h3>' +
-                    '<p>Upload documents first, then you can search through them here.</p>' +
-                    '<a href="documents.html">+ Upload document</a>' +
-                '</div>';
-            return;
-        }
-
-        if(results.length === 0){
-            wrap.innerHTML =
-                '<div class="empty-state">' +
-                    '<div class="big">⌕</div>' +
-                    '<h3>No results found</h3>' +
-                    '<p>Try a different search term or clear the filters.</p>' +
-                '</div>';
-            return;
-        }
-
-        /* Render results */
-        var html = "";
-        results.forEach(function(d, i){
-            var rel = d._score !== undefined && d._score !== null ? d._score : null;
-            var snippet = buildSnippet(d);
-
-            html +=
-                '<article class="result" style="animation-delay:' + (i * 40) + 'ms">' +
-                    '<div class="result-top">' +
-                        '<div class="result-icon ' + iconClass(d.ext) + '">' + (d.ext || "FILE") + '</div>' +
-                        '<div>' +
-                            '<div class="result-title">' + highlight(d.name, currentQuery) + '</div>' +
-                            '<div class="result-path">Uploaded ' + timeAgo(d.uploadedAt) + ' · ' + formatSize(d.size) + '</div>' +
-                        '</div>' +
-                        (rel !== null
-                            ? '<div class="relevance">' + rel + '% match</div>'
-                            : '<div class="relevance">Indexed</div>') +
-                    '</div>' +
-                    '<p class="result-snippet">' + highlight(snippet, currentQuery) + '</p>' +
-                    '<div class="result-footer">' +
-                        '<span>📄 ' + (d.ext || "FILE") + '</span>' +
-                        '<span>🕐 ' + formatDate(d.uploadedAt) + '</span>' +
-                        '<span>👤 ' + escapeHtml(currentUser.name) + '</span>' +
-                    '</div>' +
-                '</article>';
-        });
-        wrap.innerHTML = html;
-    }
-
-    /* ============================================
-       SEARCH FORM
-    ============================================ */
-    document.getElementById("searchForm").addEventListener("submit", function(e){
-        e.preventDefault();
-        var q = document.getElementById("searchInput").value.trim();
-        currentQuery = q;
-
-        if(q){
-            var wrap = document.getElementById("resultsWrap");
-            wrap.innerHTML = '<div class="loading"><div class="spinner"></div><p>Searching knowledge base...</p></div>';
-
-            setTimeout(function(){
-                render();
-                toast("Found results for \"" + q + "\"", "success");
-            }, 300);
-        } else {
-            render();
-        }
-    });
-
-    /* Live search as you type */
-    var liveTimer = null;
-    document.getElementById("searchInput").addEventListener("input", function(){
-        currentQuery = this.value.trim();
-        clearTimeout(liveTimer);
-        liveTimer = setTimeout(render, 150);
-    });
-
-    /* ============================================
-       FILTER CHIPS
-    ============================================ */
-    var chips = document.querySelectorAll("#filterChips .chip");
-    chips.forEach(function(chip){
-        chip.addEventListener("click", function(){
-            chips.forEach(function(c){ c.classList.remove("active"); });
-            chip.classList.add("active");
-            currentCategory = chip.getAttribute("data-cat");
-            render();
-            toast("Filter: " + chip.textContent.trim(), "");
-        });
-    });
-
-    /* ============================================
-       TOAST
-    ============================================ */
-    function toast(msg, type){
-        var wrap = document.getElementById("toastWrap");
-        var el = document.createElement("div");
-        el.className = "toast " + (type || "");
-        el.textContent = msg;
-        wrap.appendChild(el);
-        setTimeout(function(){
-            el.style.transition = "opacity .3s ease, transform .3s ease";
-            el.style.opacity = "0";
-            el.style.transform = "translateX(30px)";
-            setTimeout(function(){ el.remove(); }, 300);
-        }, 2200);
-    }
-
-    /* ============================================
-       INIT
-    ============================================ */
+    closeModal();
     render();
+}
 
-    /* Listen for storage changes */
-    window.addEventListener("storage", function(e){
-        if(e.key === "securedocs_documents"){
-            render();
-        }
-    });
-    document.addEventListener("visibilitychange", function(){
-        if(!document.hidden) render();
-    });
+/* =========================
+   DELETE
+========================== */
+function openDelete(id){
+    const u = users.find(x => x.id === id);
+    if(!u) return;
+    deletingId = id;
+    document.getElementById("deleteDesc").textContent = `Are you sure you want to remove ${u.name}?`;
+    document.getElementById("deleteModal").classList.add("show");
+}
 
-    /* ⌘K focuses search */
-    document.addEventListener("keydown", function(e){
-        if((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k"){
-            e.preventDefault();
-            document.getElementById("searchInput").focus();
-        }
-    });
+function closeDelete(){
+    document.getElementById("deleteModal").classList.remove("show");
+    deletingId = null;
+}
 
+function confirmDelete(){
+    if(!deletingId) return;
+    const u = users.find(x => x.id === deletingId);
+    users = users.filter(x => x.id !== deletingId);
+    toast((u ? u.name : "User") + " removed", "danger");
+    closeDelete();
+    render();
+}
+
+/* =========================
+   TOASTS
+========================== */
+function toast(msg, type){
+    const wrap = document.getElementById("toastWrap");
+    const el = document.createElement("div");
+    el.className = "toast " + (type || "");
+    el.textContent = msg;
+    wrap.appendChild(el);
+    setTimeout(() => {
+        el.style.transition = "opacity .3s ease, transform .3s ease";
+        el.style.opacity = "0";
+        el.style.transform = "translateX(30px)";
+        setTimeout(() => el.remove(), 300);
+    }, 2600);
+}
+
+/* =========================
+   INIT
+========================== */
+render();
+
+/* Close modal on ESC */
+document.addEventListener("keydown", e => {
+    if(e.key === "Escape"){
+        closeModal();
+        closeDelete();
+    }
+});
+
+/* Close on overlay click */
+document.getElementById("userModal").addEventListener("click", e => {
+    if(e.target.id === "userModal") closeModal();
+});
+document.getElementById("deleteModal").addEventListener("click", e => {
+    if(e.target.id === "deleteModal") closeDelete();
 });
 </script>
 </body>
