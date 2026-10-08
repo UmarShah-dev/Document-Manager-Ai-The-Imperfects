@@ -467,6 +467,75 @@ animation-duration:.01ms!important;animation-iteration-count:1!important;transit
 <div class="toast-wrap" id="toastWrap"></div>
 
 <script>
+/* ============================================
+   AUTH — same working pattern as dashboard.html
+   Uses the real FastAPI session only. No auth.js/localStorage auth.
+============================================ */
+(async function(){
+    var authResponse;
+    try {
+        authResponse = await fetch("/api/me", {
+            method: "GET",
+            credentials: "same-origin",
+            cache: "no-store"
+        });
+    } catch(e) {
+        console.error("SecureDocs authentication check failed:", e);
+        window.location.replace("/login.html");
+        return;
+    }
+
+    if(!authResponse.ok){
+        window.location.replace("/login.html");
+        return;
+    }
+
+    var me;
+    try {
+        me = await authResponse.json();
+    } catch(e) {
+        console.error("Invalid /api/me response:", e);
+        window.location.replace("/login.html");
+        return;
+    }
+
+    window.ME = me;
+    window.CSRF = me.csrf || "";
+
+    var name = me.full_name || (me.email || "User").split("@")[0];
+    var initials = name.split(/\s+/).filter(Boolean).slice(0,2).map(function(part){
+        return part.charAt(0);
+    }).join("").toUpperCase() || "U";
+
+    var sidebarName = document.getElementById("sidebarName");
+    var sidebarRole = document.getElementById("sidebarRole");
+    var sidebarAvatar = document.getElementById("sidebarAvatar");
+
+    if(sidebarName) sidebarName.textContent = name;
+    if(sidebarAvatar) sidebarAvatar.textContent = initials;
+    if(sidebarRole){
+        var role = (me.role || "visitor");
+        sidebarRole.textContent = role.charAt(0).toUpperCase() + role.slice(1) + " account";
+    }
+
+    /* Keep the same role-aware navigation behavior as dashboard.html. */
+    var ROLE_PAGES = {
+        admin: ["dashboard","documents","search","assistant","users","roles","audit","settings","profile"],
+        executive: ["dashboard","documents","search","assistant","profile"],
+        visitor: ["dashboard","documents","search"]
+    };
+    var allowed = ROLE_PAGES[me.role] || ROLE_PAGES.visitor;
+
+    document.querySelectorAll(".nav a").forEach(function(link){
+        var href = (link.getAttribute("href") || "").replace(".html", "");
+        if(allowed.indexOf(href) === -1){
+            link.style.display = "none";
+        }
+    });
+
+    /* Continue into the existing Documents application only after auth succeeds. */
+    window.dispatchEvent(new CustomEvent("securedocs-auth-ready"));
+})();
 
 /* ============================================
    STORAGE
