@@ -355,214 +355,129 @@ animation-duration:.01ms!important;animation-iteration-count:1!important;transit
 
 </div>
 
-<script src="auth.js"></script>
 <script>
-SecureDocsAuth.guard(null);
-</script>
-<script>
-const form = document.getElementById("chatForm");
-const input = document.getElementById("chatInput");
-const messages = document.getElementById("messages");
+(function(){
+    "use strict";
 
-/* =========================
-   LOAD UPLOADED DOCUMENTS
-========================== */
-function getUploadedDocs(){
-    try {
-        var raw = localStorage.getItem("securedocs_documents");
-        return raw ? JSON.parse(raw) : [];
-    } catch(e){ return []; }
-}
-
-/* =========================
-   AI REPLY LOGIC
-========================== */
-function generateReply(text){
-    const q = text.toLowerCase().trim();
-    const docs = getUploadedDocs();
-
-    /* Greeting */
-    if(/^(hi|hello|hey|salam|assalam)/.test(q)){
-        return {
-            body: "Hello! How can I help you with your documents today?",
-            source: null
-        };
-    }
-
-    /* Thanks */
-    if(/(thank|thanks|shukriya)/.test(q)){
-        return {
-            body: "You're welcome! Let me know if you need anything else.",
-            source: null
-        };
-    }
-
-    /* List documents */
-    if(/(list|show|what).*(document|file)/.test(q) || q.includes("uploaded files") || q.includes("my files")){
-        if(docs.length === 0){
-            return {
-                body: "You haven't uploaded any documents yet. Go to the Documents page to upload files, then I can help you search through them.",
-                source: null
-            };
-        }
-        let list = "You currently have <b>" + docs.length + "</b> document" + (docs.length > 1 ? "s" : "") + " in your workspace:<br><br>";
-        docs.slice(0, 10).forEach(function(d, i){
-            list += (i + 1) + ". <b>" + escapeHtml(d.name) + "</b><br>";
-        });
-        if(docs.length > 10){
-            list += "<br>... and " + (docs.length - 10) + " more.";
-        }
-        return {
-            body: list,
-            source: "Workspace documents · " + docs.length + " file(s)"
-        };
-    }
-
-    /* Summarize */
-    if(q.includes("summar") || q.includes("overview")){
-        if(docs.length === 0){
-            return {
-                body: "I can't summarize documents yet — you haven't uploaded any. Please add files on the Documents page first.",
-                source: null
-            };
-        }
-        return {
-            body: "Here's a quick overview of your workspace:<br><br>" +
-                  "• <b>" + docs.length + "</b> document(s) uploaded<br>" +
-                  "• Total size: <b>" + totalSize(docs) + "</b><br>" +
-                  "• Latest upload: <b>" + escapeHtml(docs[0].name) + "</b><br><br>" +
-                  "Ask me about any specific document to get details.",
-            source: "Workspace summary"
-        };
-    }
-
-    /* Security / policy */
-    if(q.includes("security") || q.includes("policy")){
-        return {
-            body: "Based on your workspace policy, documents should only be accessed by authorized users with the appropriate permissions. " +
-                  "Sensitive files are protected with role-based access control and all actions are logged for compliance.",
-            source: docs.length > 0 ? "Source · " + escapeHtml(docs[0].name) : "Workspace policy"
-        };
-    }
-
-    /* Search for a keyword in docs */
-    const words = q.split(/\s+/).filter(w => w.length > 2);
-    if(words.length > 0 && docs.length > 0){
-        const matches = docs.filter(function(d){
-            const name = d.name.toLowerCase();
-            return words.some(w => name.includes(w));
-        });
-        if(matches.length > 0){
-            let body = "I found <b>" + matches.length + "</b> matching document" + (matches.length > 1 ? "s" : "") + ":<br><br>";
-            matches.forEach(function(d){
-                body += "• <b>" + escapeHtml(d.name) + "</b> — " + formatSize(d.size || 0) + "<br>";
-            });
-            return {
-                body: body,
-                source: "Workspace search · " + matches.length + " match(es)"
-            };
-        }
-    }
-
-    /* Fallback */
-    if(docs.length === 0){
-        return {
-            body: "I don't have any documents to search through yet. Please upload files on the Documents page and I'll be able to help you find answers.",
-            source: null
-        };
-    }
-
-    return {
-        body: "I searched your workspace but couldn't find a direct answer to that question. " +
-              "Try rephrasing, or ask me to <b>list your documents</b>, <b>summarize</b> them, or search for a specific keyword.",
-        source: "Workspace search · no direct match"
+    var ROLE_PAGES = {
+        admin:     ["dashboard","documents","search","assistant","users","roles","audit","settings","profile"],
+        executive: ["dashboard","documents","search","assistant","profile"],
+        visitor:   ["dashboard","documents","search","assistant","profile"]
     };
-}
 
-/* =========================
-   HELPERS
-========================== */
-function escapeHtml(s){
-    return String(s).replace(/[&<>"']/g, c => ({
-        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-    }[c]));
-}
-function formatSize(bytes){
-    if(bytes < 1024) return bytes + " B";
-    if(bytes < 1024*1024) return (bytes/1024).toFixed(1) + " KB";
-    if(bytes < 1024*1024*1024) return (bytes/(1024*1024)).toFixed(1) + " MB";
-    return (bytes/(1024*1024*1024)).toFixed(2) + " GB";
-}
-function totalSize(docs){
-    const total = docs.reduce((s, d) => s + (d.size || 0), 0);
-    return formatSize(total);
-}
+    var form = document.getElementById("chatForm");
+    var input = document.getElementById("chatInput");
+    var messages = document.getElementById("messages");
 
-/* =========================
-   SEND MESSAGE
-========================== */
-form.addEventListener("submit", function(e){
-    e.preventDefault();
-    const text = input.value.trim();
-    if(!text) return;
+    var ME = null;
 
-    /* user bubble */
-    const userMsg = document.createElement("div");
-    userMsg.className = "message user";
-    const uBubble = document.createElement("div");
-    uBubble.className = "bubble";
-    uBubble.textContent = text;
-    userMsg.appendChild(uBubble);
-    messages.appendChild(userMsg);
-
-    input.value = "";
-    messages.scrollTop = messages.scrollHeight;
-
-    /* typing indicator */
-    const typingMsg = document.createElement("div");
-    typingMsg.className = "message ai";
-    typingMsg.innerHTML = '<div class="bubble"><div class="typing-dots"><span></span><span></span><span></span></div></div>';
-    messages.appendChild(typingMsg);
-    messages.scrollTop = messages.scrollHeight;
-
-    /* reply */
-    setTimeout(function(){
-        typingMsg.remove();
-
-        const reply = generateReply(text);
-
-        const aiMsg = document.createElement("div");
-        aiMsg.className = "message ai";
-
-        const aiBubble = document.createElement("div");
-        aiBubble.className = "bubble";
-        aiBubble.innerHTML = reply.body +
-            (reply.source ? '<div class="source">' + reply.source + '</div>' : "");
-
-        aiMsg.appendChild(aiBubble);
-        messages.appendChild(aiMsg);
-
-        messages.scrollTop = messages.scrollHeight;
-    }, 700);
-});
-
-/* =========================
-   SUGGESTIONS
-========================== */
-document.querySelectorAll(".suggestion").forEach(function(btn){
-    btn.addEventListener("click", function(){
-        input.value = this.textContent.trim();
-        input.focus();
-    });
-});
-
-/* ENTER TO SEND */
-input.addEventListener("keydown", function(e){
-    if(e.key === "Enter"){
-        e.preventDefault();
-        form.requestSubmit();
+    function el(tag, cls, txt){
+        var node = document.createElement(tag);
+        if(cls) node.className = cls;
+        if(txt !== undefined && txt !== null) node.textContent = txt;
+        return node;
     }
-});
+
+    function addMessage(kind, text, sources){
+        var msg = el("div", "message " + kind);
+        var bubble = el("div", "bubble", text);
+        bubble.style.whiteSpace = "pre-wrap";
+
+        if(sources && sources.length){
+            bubble.append(el("div", "source", "Source · " + sources.join(" · ")));
+        }
+
+        msg.append(bubble);
+        messages.append(msg);
+        messages.scrollTop = messages.scrollHeight;
+        return msg;
+    }
+
+    /* Load the session first so the CSRF token is available for chat requests. */
+    var ready = fetch("/api/me", { credentials: "same-origin", cache: "no-store" })
+        .then(function(r){
+            if(!r.ok){
+                location.replace("/login.html");
+                throw new Error("Please sign in.");
+            }
+            return r.json();
+        })
+        .then(function(me){
+            ME = me;
+
+            var role = me.role || "visitor";
+            var allowed = ROLE_PAGES[role] || ROLE_PAGES.visitor;
+
+            document.querySelectorAll(".nav a").forEach(function(link){
+                var page = (link.getAttribute("href") || "").replace(".html", "");
+                if(allowed.indexOf(page) === -1) link.style.display = "none";
+            });
+            return me;
+        });
+
+    form.addEventListener("submit", async function(e){
+        e.preventDefault();
+
+        var text = input.value.trim();
+        if(!text) return;
+
+        input.value = "";
+        addMessage("user", text);
+
+        var typing = el("div", "message ai");
+        typing.innerHTML = '<div class="bubble"><div class="typing-dots"><span></span><span></span><span></span></div></div>';
+        messages.append(typing);
+        messages.scrollTop = messages.scrollHeight;
+
+        try{
+            await ready;
+
+            var r = await fetch("/api/chat", {
+                method: "POST",
+                credentials: "same-origin",
+                cache: "no-store",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRF": ME ? ME.csrf : ""
+                },
+                body: JSON.stringify({ message: text })
+            });
+
+            if(r.status === 401){
+                location.replace("/login.html");
+                return;
+            }
+
+            var data = await r.json().catch(function(){ return {}; });
+            typing.remove();
+
+            if(!r.ok){
+                throw new Error(typeof data.detail === "string" ? data.detail : "The assistant could not respond.");
+            }
+
+            addMessage("ai", data.answer || "No answer was returned.", data.sources);
+
+        }catch(err){
+            typing.remove();
+            addMessage("ai", err.message || "Something went wrong. Please try again.");
+        }
+    });
+
+    document.querySelectorAll(".suggestion").forEach(function(btn){
+        btn.addEventListener("click", function(){
+            input.value = this.textContent.trim();
+            input.focus();
+        });
+    });
+
+    input.addEventListener("keydown", function(e){
+        if(e.key === "Enter"){
+            e.preventDefault();
+            form.requestSubmit();
+        }
+    });
+})();
+
 </script>
 </body>
 </html> 
