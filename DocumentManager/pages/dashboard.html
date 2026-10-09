@@ -581,184 +581,56 @@ animation-duration:.01ms!important;animation-iteration-count:1!important;transit
 </div>
 
 <script>
-/* ============================================
-   AUTH + DASHBOARD (SELF-CONTAINED)
-   No external auth.js dependency.
-============================================ */
 (async function(){
-
-    /* ---------- AUTH ---------- */
-    var currentUser = null;
-
-    try {
-        var authResponse = await fetch("/api/me", {
-            method: "GET",
-            credentials: "same-origin",
-            cache: "no-store"
-        });
-
-        if(!authResponse.ok){
-            window.location.replace("/login.html");
-            return;
-        }
-
-        var me = await authResponse.json();
-
-        currentUser = {
-            email: me.email || "",
-            role: me.role || "visitor",
-            csrf: me.csrf || "",
-            name: me.full_name || (me.email || "User").split("@")[0],
-            initials: ""
-        };
-
-        var nameForInitials = currentUser.name || currentUser.email || "U";
-        currentUser.initials = nameForInitials
-            .split(/\s+/)
-            .filter(Boolean)
-            .slice(0, 2)
-            .map(function(part){ return part.charAt(0); })
-            .join("")
-            .toUpperCase();
-
-        window.ME = me;
-        window.CSRF = me.csrf || "";
-
-    } catch(e){
-        console.error("SecureDocs authentication check failed:", e);
-        window.location.replace("/login.html");
-        return;
-    }
+    "use strict";
 
     var ROLE_PAGES = {
-        admin:     ["overview","documents","search","assistant","users","roles","audit","settings","profile"],
-        executive: ["overview","documents","search","assistant","profile"],
-        visitor:   ["overview","documents","search","profile"]
+        admin:     ["dashboard","documents","search","assistant","users","roles","audit","settings","profile"],
+        executive: ["dashboard","documents","search","assistant","profile"],
+        visitor:   ["dashboard","documents","search","assistant","profile"]
     };
-    var PAGE_KEY = {
-        "dashboard":"overview","documents":"documents","search":"search","assistant":"assistant",
-        "users":"users","roles":"roles","audit":"audit","settings":"settings","profile":"profile"
-    };
-    var allowed = ROLE_PAGES[currentUser.role] || ROLE_PAGES.visitor;
 
-    document.querySelectorAll(".nav a").forEach(function(link){
-        var href = (link.getAttribute("href") || "").replace(".html","");
-        var key = PAGE_KEY[href];
-        if(key && allowed.indexOf(key) === -1){
-            link.style.display = "none";
+    function byId(id){ return document.getElementById(id); }
+
+    function setText(id, value){
+        var node = byId(id);
+        if(node) node.textContent = String(value);
+    }
+
+    function el(tag, cls, txt){
+        var node = document.createElement(tag);
+        if(cls) node.className = cls;
+        if(txt !== undefined && txt !== null) node.textContent = txt;
+        return node;
+    }
+
+    async function getJSON(url){
+        var r = await fetch(url, { credentials: "same-origin", cache: "no-store" });
+        if(r.status === 401){
+            location.replace("/login.html");
+            throw new Error("Please sign in.");
         }
-    });
-
-    /* ---------- USER INFO ---------- */
-    var sName = document.getElementById("sidebarName");
-    var sRole = document.getElementById("sidebarRole");
-    var sAvatar = document.getElementById("sidebarAvatar");
-    var welcome = document.getElementById("welcomeName");
-
-    if(sName) sName.textContent = currentUser.name;
-    if(sAvatar) sAvatar.textContent = currentUser.initials;
-    if(sRole){
-        var rl = currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1);
-        sRole.textContent = rl + " account";
-    }
-    if(welcome){
-        welcome.textContent = (currentUser.name || "User").split(" ")[0] + ".";
+        if(!r.ok) throw new Error("Request failed (" + r.status + ")");
+        return r.json();
     }
 
-    if(sAvatar){
-        sAvatar.style.cursor = "pointer";
-        sAvatar.title = "Click to sign out";
-        sAvatar.addEventListener("click", function(){
-            if(confirm("Sign out of SecureDocs?")){
-                logoutCurrentUser();
-            }
-        });
-    }
-
-    /* ---------- LOGOUT ---------- */
-    async function logoutCurrentUser(){
-        try{
-            var response = await fetch("/api/logout", {
-                method: "POST",
-                credentials: "same-origin",
-                headers: {
-                    "X-CSRF": currentUser.csrf || window.CSRF || ""
-                }
-            });
-
-            if(response.ok){
-                window.location.replace("/login.html");
-                return;
-            }
-
-            var data = {};
-            try { data = await response.json(); } catch(e){}
-
-            alert(data.detail || "Could not sign out. Please reload and try again.");
-        }catch(e){
-            console.error("Logout failed:", e);
-            alert("Could not sign out. Please check your connection and try again.");
-        }
-    }
-
-    /* ============================================
-       DATA GETTERS (real localStorage)
-    ============================================ */
-    function getDocuments(){
-        try {
-            var raw = localStorage.getItem("securedocs_documents");
-            return raw ? JSON.parse(raw) : [];
-        } catch(e){ return []; }
-    }
-
-    function getUsers(){
-        try {
-            var raw = localStorage.getItem("securedocs_users");
-            if(raw) return JSON.parse(raw);
-        } catch(e){}
-        /* Default users (agar Users page se kuch save na ho) */
-        return [
-            { name:"Sarah Connor",   email:"admin@securedocs.com",     role:"admin",  status:"active" },
-            { name:"John Mercer",    email:"executive@securedocs.com", role:"exec",   status:"active" },
-            { name:"Guest User",     email:"visitor@securedocs.com",   role:"viewer", status:"idle" }
-        ];
-    }
-
-    function getAIQueryCount(){
-        try {
-            var n = parseInt(localStorage.getItem("securedocs_ai_queries") || "0", 10);
-            return isNaN(n) ? 0 : n;
-        } catch(e){ return 0; }
-    }
-
-    function getAuditLogs(){
-        try {
-            var raw = localStorage.getItem("securedocs_audit");
-            return raw ? JSON.parse(raw) : [];
-        } catch(e){ return []; }
-    }
-
-    /* ============================================
-       HELPERS
-    ============================================ */
-    function formatSize(bytes){
-        if(!bytes && bytes !== 0) return "—";
+    function fmtSize(bytes){
+        bytes = Number(bytes) || 0;
         if(bytes < 1024) return bytes + " B";
-        if(bytes < 1024*1024) return (bytes/1024).toFixed(1) + " KB";
-        if(bytes < 1024*1024*1024) return (bytes/(1024*1024)).toFixed(1) + " MB";
-        return (bytes/(1024*1024*1024)).toFixed(2) + " GB";
+        if(bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB";
+        if(bytes < 1073741824) return (bytes / 1048576).toFixed(1) + " MB";
+        return (bytes / 1073741824).toFixed(2) + " GB";
     }
 
+    /* ts is a unix timestamp in seconds (as sent by the server) */
     function timeAgo(ts){
-        var diff = Date.now() - ts;
-        var min = Math.floor(diff/60000);
-        if(min < 1) return "just now";
-        if(min < 60) return min + " min ago";
-        var hr = Math.floor(min/60);
-        if(hr < 24) return hr + " hr ago";
-        var day = Math.floor(hr/24);
-        if(day < 7) return day + " day" + (day > 1 ? "s" : "") + " ago";
-        return new Date(ts).toLocaleDateString();
+        var s = Math.max(0, Date.now() / 1000 - ts);
+        if(s < 60) return "just now";
+        if(s < 3600) return Math.floor(s / 60) + " min ago";
+        if(s < 86400) return Math.floor(s / 3600) + " hr ago";
+        var d = Math.floor(s / 86400);
+        if(d < 7) return d + " day" + (d > 1 ? "s" : "") + " ago";
+        return new Date(ts * 1000).toLocaleDateString();
     }
 
     function iconClass(ext){
@@ -768,213 +640,251 @@ animation-duration:.01ms!important;animation-iteration-count:1!important;transit
         return "";
     }
 
-    function escapeHtml(str){
-        return String(str || "").replace(/[&<>"']/g, function(s){
-            return { "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[s];
-        });
-    }
-
-    function setText(id, val){
-        var el = document.getElementById(id);
-        if(el) el.textContent = val;
-    }
-
-    /* ============================================
-       RECENT DOCS
-    ============================================ */
-    function renderRecentDocs(){
-        var wrap = document.getElementById("recentDocsWrap");
-        var docs = getDocuments();
-        docs.sort(function(a,b){ return (b.uploadedAt || 0) - (a.uploadedAt || 0); });
-        var recent = docs.slice(0, 4);
-
-        if(recent.length === 0){
-            wrap.innerHTML =
-                '<div class="empty-state">' +
-                    '<div class="empty-icon">▣</div>' +
-                    '<h4>No documents yet</h4>' +
-                    '<p>Upload your first document to see it here.</p>' +
-                    '<a href="documents.html" class="empty-btn">+ Upload document</a>' +
-                '</div>';
-            return;
+    function setTrend(id, value){
+        var node = byId(id);
+        if(!node) return;
+        node.classList.remove("down");
+        node.classList.remove("neutral");
+        if(value > 0){
+            node.textContent = "↑ " + value;
+        } else {
+            node.classList.add("neutral");
+            node.textContent = "—";
         }
-
-        var html = "";
-        recent.forEach(function(d){
-            var ext = (d.ext || "FILE").toUpperCase();
-            html +=
-                '<div class="document">' +
-                    '<div class="doc-icon ' + iconClass(ext) + '">' + ext + '</div>' +
-                    '<div class="doc-body">' +
-                        '<div class="doc-name">' + escapeHtml(d.name) + '</div>' +
-                        '<div class="doc-meta">' + formatSize(d.size || 0) + ' · ' + timeAgo(d.uploadedAt) + '</div>' +
-                    '</div>' +
-                '</div>';
-        });
-        wrap.innerHTML = html;
     }
 
-    /* ============================================
-       RECENT ACTIVITY
-    ============================================ */
-    function renderRecentActivity(){
-        var wrap = document.getElementById("recentActivity");
-        var logs = getAuditLogs();
-
-        if(!logs || logs.length === 0){
-            logs = [{
-                icon: "✓", color: "act-green",
-                text: "<b>" + escapeHtml(currentUser.name) + "</b> signed in",
-                time: "just now", ts: Date.now()
-            }];
-        }
-
-        logs.sort(function(a,b){ return (b.ts || 0) - (a.ts || 0); });
-        var recent = logs.slice(0, 4);
-
-        var html = "";
-        recent.forEach(function(l){
-            html +=
-                '<div class="activity">' +
-                    '<div class="act-icon ' + (l.color || "act-blue") + '">' + (l.icon || "•") + '</div>' +
-                    '<div class="act-body">' +
-                        '<div class="act-text">' + (l.text || l.action || "") + '</div>' +
-                        '<div class="act-time">' + (l.time || timeAgo(l.ts || Date.now())) + '</div>' +
-                    '</div>' +
-                '</div>';
-        });
-        wrap.innerHTML = html;
+    function iconFor(action){
+        return ({ login:"✓", upload:"▣", download:"⬇", ai:"✦", delete:"✕", permission:"⬡", security:"⚠", settings:"⚙", profile:"◐" })[action] || "•";
     }
 
-    /* ============================================
-       CHART (7-day real)
-    ============================================ */
-    function renderChart(){
-        var chart = document.getElementById("activityChart");
-        var labels = document.getElementById("chartLabels");
-        var docs = getDocuments();
-        var logs = getAuditLogs();
-
-        var days = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
-        var today = new Date();
-        today.setHours(0,0,0,0);
-
-        var counts = [], labelList = [];
-        for(var i = 6; i >= 0; i--){
-            var d = new Date(today);
-            d.setDate(today.getDate() - i);
-            var start = d.getTime();
-            var end = start + 86400000;
-
-            var up = docs.filter(function(x){ return x.uploadedAt >= start && x.uploadedAt < end; }).length;
-            var lg = logs.filter(function(x){ return (x.ts || 0) >= start && (x.ts || 0) < end; }).length;
-
-            counts.push(up + lg);
-            labelList.push(days[d.getDay()]);
-        }
-
-        var max = Math.max.apply(null, counts.concat([1]));
-        var html = "";
-        counts.forEach(function(c, idx){
-            var h = max === 0 ? 6 : Math.max((c / max) * 100, 6);
-            var isToday = idx === counts.length - 1;
-            html +=
-                '<div class="bar ' + (isToday ? "today" : "") + '" style="height:' + h + '%">' +
-                    '<span class="val">' + c + '</span>' +
-                '</div>';
-        });
-        chart.innerHTML = html;
-
-        var lHtml = "";
-        labelList.forEach(function(l, idx){
-            var isToday = idx === labelList.length - 1;
-            lHtml += '<span class="' + (isToday ? "today" : "") + '">' + l + '</span>';
-        });
-        labels.innerHTML = lHtml;
+    function colorFor(action){
+        return action === "login" ? "act-green" : "act-blue";
     }
 
-    /* ============================================
-       STATS (real)
-    ============================================ */
-    function updateStats(){
-        var docs = getDocuments();
-        var users = getUsers();
-        var aiQueries = getAIQueryCount();
-
-        var totalDocs = docs.length;
-        var totalBytes = docs.reduce(function(s, d){ return s + (d.size || 0); }, 0);
-        var activeUsers = users.filter(function(u){ return u.status === "active"; }).length;
+    function renderStats(files, stats){
+        var total = stats.total != null ? stats.total : files.length;
 
         var todayStart = new Date();
-        todayStart.setHours(0,0,0,0);
-        var todayCount = docs.filter(function(d){
-            return (d.uploadedAt || 0) >= todayStart.getTime();
+        todayStart.setHours(0, 0, 0, 0);
+        var todayCount = files.filter(function(f){
+            return f.ts >= todayStart.getTime() / 1000;
         }).length;
 
-        /* HERO */
         setText("statDocsToday", todayCount);
-        setText("statTotal", totalDocs);
+        setText("statTotal", total);
 
-        /* MINI STATS */
-        setText("miniTotal", totalDocs);
-        setText("miniIndexed", totalDocs);
-        setText("miniAI", aiQueries);
-        setText("miniUsers", activeUsers);
+        setText("miniTotal", total);
+        setText("miniIndexed", stats.indexed != null ? stats.indexed : total);
+        setText("miniAI", stats.queries || 0);
 
-        /* TRENDS */
-        setTrend("trendDocs", totalDocs);
-        setTrend("trendIndexed", totalDocs);
-        setTrend("trendAI", aiQueries);
-        setTrend("trendUsers", activeUsers);
+        setTrend("trendDocs", stats.mine || 0);
+        setTrend("trendIndexed", stats.indexed || 0);
+        setTrend("trendAI", stats.queries || 0);
 
-        /* STORAGE */
-        var usedMB = totalBytes / (1024*1024);
-        var usedText = usedMB < 1024
-            ? usedMB.toFixed(1) + " MB"
-            : (usedMB/1024).toFixed(2) + " GB";
+        var bytes = stats.storage != null
+            ? stats.storage
+            : files.reduce(function(sum, f){ return sum + (f.size || 0); }, 0);
 
+        var mb = bytes / 1048576;
+        var usedText = mb < 1024 ? mb.toFixed(1) + " MB" : (mb / 1024).toFixed(2) + " GB";
         setText("storageUsed", usedText);
         setText("docsSize", usedText);
 
-        var pct = Math.min((totalBytes / (50*1024*1024*1024)) * 100, 100);
-        var fill = document.getElementById("storageFill");
-        if(fill) fill.style.width = Math.max(pct, totalDocs > 0 ? 0.5 : 0) + "%";
+        var fill = byId("storageFill");
+        if(fill){
+            var pct = Math.min((bytes / (50 * 1073741824)) * 100, 100);
+            fill.style.width = Math.max(pct, total > 0 ? 0.5 : 0) + "%";
+        }
     }
 
-    function setTrend(elId, value){
-        var el = document.getElementById(elId);
-        if(!el) return;
-        el.classList.remove("down", "neutral");
-        if(value > 0){
-            el.textContent = "↑ " + value;
+    async function renderUsers(role){
+        if(role !== "admin"){
+            setText("miniUsers", "—");
+            return;
+        }
+        try{
+            var users = await getJSON("/api/users");
+            setText("miniUsers", users.length);
+            setTrend("trendUsers", users.length);
+        }catch(e){
+            setText("miniUsers", "—");
+        }
+    }
+
+    function renderRecent(files){
+        var wrap = byId("recentDocsWrap");
+        if(!wrap) return;
+        wrap.replaceChildren();
+
+        if(!files.length){
+            var empty = el("div", "empty-state");
+            empty.append(
+                el("div", "empty-icon", "▣"),
+                el("h4", null, "No documents yet"),
+                el("p", null, "Upload your first document to see it here.")
+            );
+            var btn = el("a", "empty-btn", "+ Upload document");
+            btn.href = "documents.html";
+            empty.append(btn);
+            wrap.append(empty);
+            return;
+        }
+
+        files.slice(0, 4).forEach(function(f){
+            var ext = (f.ext || "FILE").toUpperCase();
+            var row = el("div", "document");
+            row.style.cursor = "pointer";
+            row.addEventListener("click", function(){
+                location.href = "documents.html";
+            });
+
+            var body = el("div", "doc-body");
+            body.append(
+                el("div", "doc-name", f.name),
+                el("div", "doc-meta", fmtSize(f.size) + " · " + timeAgo(f.ts))
+            );
+
+            row.append(el("div", "doc-icon " + iconClass(ext), ext), body);
+            wrap.append(row);
+        });
+    }
+
+    function renderChart(files){
+        var chart = byId("activityChart");
+        var labels = byId("chartLabels");
+        if(!chart || !labels) return;
+
+        var names = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+        var today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        var counts = [];
+        var labelList = [];
+
+        for(var i = 6; i >= 0; i--){
+            var day = new Date(today);
+            day.setDate(today.getDate() - i);
+            var start = day.getTime() / 1000;
+            var end = start + 86400;
+
+            counts.push(files.filter(function(f){
+                return f.ts >= start && f.ts < end;
+            }).length);
+
+            labelList.push(names[day.getDay()]);
+        }
+
+        var max = Math.max.apply(null, counts.concat([1]));
+
+        chart.replaceChildren();
+        counts.forEach(function(c, idx){
+            var isToday = idx === counts.length - 1;
+            var bar = el("div", "bar" + (isToday ? " today" : ""));
+            bar.style.height = Math.max((c / max) * 100, 6) + "%";
+            bar.append(el("span", "val", String(c)));
+            chart.append(bar);
+        });
+
+        labels.replaceChildren();
+        labelList.forEach(function(l, idx){
+            labels.append(el("span", idx === labelList.length - 1 ? "today" : "", l));
+        });
+    }
+
+    async function renderActivity(files, role, email){
+        var wrap = byId("recentActivity");
+        if(!wrap) return;
+        wrap.replaceChildren();
+
+        var rows = [];
+
+        if(role === "admin"){
+            try{
+                var audit = await getJSON("/api/audit?limit=4");
+                rows = audit.logs.map(function(l){
+                    return {
+                        icon: iconFor(l.action),
+                        color: colorFor(l.action),
+                        text: l.user + " — " + l.description,
+                        ts: l.ts
+                    };
+                });
+            }catch(e){}
         } else {
-            el.classList.add("neutral");
-            el.textContent = "—";
+            rows = files
+                .filter(function(f){ return f.owner === email; })
+                .slice(0, 4)
+                .map(function(f){
+                    return { icon: "▣", color: "act-blue", text: "Uploaded " + f.name, ts: f.ts };
+                });
         }
+
+        if(!rows.length){
+            wrap.append(el("div", "doc-meta", "No activity yet."));
+            return;
+        }
+
+        rows.forEach(function(r){
+            var row = el("div", "activity");
+            var body = el("div", "act-body");
+            body.append(
+                el("div", "act-text", r.text),
+                el("div", "act-time", timeAgo(r.ts))
+            );
+            row.append(el("div", "act-icon " + r.color, r.icon), body);
+            wrap.append(row);
+        });
     }
 
-    /* ============================================
-       INIT
-    ============================================ */
-    renderRecentDocs();
-    renderRecentActivity();
-    renderChart();
-    updateStats();
+    /* ---------- INIT ---------- */
 
-    window.addEventListener("storage", function(e){
-        if(["securedocs_documents","securedocs_users","securedocs_ai_queries","securedocs_audit"].indexOf(e.key) !== -1){
-            renderRecentDocs(); renderRecentActivity(); renderChart(); updateStats();
-        }
+    var me;
+    try{
+        me = await getJSON("/api/me");
+    }catch(e){
+        location.replace("/login.html");
+        return;
+    }
+
+    var role = me.role || "visitor";
+    var name = me.full_name || (me.email || "User").split("@")[0];
+    var allowed = ROLE_PAGES[role] || ROLE_PAGES.visitor;
+
+    document.querySelectorAll(".nav a").forEach(function(link){
+        var page = (link.getAttribute("href") || "").replace(".html", "");
+        if(allowed.indexOf(page) === -1) link.style.display = "none";
     });
 
-    document.addEventListener("visibilitychange", function(){
-        if(!document.hidden){
-            renderRecentDocs(); renderRecentActivity(); renderChart(); updateStats();
-        }
-    });
+    var initials = name.split(/\s+/).filter(Boolean).slice(0, 2)
+        .map(function(p){ return p.charAt(0); }).join("").toUpperCase() || "U";
 
-}
-)();
+    setText("sidebarName", name);
+    setText("sidebarAvatar", initials);
+    setText("sidebarRole", role.charAt(0).toUpperCase() + role.slice(1) + " account");
+    setText("welcomeName", name.split(" ")[0] + ".");
+
+    var files = [];
+    var stats = {};
+
+    try{
+        var results = await Promise.all([
+            getJSON("/api/files"),
+            getJSON("/api/stats")
+        ]);
+        files = results[0];
+        stats = results[1];
+    }catch(e){
+        console.error("Dashboard data could not be loaded:", e);
+    }
+
+    renderStats(files, stats);
+    renderRecent(files);
+    renderChart(files);
+    renderUsers(role);
+    renderActivity(files, role, me.email);
+
+})();
+
 </script>
 </body>
 </html>
