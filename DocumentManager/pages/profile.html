@@ -381,6 +381,13 @@ background:linear-gradient(180deg,var(--blue),var(--violet))}
 animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;
 }
 }
+/* LAYOUT FIX: let grid/flex columns shrink so panels stay inside the
+   visible area at normal (100%) zoom. Colours and design are unchanged. */
+.main{min-width:0}
+.grid{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr)}
+.grid>*,.field-row>*,.panel,.hero-info{min-width:0}
+input,select,textarea{max-width:100%;min-width:0}
+@media(max-width:1000px){.grid{grid-template-columns:minmax(0,1fr)}}
 </style>
 </head>
 <body>
