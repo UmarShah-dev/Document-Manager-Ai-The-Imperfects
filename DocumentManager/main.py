@@ -106,6 +106,16 @@ COOKIE_SECURE = os.getenv(
 }
 
 
+ALLOW_SIGNUP = os.getenv(
+    "ALLOW_SIGNUP",
+    "1",
+).lower() not in {
+    "0",
+    "false",
+    "no",
+}
+
+
 # ============================================================
 # DATABASE
 # ============================================================
@@ -207,6 +217,12 @@ class User(Base):
     notifications = Column(
         Integer,
         default=1,
+        nullable=False,
+    )
+
+    sessions_valid_after = Column(
+        Float,
+        default=0.0,
         nullable=False,
     )
 
@@ -457,6 +473,12 @@ ensure_column(
     "INTEGER DEFAULT 1",
 )
 
+ensure_column(
+    "users",
+    "sessions_valid_after",
+    "FLOAT DEFAULT 0",
+)
+
 
 def get_db():
 
@@ -478,17 +500,39 @@ FERNET_KEY = os.getenv(
 
 if not FERNET_KEY:
 
-    print(
-        "\nWARNING: SECUREDOCS_FERNET_KEY is not set."
-    )
+    # Previously a NEW random key was generated on every restart, which made
+    # every previously uploaded file permanently unreadable. Generate one key
+    # once and store it in the database so it survives restarts. In production
+    # set SECUREDOCS_FERNET_KEY to manage the key yourself.
 
-    print(
-        "A temporary encryption key will be generated."
-    )
+    with engine.begin() as conn:
 
-    FERNET_KEY = (
-        Fernet.generate_key().decode()
-    )
+        conn.execute(
+            sql_text(
+                "CREATE TABLE IF NOT EXISTS app_secrets ("
+                "name TEXT PRIMARY KEY, "
+                "value TEXT NOT NULL"
+                ")"
+            )
+        )
+
+        conn.execute(
+            sql_text(
+                "INSERT OR IGNORE INTO app_secrets "
+                "(name, value) VALUES "
+                "('fernet_key', :value)"
+            ),
+            {"value": Fernet.generate_key().decode()},
+        )
+
+        FERNET_KEY = conn.execute(
+            sql_text(
+                "SELECT value FROM app_secrets "
+                "WHERE name = 'fernet_key'"
+            )
+        ).scalar_one()
+
+    print("Encryption key loaded from the database.")
 
 
 try:
@@ -621,6 +665,11 @@ def ensure_demo_accounts():
 
     try:
 
+        # Passwords are only reset when explicitly requested.
+        reset = os.getenv(
+            "SECUREDOCS_RESET_DEMO"
+        ) == "1"
+
         for email, info in DEMO_ACCOUNTS.items():
 
             user = (
@@ -645,44 +694,25 @@ def ensure_demo_accounts():
 
                 db.add(user)
 
-            else:
+            elif reset:
 
-                # Reset the demo credentials so
-                # the frontend developer test accounts
-                # always work after deployment.
                 user.pw = hash_pw(
                     info["password"]
                 )
 
                 user.role = info["role"]
 
-                if not user.full_name:
-                    user.full_name = (
-                        info["full_name"]
-                    )
+            if not user.full_name:
+
+                user.full_name = (
+                    info["full_name"]
+                )
 
         db.commit()
 
         print(
-            "\n========================================"
-        )
-        print(
-            " SecureDocs Demo Accounts"
-        )
-        print(
-            "========================================"
-        )
-        print(
-            " Admin     : admin@securedocs.com / SecureDocs_Admin_2026!X7"
-        )
-        print(
-            " Executive : executive@securedocs.com / exec123"
-        )
-        print(
-            " Visitor   : visitor@securedocs.com / visit123"
-        )
-        print(
-            "========================================\n"
+            "Demo accounts ready. "
+            "Set SECUREDOCS_RESET_DEMO=1 once to reset their passwords."
         )
 
     except Exception as e:
@@ -697,6 +727,7 @@ def ensure_demo_accounts():
     finally:
 
         db.close()
+
 
 
 ensure_demo_accounts()
@@ -768,8 +799,10 @@ def make_session_cookie(
     expires: int,
 ) -> str:
 
+    issued = time.time()
+
     payload = (
-        f"{email}|{csrf}|{expires}"
+        f"{expires}|{issued:.6f}|{csrf}|{email}"
     ).encode()
 
     signature = hmac.new(
@@ -778,12 +811,7 @@ def make_session_cookie(
         hashlib.sha256,
     ).hexdigest()
 
-    encoded = (
-        secrets.token_urlsafe(0)
-        + payload.hex()
-    )
-
-    return encoded + "." + signature
+    return payload.hex() + "." + signature
 
 
 def read_session_cookie(
@@ -813,10 +841,10 @@ def read_session_cookie(
         ):
             return None
 
-        email, csrf, expires = (
+        expires, issued, csrf, email = (
             payload.decode().split(
                 "|",
-                2,
+                3,
             )
         )
 
@@ -829,6 +857,7 @@ def read_session_cookie(
             "email": email,
             "csrf": csrf,
             "exp": expires,
+            "iat": float(issued),
         }
 
     except Exception:
@@ -864,6 +893,12 @@ def get_user(
     )
 
     if not user:
+        return None
+
+    # Revoked by logout or a password change.
+    if session["iat"] <= (
+        user.sessions_valid_after or 0.0
+    ):
         return None
 
     return {
@@ -1673,7 +1708,10 @@ elif genai is None:
     )
 
 
-GEMINI_MODEL = "gemini-3.8-flash"
+GEMINI_MODEL = os.getenv(
+    "GEMINI_MODEL",
+    "gemini-2.5-flash",
+)
 
 
 # ============================================================
@@ -2139,6 +2177,13 @@ def auth(
 
         if user is None:
 
+            if not ALLOW_SIGNUP:
+
+                raise HTTPException(
+                    401,
+                    "Incorrect email or password.",
+                )
+
             if len(
                 body.password
             ) < 8:
@@ -2250,6 +2295,19 @@ def logout(
         SESSION_COOKIE_NAME
     )
 
+    # Revoke every session issued before now (including this one).
+    revoked_user = (
+        db.query(User)
+        .filter(User.email == u["email"])
+        .first()
+    )
+
+    if revoked_user:
+
+        revoked_user.sessions_valid_after = time.time()
+
+        db.commit()
+
     audit(
         db,
         request,
@@ -2352,11 +2410,11 @@ def stats(
         Document
     ).all()
 
-    count = sum(
-        1
+    visible_docs = [
+        d
         for d in documents
         if visible(u, d)
-    )
+    ]
 
     user = (
         db.query(User)
@@ -2367,8 +2425,17 @@ def stats(
     )
 
     return {
-        "total": count,
-        "indexed": count,
+        "total": len(visible_docs),
+        "indexed": len(visible_docs),
+        "mine": sum(
+            1
+            for d in visible_docs
+            if d.owner == u["email"]
+        ),
+        "storage": sum(
+            d.size or 0
+            for d in visible_docs
+        ),
         "queries": (
             user.queries
             if user
@@ -2384,6 +2451,14 @@ async def upload(
     u=Depends(current_user),
     db: Session = Depends(get_db),
 ):
+
+    # Role matrix (ROLE_PERMISSIONS): visitors cannot upload.
+    if u["role"] == "visitor":
+
+        raise HTTPException(
+            403,
+            "Visitor accounts cannot upload documents.",
+        )
 
     original_name = os.path.basename(
         file.filename or "file"
@@ -2565,6 +2640,106 @@ def download(
     )
 
 
+@app.get("/api/files/{doc_id}/text")
+def document_text(
+    doc_id: str,
+    u=Depends(current_user),
+    db: Session = Depends(get_db),
+):
+
+    d = (
+        db.query(Document)
+        .filter(
+            Document.id == doc_id
+        )
+        .first()
+    )
+
+    if not d or not visible(u, d):
+
+        raise HTTPException(
+            404,
+            "File not found.",
+        )
+
+    parts = []
+
+    for c in d.chunks:
+
+        try:
+
+            parts.append(
+                dec(c.data).decode(
+                    "utf-8",
+                    "replace",
+                )
+            )
+
+        except Exception:
+
+            continue
+
+    return {
+        "id": d.id,
+        "name": d.name,
+        "text": "\n\n".join(parts),
+    }
+
+
+@app.delete("/api/files/{doc_id}")
+def delete_file(
+    doc_id: str,
+    request: Request,
+    u=Depends(current_user),
+    db: Session = Depends(get_db),
+):
+
+    d = (
+        db.query(Document)
+        .filter(
+            Document.id == doc_id
+        )
+        .first()
+    )
+
+    if not d or not visible(u, d):
+
+        raise HTTPException(
+            404,
+            "File not found.",
+        )
+
+    if (
+        u["role"] != "admin"
+        and d.owner != u["email"]
+    ):
+
+        raise HTTPException(
+            403,
+            "Only the owner or an administrator can delete this file.",
+        )
+
+    name = d.name
+
+    db.delete(d)
+
+    db.commit()
+
+    audit(
+        db,
+        request,
+        u["email"],
+        "delete",
+        f"Deleted document: {name}",
+        document=name,
+        level="warning",
+    )
+
+    return {
+        "ok": True
+    }
+
+
 # ============================================================
 # SEARCH
 # ============================================================
@@ -2576,25 +2751,63 @@ def search(
     db: Session = Depends(get_db),
 ):
 
+    q = q.strip()[:300]
+
+    if not q:
+        return []
+
     results = {}
 
+    # 1) File-name matches ("remote policy" finds remote_policy.pdf)
+    q_tokens = set(tok(q))
+
+    if q_tokens:
+
+        for d in (
+            db.query(Document)
+            .order_by(Document.ts.desc())
+            .all()
+        ):
+
+            if not visible(u, d):
+                continue
+
+            if q_tokens & normalize_name(
+                d.name
+            ):
+
+                results[d.id] = meta(
+                    d,
+                    snippet="Matched by file name.",
+                    score=0.0,
+                )
+
+    # 2) Content matches
     for score, d, content in retrieve(
         u,
-        q[:300],
+        q,
         db,
         30,
     ):
 
-        results.setdefault(
-            d.id,
-            meta(
+        row = results.get(d.id)
+
+        if row is None:
+
+            results[d.id] = meta(
                 d,
                 snippet=content[:300],
-            ),
-        )
+                score=round(float(score), 4),
+            )
 
-    return list(
-        results.values()
+        else:
+
+            row["snippet"] = content[:300]
+            row["score"] = round(float(score), 4)
+
+    return sorted(
+        results.values(),
+        key=lambda r: -r.get("score", 0),
     )
 
 
@@ -2618,6 +2831,22 @@ def ai_search(
             "sources": [],
             "results": [],
         }
+
+    user_row = (
+        db.query(User)
+        .filter(
+            User.email == u["email"]
+        )
+        .first()
+    )
+
+    if user_row:
+
+        user_row.queries = (
+            user_row.queries or 0
+        ) + 1
+
+        db.commit()
 
     hits = retrieve(
         u,
@@ -3078,6 +3307,9 @@ def change_password(
         body.new_password
     )
 
+    # Sign out every existing session, including other devices.
+    user.sessions_valid_after = time.time()
+
     db.commit()
 
     audit(
@@ -3340,6 +3572,13 @@ def update_user_role(
         raise HTTPException(
             404,
             "User not found.",
+        )
+
+    if user.email == ADMIN_EMAIL and body.role != "admin":
+
+        raise HTTPException(
+            400,
+            "The primary administrator must remain an admin.",
         )
 
     old_role = user.role
@@ -3665,7 +3904,14 @@ def audit_export(
 
             value = str(
                 value or ""
-            ).replace(
+            )
+
+            # Neutralise spreadsheet formula injection (CSV injection).
+            if value[:1] in ("=", "+", "-", "@"):
+
+                value = "'" + value
+
+            value = value.replace(
                 '"',
                 '""',
             )
@@ -3746,12 +3992,13 @@ PAGE_ACCESS = {
         "profile",
     },
 
-    # 4 pages
+    # 5 pages
     "visitor": {
         "dashboard",
         "documents",
         "assistant",
         "search",
+        "profile",
     },
 
 }
