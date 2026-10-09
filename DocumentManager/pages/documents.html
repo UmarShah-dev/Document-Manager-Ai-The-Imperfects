@@ -434,7 +434,7 @@ animation-duration:.01ms!important;animation-iteration-count:1!important;transit
         <h2>Drop your documents here</h2>
         <p>PDF, DOCX, TXT and other supported files</p>
         <span class="browse">Browse files</span>
-        <input type="file" id="fileInput" multiple accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg,.gif,.webp">
+        <input type="file" id="fileInput" multiple accept=".pdf,.docx,.txt,.md,.csv">
     </div>
 
     <div class="toolbar">
@@ -467,458 +467,346 @@ animation-duration:.01ms!important;animation-iteration-count:1!important;transit
 <div class="toast-wrap" id="toastWrap"></div>
 
 <script>
-/* ============================================
-   AUTH — same working pattern as dashboard.html
-   Uses the real FastAPI session only. No auth.js/localStorage auth.
-============================================ */
-(async function(){
-    var authResponse;
-    try {
-        authResponse = await fetch("/api/me", {
-            method: "GET",
-            credentials: "same-origin",
-            cache: "no-store"
-        });
-    } catch(e) {
-        console.error("SecureDocs authentication check failed:", e);
-        window.location.replace("/login.html");
-        return;
-    }
+(function(){
+    "use strict";
 
-    if(!authResponse.ok){
-        window.location.replace("/login.html");
-        return;
-    }
+    var MAX_BYTES = 5 * 1024 * 1024;
+    var ALLOWED_EXT = ["pdf", "docx", "txt", "md", "csv"];
 
-    var me;
-    try {
-        me = await authResponse.json();
-    } catch(e) {
-        console.error("Invalid /api/me response:", e);
-        window.location.replace("/login.html");
-        return;
-    }
-
-    window.ME = me;
-    window.CSRF = me.csrf || "";
-
-    var name = me.full_name || (me.email || "User").split("@")[0];
-    var initials = name.split(/\s+/).filter(Boolean).slice(0,2).map(function(part){
-        return part.charAt(0);
-    }).join("").toUpperCase() || "U";
-
-    var sidebarName = document.getElementById("sidebarName");
-    var sidebarRole = document.getElementById("sidebarRole");
-    var sidebarAvatar = document.getElementById("sidebarAvatar");
-
-    if(sidebarName) sidebarName.textContent = name;
-    if(sidebarAvatar) sidebarAvatar.textContent = initials;
-    if(sidebarRole){
-        var role = (me.role || "visitor");
-        sidebarRole.textContent = role.charAt(0).toUpperCase() + role.slice(1) + " account";
-    }
-
-    /* Keep the same role-aware navigation behavior as dashboard.html. */
     var ROLE_PAGES = {
-        admin: ["dashboard","documents","search","assistant","users","roles","audit","settings","profile"],
+        admin:     ["dashboard","documents","search","assistant","users","roles","audit","settings","profile"],
         executive: ["dashboard","documents","search","assistant","profile"],
-        visitor: ["dashboard","documents","search"]
+        visitor:   ["dashboard","documents","search","assistant","profile"]
     };
-    var allowed = ROLE_PAGES[me.role] || ROLE_PAGES.visitor;
 
-    document.querySelectorAll(".nav a").forEach(function(link){
-        var href = (link.getAttribute("href") || "").replace(".html", "");
-        if(allowed.indexOf(href) === -1){
-            link.style.display = "none";
+    var ME = null;
+    var ALL = [];
+    var currentSearch = "";
+
+    function byId(id){ return document.getElementById(id); }
+
+    function el(tag, cls, txt){
+        var node = document.createElement(tag);
+        if(cls) node.className = cls;
+        if(txt !== undefined && txt !== null) node.textContent = txt;
+        return node;
+    }
+
+    function fmtSize(bytes){
+        bytes = Number(bytes) || 0;
+        if(bytes < 1024) return bytes + " B";
+        if(bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB";
+        if(bytes < 1073741824) return (bytes / 1048576).toFixed(1) + " MB";
+        return (bytes / 1073741824).toFixed(2) + " GB";
+    }
+
+    function timeAgo(ts){
+        var s = Math.max(0, Date.now() / 1000 - ts);
+        if(s < 60) return "just now";
+        if(s < 3600) return Math.floor(s / 60) + " min ago";
+        if(s < 86400) return Math.floor(s / 3600) + " hr ago";
+        var d = Math.floor(s / 86400);
+        if(d < 7) return d + " day" + (d > 1 ? "s" : "") + " ago";
+        return new Date(ts * 1000).toLocaleDateString();
+    }
+
+    function iconClass(ext){
+        if(ext === "PDF") return "pdf";
+        if(ext === "DOC" || ext === "DOCX") return "doc";
+        if(ext === "TXT") return "txt";
+        return "";
+    }
+
+    /* Calls the FastAPI backend. Sends the CSRF token on every write. */
+    async function api(url, opts){
+        opts = opts || {};
+        opts.credentials = "same-origin";
+        opts.cache = "no-store";
+        opts.headers = opts.headers || {};
+        if(ME && opts.method && opts.method !== "GET"){
+            opts.headers["X-CSRF"] = ME.csrf;
         }
-    });
 
-    /* Continue into the existing Documents application only after auth succeeds. */
-    window.dispatchEvent(new CustomEvent("securedocs-auth-ready"));
-})();
+        var r = await fetch(url, opts);
 
-/* ============================================
-   STORAGE
-============================================ */
-var STORAGE_KEY = "securedocs_documents";
-var MAX_FILE_SIZE = 4 * 1024 * 1024; /* 4MB base64 limit approx */
-
-function loadDocs(){
-    try {
-        var raw = localStorage.getItem(STORAGE_KEY);
-        return raw ? JSON.parse(raw) : [];
-    } catch(e){ return []; }
-}
-
-function saveDocs(docs){
-    try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(docs));
-        return true;
-    } catch(e){
-        toast("Storage full — remove some files", "danger");
-        return false;
-    }
-}
-
-/* ============================================
-   HELPERS
-============================================ */
-function formatSize(bytes){
-    if(bytes < 1024) return bytes + " B";
-    if(bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + " KB";
-    if(bytes < 1024 * 1024 * 1024) return (bytes / (1024 * 1024)).toFixed(1) + " MB";
-    return (bytes / (1024 * 1024 * 1024)).toFixed(2) + " GB";
-}
-
-function timeAgo(ts){
-    var diff = Date.now() - ts;
-    var min = Math.floor(diff / 60000);
-    if(min < 1) return "just now";
-    if(min < 60) return min + " min ago";
-    var hr = Math.floor(min / 60);
-    if(hr < 24) return hr + " hr ago";
-    var day = Math.floor(hr / 24);
-    if(day < 7) return day + " day" + (day > 1 ? "s" : "") + " ago";
-    return new Date(ts).toLocaleDateString();
-}
-
-function iconClass(ext){
-    if(ext === "PDF") return "pdf";
-    if(ext === "DOC" || ext === "DOCX") return "doc";
-    if(ext === "TXT") return "txt";
-    return "";
-}
-
-function escapeHtml(str){
-    return String(str).replace(/[&<>"']/g, function(c){
-        return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
-    });
-}
-
-/* ============================================
-   RENDER
-============================================ */
-var currentSearch = "";
-
-function render(){
-    var wrap = document.getElementById("documentsList");
-    var docs = loadDocs();
-
-    docs.sort(function(a,b){ return (b.uploadedAt || 0) - (a.uploadedAt || 0); });
-
-    var filtered = docs;
-    if(currentSearch){
-        var q = currentSearch.toLowerCase();
-        filtered = docs.filter(function(d){
-            return d.name.toLowerCase().indexOf(q) !== -1;
-        });
-    }
-
-    document.getElementById("docCount").textContent = docs.length;
-
-    if(filtered.length === 0){
-        if(docs.length === 0){
-            wrap.innerHTML =
-                '<div class="empty-state">' +
-                    '<div class="big">▣</div>' +
-                    '<h4>No documents yet</h4>' +
-                    '<p>Upload your first document to get started.</p>' +
-                '</div>';
-        } else {
-            wrap.innerHTML =
-                '<div class="empty-state">' +
-                    '<div class="big">⌕</div>' +
-                    '<h4>No matches</h4>' +
-                    '<p>Try a different search term.</p>' +
-                '</div>';
+        if(r.status === 401){
+            location.replace("/login.html");
+            throw new Error("Please sign in.");
         }
-        return;
+
+        var data = await r.json().catch(function(){ return {}; });
+
+        if(!r.ok){
+            throw new Error(
+                typeof data.detail === "string"
+                    ? data.detail
+                    : "Request failed (" + r.status + ")"
+            );
+        }
+
+        return data;
     }
 
-    var html = "";
-    filtered.forEach(function(d){
+    function toast(msg, type){
+        var wrap = byId("toastWrap");
+        if(!wrap) return;
+        var t = el("div", "toast " + (type || ""), msg);
+        wrap.append(t);
+        setTimeout(function(){
+            t.style.transition = "opacity .3s ease, transform .3s ease";
+            t.style.opacity = "0";
+            t.style.transform = "translateX(30px)";
+            setTimeout(function(){ t.remove(); }, 300);
+        }, 2400);
+    }
+
+    function findDoc(id){
+        return ALL.find(function(d){ return d.id === id; });
+    }
+
+    function row(d){
         var ext = (d.ext || "FILE").toUpperCase();
-        var cls = iconClass(ext);
-        var statusCls = d.status === "Processing" ? "processing" : "";
-        html +=
-            '<div class="document" data-id="' + d.id + '">' +
-                '<div class="doc-left">' +
-                    '<div class="doc-icon ' + cls + '">' + ext + '</div>' +
-                    '<div class="doc-body">' +
-                        '<div class="doc-name">' + escapeHtml(d.name) + '</div>' +
-                        '<div class="doc-meta">' + formatSize(d.size || 0) + ' · ' + timeAgo(d.uploadedAt) + '</div>' +
-                    '</div>' +
-                '</div>' +
-                '<div class="doc-actions">' +
-                    '<span class="status ' + statusCls + '">' + (d.status || "Indexed") + '</span>' +
-                    '<button class="action-btn" title="View" onclick="viewDoc(' + d.id + ')">👁</button>' +
-                    '<button class="action-btn delete" title="Delete" onclick="deleteDoc(' + d.id + ')">🗑</button>' +
-                '</div>' +
-            '</div>';
-    });
-    wrap.innerHTML = html;
-}
 
-/* ============================================
-   UPLOAD (read file as base64 for view)
-============================================ */
-function handleFiles(files){
-    var filesArr = Array.prototype.slice.call(files);
-    if(filesArr.length === 0) return;
+        var r = el("div", "document");
+        r.setAttribute("data-id", d.id);
 
-    var remaining = filesArr.length;
-    var added = 0;
+        var left = el("div", "doc-left");
+        var body = el("div", "doc-body");
+        body.append(
+            el("div", "doc-name", d.name),
+            el("div", "doc-meta", fmtSize(d.size) + " · " + timeAgo(d.ts))
+        );
+        left.append(el("div", "doc-icon " + iconClass(ext), ext), body);
 
-    filesArr.forEach(function(file){
-        if(file.size > MAX_FILE_SIZE){
-            toast(file.name + " — too large (max 4MB)", "danger");
-            remaining--;
-            if(remaining === 0 && added > 0) render();
+        var actions = el("div", "doc-actions");
+
+        var status = el("span", "status", d.restricted ? "Restricted" : "Indexed");
+
+        var view = el("button", "action-btn", "👁");
+        view.title = "View";
+        view.addEventListener("click", function(){ openDoc(d.id); });
+
+        var del = el("button", "action-btn delete", "🗑");
+        del.title = "Delete";
+        del.addEventListener("click", function(){ removeDoc(d.id); });
+
+        actions.append(status, view, del);
+        r.append(left, actions);
+        return r;
+    }
+
+    function render(){
+        var list = byId("documentsList");
+        var count = byId("docCount");
+
+        if(count) count.textContent = ALL.length;
+        if(!list) return;
+
+        var q = currentSearch.toLowerCase();
+        var items = ALL.filter(function(d){
+            return !q || d.name.toLowerCase().indexOf(q) !== -1;
+        });
+
+        list.replaceChildren();
+
+        if(!items.length){
+            var empty = el("div", "empty-state");
+            if(!ALL.length){
+                empty.append(
+                    el("div", "big", "▣"),
+                    el("h4", null, "No documents yet"),
+                    el("p", null, "Upload your first document to get started.")
+                );
+            } else {
+                empty.append(
+                    el("div", "big", "⌕"),
+                    el("h4", null, "No matches"),
+                    el("p", null, "Try a different search term.")
+                );
+            }
+            list.append(empty);
             return;
         }
 
-        var reader = new FileReader();
-
-        reader.onload = function(e){
-            var dataUrl = e.target.result;
-            var ext = file.name.split(".").pop().toUpperCase();
-
-            var docs = loadDocs();
-            docs.push({
-                id: Date.now() + Math.floor(Math.random() * 10000),
-                name: file.name,
-                ext: ext,
-                size: file.size,
-                type: file.type,
-                dataUrl: dataUrl,           /* full content saved */
-                uploadedAt: Date.now(),
-                status: "Processing"
-            });
-
-            var ok = saveDocs(docs);
-            if(!ok){
-                /* rollback */
-                var d2 = loadDocs();
-                d2 = d2.filter(function(x){ return x.name !== file.name || x.uploadedAt !== d2[d2.length-1].uploadedAt; });
-                saveDocs(d2);
-            } else {
-                added++;
-                render();
-            }
-
-            remaining--;
-            if(remaining === 0){
-                if(added > 0){
-                    toast(added + " file" + (added > 1 ? "s" : "") + " uploaded", "success");
-                    setTimeout(function(){
-                        var docs3 = loadDocs();
-                        docs3.forEach(function(d){
-                            if(d.status === "Processing") d.status = "Indexed";
-                        });
-                        saveDocs(docs3);
-                        render();
-                    }, 1500);
-                }
-            }
-        };
-
-        reader.onerror = function(){
-            toast("Failed to read " + file.name, "danger");
-            remaining--;
-        };
-
-        reader.readAsDataURL(file);
-    });
-}
-
-/* ============================================
-   VIEW — show actual file content
-============================================ */
-function viewDoc(id){
-    var docs = loadDocs();
-    var doc = docs.find(function(d){ return d.id === id; });
-    if(!doc) return;
-
-    var modal = document.getElementById("viewModal");
-    var vIcon = document.getElementById("vIcon");
-    var vName = document.getElementById("vName");
-    var vMeta = document.getElementById("vMeta");
-    var vBody = document.getElementById("vBody");
-    var vDl = document.getElementById("vDownload");
-
-    var ext = (doc.ext || "FILE").toUpperCase();
-    vIcon.textContent = ext;
-    vIcon.className = "v-icon " + iconClass(ext);
-    vName.textContent = doc.name;
-    vMeta.textContent = formatSize(doc.size || 0) + " · Uploaded " + timeAgo(doc.uploadedAt);
-
-    if(doc.dataUrl){
-        vDl.href = doc.dataUrl;
-        vDl.download = doc.name;
-        vDl.style.display = "inline-flex";
-    } else {
-        vDl.style.display = "none";
+        items.forEach(function(d){ list.append(row(d)); });
     }
 
-    vBody.innerHTML = "";
-
-    /* Decide how to render */
-    if(!doc.dataUrl){
-        /* Old documents (before this fix) don't have data */
-        vBody.innerHTML =
-            '<div class="view-fallback">' +
-                '<div class="big">📄</div>' +
-                '<h3>Preview not available</h3>' +
-                '<p>This file was uploaded before preview support was added. Please delete and re-upload to view it.</p>' +
-            '</div>';
-        modal.classList.add("show");
-        return;
-    }
-
-    var isImage = /^image\//.test(doc.type || "") ||
-                  ["PNG","JPG","JPEG","GIF","WEBP","SVG"].indexOf(ext) !== -1;
-    var isPdf = ext === "PDF" || (doc.type === "application/pdf");
-    var isText = ext === "TXT" || (doc.type && doc.type.indexOf("text") === 0);
-    var isOffice = ext === "DOC" || ext === "DOCX";
-
-    if(isImage){
-        var img = document.createElement("img");
-        img.src = doc.dataUrl;
-        img.alt = doc.name;
-        vBody.appendChild(img);
-    } else if(isPdf){
-        var iframe = document.createElement("iframe");
-        iframe.src = doc.dataUrl;
-        vBody.appendChild(iframe);
-    } else if(isText){
-        /* Read as text */
-        try {
-            var parts = doc.dataUrl.split(",");
-            var b64 = parts[1] || "";
-            var decoded = atob(b64);
-            var pre = document.createElement("pre");
-            pre.textContent = decoded;
-            vBody.appendChild(pre);
-        } catch(e){
-            vBody.innerHTML =
-                '<div class="view-fallback">' +
-                    '<div class="big">📄</div>' +
-                    '<h3>Cannot preview this file</h3>' +
-                    '<p>Use download button to open in external app.</p>' +
-                '</div>';
+    async function load(){
+        try{
+            ALL = await api("/api/files");
+        }catch(err){
+            toast(err.message, "danger");
         }
-    } else if(isOffice){
-        vBody.innerHTML =
-            '<div class="view-fallback">' +
-                '<div class="big">📝</div>' +
-                '<h3>Office documents</h3>' +
-                '<p>Browsers cannot preview .doc / .docx inline. Download the file to open it in Word or another app.</p>' +
-                '<a class="dl-btn" href="' + doc.dataUrl + '" download="' + escapeHtml(doc.name) + '">⬇ Download ' + escapeHtml(doc.name) + '</a>' +
-            '</div>';
-    } else {
-        vBody.innerHTML =
-            '<div class="view-fallback">' +
-                '<div class="big">📄</div>' +
-                '<h3>Preview not available</h3>' +
-                '<p>This file type cannot be previewed in the browser.</p>' +
-                '<a class="dl-btn" href="' + doc.dataUrl + '" download="' + escapeHtml(doc.name) + '">⬇ Download file</a>' +
-            '</div>';
+        render();
     }
 
-    modal.classList.add("show");
-}
+    async function uploadFiles(fileList){
+        var files = Array.prototype.slice.call(fileList || []);
+        var added = 0;
 
-function closeView(){
-    document.getElementById("viewModal").classList.remove("show");
-    document.getElementById("vBody").innerHTML = "";
-}
+        for(var i = 0; i < files.length; i++){
+            var f = files[i];
+            var ext = (f.name.split(".").pop() || "").toLowerCase();
 
-/* ============================================
-   DELETE
-============================================ */
-function deleteDoc(id){
-    var docs = loadDocs();
-    var doc = docs.find(function(d){ return d.id === id; });
-    if(!doc) return;
+            if(ALLOWED_EXT.indexOf(ext) === -1){
+                toast(f.name + ": unsupported file type", "danger");
+                continue;
+            }
 
-    if(!confirm('Delete "' + doc.name + '"?\n\nThis cannot be undone.')) return;
+            if(f.size > MAX_BYTES){
+                toast(f.name + ": larger than 5 MB", "danger");
+                continue;
+            }
 
-    docs = docs.filter(function(d){ return d.id !== id; });
-    saveDocs(docs);
-    render();
-    toast(doc.name + " deleted", "danger");
-}
+            var fd = new FormData();
+            fd.append("file", f);
 
-/* ============================================
-   UPLOAD ZONE EVENTS
-============================================ */
-var zone = document.getElementById("uploadZone");
-var fileInput = document.getElementById("fileInput");
+            try{
+                await api("/api/upload", { method: "POST", body: fd });
+                added++;
+            }catch(err){
+                toast(f.name + ": " + err.message, "danger");
+            }
+        }
 
-zone.addEventListener("click", function(e){
-    if(e.target.tagName !== "BUTTON"){
-        fileInput.click();
+        if(added){
+            toast(added + " file" + (added > 1 ? "s" : "") + " uploaded", "success");
+        }
+
+        await load();
     }
-});
 
-fileInput.addEventListener("change", function(){
-    if(this.files.length) handleFiles(this.files);
-    this.value = "";
-});
+    async function openDoc(id){
+        var d = findDoc(id);
+        if(!d) return;
 
-["dragenter","dragover"].forEach(function(ev){
-    zone.addEventListener(ev, function(e){
-        e.preventDefault();
-        e.stopPropagation();
-        zone.classList.add("dragover");
-    });
-});
-["dragleave","drop"].forEach(function(ev){
-    zone.addEventListener(ev, function(e){
-        e.preventDefault();
-        e.stopPropagation();
-        zone.classList.remove("dragover");
-    });
-});
-zone.addEventListener("drop", function(e){
-    if(e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
-});
+        var ext = (d.ext || "FILE").toUpperCase();
 
-/* SEARCH */
-document.getElementById("searchInput").addEventListener("input", function(){
-    currentSearch = this.value.trim();
-    render();
-});
+        var icon = byId("vIcon");
+        icon.textContent = ext;
+        icon.className = "v-icon " + iconClass(ext);
 
-/* Modal close */
-document.addEventListener("keydown", function(e){
-    if(e.key === "Escape") closeView();
-});
-document.getElementById("viewModal").addEventListener("click", function(e){
-    if(e.target.id === "viewModal") closeView();
-});
+        byId("vName").textContent = d.name;
+        byId("vMeta").textContent = fmtSize(d.size) + " · Uploaded " + timeAgo(d.ts);
 
-/* ============================================
-   TOAST
-============================================ */
-function toast(msg, type){
-    var wrap = document.getElementById("toastWrap");
-    var el = document.createElement("div");
-    el.className = "toast " + (type || "");
-    el.textContent = msg;
-    wrap.appendChild(el);
-    setTimeout(function(){
-        el.style.transition = "opacity .3s ease, transform .3s ease";
-        el.style.opacity = "0";
-        el.style.transform = "translateX(30px)";
-        setTimeout(function(){ el.remove(); }, 300);
-    }, 2400);
-}
+        var dl = byId("vDownload");
+        dl.href = "/api/files/" + encodeURIComponent(d.id) + "/download";
+        dl.setAttribute("download", d.name);
+        dl.style.display = "inline-flex";
 
-/* ============================================
-   INIT
-============================================ */
-render();
+        var body = byId("vBody");
+        body.replaceChildren(el("div", "view-fallback", "Loading preview..."));
+        byId("viewModal").classList.add("show");
+
+        try{
+            var res = await api("/api/files/" + encodeURIComponent(d.id) + "/text");
+            var pre = el("pre", null, res.text || "This file has no readable text. Use Download to open it.");
+            pre.style.whiteSpace = "pre-wrap";
+            body.replaceChildren(pre);
+        }catch(err){
+            body.replaceChildren(el("div", "view-fallback", err.message));
+        }
+    }
+
+    function closeView(){
+        byId("viewModal").classList.remove("show");
+        byId("vBody").replaceChildren();
+    }
+
+    async function removeDoc(id){
+        var d = findDoc(id);
+        if(!d) return;
+
+        if(!confirm('Delete "' + d.name + '"?\n\nThis cannot be undone.')) return;
+
+        try{
+            await api("/api/files/" + encodeURIComponent(d.id), { method: "DELETE" });
+            toast(d.name + " deleted", "danger");
+        }catch(err){
+            toast(err.message, "danger");
+        }
+
+        await load();
+    }
+
+    /* Exposed because the markup has onclick="closeView()" */
+    window.closeView = closeView;
+
+    async function init(){
+        try{
+            ME = await api("/api/me");
+        }catch(e){
+            location.replace("/login.html");
+            return;
+        }
+
+        var role = ME.role || "visitor";
+        var name = ME.full_name || (ME.email || "User").split("@")[0];
+        var allowed = ROLE_PAGES[role] || ROLE_PAGES.visitor;
+
+        document.querySelectorAll(".nav a").forEach(function(link){
+            var page = (link.getAttribute("href") || "").replace(".html", "");
+            if(allowed.indexOf(page) === -1) link.style.display = "none";
+        });
+
+        var initials = name.split(/\s+/).filter(Boolean).slice(0, 2)
+            .map(function(p){ return p.charAt(0); }).join("").toUpperCase() || "U";
+
+        if(byId("sidebarName")) byId("sidebarName").textContent = name;
+        if(byId("sidebarAvatar")) byId("sidebarAvatar").textContent = initials;
+        if(byId("sidebarRole")) byId("sidebarRole").textContent = role.charAt(0).toUpperCase() + role.slice(1) + " account";
+
+        var zone = byId("uploadZone");
+        var input = byId("fileInput");
+
+        zone.addEventListener("click", function(e){
+            if(e.target.tagName !== "BUTTON") input.click();
+        });
+
+        input.addEventListener("change", function(){
+            if(this.files.length) uploadFiles(this.files);
+            this.value = "";
+        });
+
+        ["dragenter", "dragover"].forEach(function(ev){
+            zone.addEventListener(ev, function(e){
+                e.preventDefault();
+                e.stopPropagation();
+                zone.classList.add("dragover");
+            });
+        });
+
+        ["dragleave", "drop"].forEach(function(ev){
+            zone.addEventListener(ev, function(e){
+                e.preventDefault();
+                e.stopPropagation();
+                zone.classList.remove("dragover");
+            });
+        });
+
+        zone.addEventListener("drop", function(e){
+            if(e.dataTransfer.files.length) uploadFiles(e.dataTransfer.files);
+        });
+
+        byId("searchInput").addEventListener("input", function(){
+            currentSearch = this.value.trim();
+            render();
+        });
+
+        document.addEventListener("keydown", function(e){
+            if(e.key === "Escape") closeView();
+        });
+
+        byId("viewModal").addEventListener("click", function(e){
+            if(e.target.id === "viewModal") closeView();
+        });
+
+        await load();
+    }
+
+    init();
+})();
+
 </script>
 </body>
 </html>
