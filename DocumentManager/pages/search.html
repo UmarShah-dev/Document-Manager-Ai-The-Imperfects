@@ -400,174 +400,51 @@ animation-duration:.01ms!important;animation-iteration-count:1!important;transit
 
 <div class="toast-wrap" id="toastWrap"></div>
 
-<script src="auth.js"></script>
 <script>
-/* ============================================
-   AUTH GUARD + SEARCH (IIFE)
-============================================ */
-(async function(){
+(function(){
+    "use strict";
 
-    var currentUser = null;
-
-    try {
-        var authResponse = await fetch("/api/me", {
-            method: "GET",
-            credentials: "same-origin",
-            cache: "no-store"
-        });
-
-        if(!authResponse.ok){
-            window.location.replace("/login.html");
-            return;
-        }
-
-        var me = await authResponse.json();
-        var displayName = me.full_name || (me.email || "User").split("@")[0];
-        var nameForInitials = displayName || me.email || "U";
-        var initials = nameForInitials
-            .split(/\s+/)
-            .filter(Boolean)
-            .slice(0, 2)
-            .map(function(part){ return part.charAt(0); })
-            .join("")
-            .toUpperCase();
-
-        currentUser = {
-            email: me.email || "",
-            role: me.role || "visitor",
-            csrf: me.csrf || "",
-            name: displayName,
-            initials: initials
-        };
-
-        window.ME = me;
-        window.CSRF = me.csrf || "";
-
-    } catch(e){
-        console.error("SecureDocs authentication check failed:", e);
-        window.location.replace("/login.html");
-        return;
-    }
-
-var ROLE_PAGES = {
-        admin:     ["overview","documents","search","assistant","users","roles","audit","settings","profile"],
-        executive: ["overview","documents","search","assistant","profile"],
-        visitor:   ["overview","documents","search","profile"]
+    var ROLE_PAGES = {
+        admin:     ["dashboard","documents","search","assistant","users","roles","audit","settings","profile"],
+        executive: ["dashboard","documents","search","assistant","profile"],
+        visitor:   ["dashboard","documents","search","assistant","profile"]
     };
-    var PAGE_KEY = {
-        "dashboard":"overview","documents":"documents","search":"search","assistant":"assistant",
-        "users":"users","roles":"roles","audit":"audit","settings":"settings","profile":"profile"
-    };
-    var allowed = ROLE_PAGES[currentUser.role] || ROLE_PAGES.visitor;
 
-    document.querySelectorAll(".nav a").forEach(function(link){
-        var href = (link.getAttribute("href") || "").replace(".html","");
-        var key = PAGE_KEY[href];
-        if(key && allowed.indexOf(key) === -1){
-            link.style.display = "none";
-        }
-    });
+    var currentCategory = "all";
+    var lastItems = [];
+    var lastMeta = {};
+    var timer = null;
+    var requestId = 0;
 
-    /* Sidebar user info */
-    var sName = document.getElementById("sidebarName");
-    var sRole = document.getElementById("sidebarRole");
-    var sAvatar = document.getElementById("sidebarAvatar");
-    if(sName) sName.textContent = currentUser.name;
-    if(sAvatar) sAvatar.textContent = currentUser.initials;
-    if(sRole){
-        var rl = currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1);
-        sRole.textContent = rl + " account";
-    }
-    if(sAvatar){
-        sAvatar.style.cursor = "pointer";
-        sAvatar.title = "Click to sign out";
-        sAvatar.addEventListener("click", function(){
-            if(confirm("Sign out of SecureDocs?")){
-                logoutCurrentUser();
-            }
-        });
+    function byId(id){ return document.getElementById(id); }
+
+    function el(tag, cls, txt){
+        var node = document.createElement(tag);
+        if(cls) node.className = cls;
+        if(txt !== undefined && txt !== null) node.textContent = txt;
+        return node;
     }
 
-    /* ---------- LOGOUT ---------- */
-    async function logoutCurrentUser(){
-        try{
-            var response = await fetch("/api/logout", {
-                method: "POST",
-                credentials: "same-origin",
-                headers: {
-                    "X-CSRF": currentUser.csrf || window.CSRF || ""
-                }
-            });
-
-            if(response.ok){
-                window.location.replace("/login.html");
-                return;
-            }
-
-            var data = {};
-            try { data = await response.json(); } catch(e){}
-            alert(data.detail || "Could not sign out. Please reload and try again.");
-        }catch(e){
-            console.error("Logout failed:", e);
-            alert("Could not sign out. Please check your connection and try again.");
-        }
-    }
-
-    /* ============================================
-       LOAD REAL DOCUMENTS
-    ============================================ */
-    function getDocuments(){
-        try {
-            var raw = localStorage.getItem("securedocs_documents");
-            return raw ? JSON.parse(raw) : [];
-        } catch(e){ return []; }
-    }
-
-    /* Determine category from extension */
-    function getCategory(ext){
-        if(!ext) return "other";
-        var e = ext.toUpperCase();
-        if(e === "PDF") return "pdf";
-        if(e === "DOC" || e === "DOCX") return "doc";
-        if(e === "TXT") return "txt";
-        return "other";
-    }
-
-    /* Generate a fake snippet from filename (since we don't have file content) */
-    function buildSnippet(doc){
-        var name = (doc.name || "").replace(/\.[^.]+$/, "").replace(/[-_]/g, " ");
-        var parts = [
-            "This document contains information related to " + name + ".",
-            "Uploaded " + formatDate(doc.uploadedAt) + " by workspace member.",
-            "Type: " + (doc.ext || "unknown").toUpperCase() + " · Size: " + formatSize(doc.size || 0)
-        ];
-        return parts.join(" ");
-    }
-
-    function formatDate(ts){
-        if(!ts) return "—";
-        return new Date(ts).toLocaleDateString();
-    }
-
-    function formatSize(bytes){
-        if(!bytes && bytes !== 0) return "—";
+    function fmtSize(bytes){
+        bytes = Number(bytes) || 0;
         if(bytes < 1024) return bytes + " B";
-        if(bytes < 1024*1024) return (bytes/1024).toFixed(1) + " KB";
-        if(bytes < 1024*1024*1024) return (bytes/(1024*1024)).toFixed(1) + " MB";
-        return (bytes/(1024*1024*1024)).toFixed(2) + " GB";
+        if(bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB";
+        if(bytes < 1073741824) return (bytes / 1048576).toFixed(1) + " MB";
+        return (bytes / 1073741824).toFixed(2) + " GB";
     }
 
     function timeAgo(ts){
-        if(!ts) return "—";
-        var diff = Date.now() - ts;
-        var min = Math.floor(diff/60000);
-        if(min < 1) return "just now";
-        if(min < 60) return min + " min ago";
-        var hr = Math.floor(min/60);
-        if(hr < 24) return hr + " hr ago";
-        var day = Math.floor(hr/24);
-        if(day < 7) return day + " day" + (day > 1 ? "s" : "") + " ago";
-        return new Date(ts).toLocaleDateString();
+        var s = Math.max(0, Date.now() / 1000 - ts);
+        if(s < 60) return "just now";
+        if(s < 3600) return Math.floor(s / 60) + " min ago";
+        if(s < 86400) return Math.floor(s / 3600) + " hr ago";
+        var d = Math.floor(s / 86400);
+        if(d < 7) return d + " day" + (d > 1 ? "s" : "") + " ago";
+        return new Date(ts * 1000).toLocaleDateString();
+    }
+
+    function fmtDate(ts){
+        return new Date(ts * 1000).toLocaleString();
     }
 
     function iconClass(ext){
@@ -577,268 +454,263 @@ var ROLE_PAGES = {
         return "";
     }
 
-    /* ============================================
-       STATE
-    ============================================ */
-    var currentQuery = "";
-    var currentCategory = "all";
+    async function api(url){
+        var r = await fetch(url, { credentials: "same-origin", cache: "no-store" });
+        if(r.status === 401){
+            location.replace("/login.html");
+            throw new Error("Please sign in.");
+        }
+        var data = await r.json().catch(function(){ return {}; });
+        if(!r.ok){
+            throw new Error(typeof data.detail === "string" ? data.detail : "Request failed (" + r.status + ")");
+        }
+        return data;
+    }
 
-    /* ============================================
-       HELPERS
-    ============================================ */
-    function escapeHtml(str){
-        return String(str || "").replace(/[&<>"']/g, function(s){
-            return { "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" }[s];
+    function toast(msg, type){
+        var wrap = byId("toastWrap");
+        if(!wrap) return;
+        var t = el("div", "toast " + (type || ""), msg);
+        wrap.append(t);
+        setTimeout(function(){
+            t.style.transition = "opacity .3s ease, transform .3s ease";
+            t.style.opacity = "0";
+            t.style.transform = "translateX(30px)";
+            setTimeout(function(){ t.remove(); }, 300);
+        }, 2400);
+    }
+
+    function matchesCategory(d){
+        if(currentCategory === "all") return true;
+        return (d.name || "").toLowerCase().indexOf(currentCategory) !== -1;
+    }
+
+    function resultCard(d, i){
+        var ext = (d.ext || "FILE").toUpperCase();
+
+        var art = el("article", "result");
+        art.style.animationDelay = (i * 40) + "ms";
+
+        var top = el("div", "result-top");
+        var mid = el("div");
+        mid.append(
+            el("div", "result-title", d.name),
+            el("div", "result-path", "Uploaded " + timeAgo(d.ts) + " · " + fmtSize(d.size))
+        );
+        top.append(
+            el("div", "result-icon " + iconClass(ext), ext),
+            mid,
+            el("div", "relevance", d.score ? "Relevant" : "Name match")
+        );
+
+        var snippet = el("p", "result-snippet", d.snippet || "");
+
+        var footer = el("div", "result-footer");
+        footer.append(
+            el("span", null, "📄 " + ext),
+            el("span", null, "🕐 " + fmtDate(d.ts)),
+            el("span", null, "👤 " + (d.owner || ""))
+        );
+
+        art.append(top, snippet, footer);
+        return art;
+    }
+
+    function answerCard(answer, sources){
+        var art = el("article", "result");
+
+        var top = el("div", "result-top");
+        var mid = el("div");
+        mid.append(
+            el("div", "result-title", "SecureDocs AI answer"),
+            el("div", "result-path", "Generated from your documents")
+        );
+        top.append(
+            el("div", "result-icon", "✦"),
+            mid,
+            el("div", "relevance", "AI")
+        );
+
+        var body = el("p", "result-snippet", answer);
+        body.style.whiteSpace = "pre-wrap";
+
+        art.append(top, body);
+
+        if(sources && sources.length){
+            var footer = el("div", "result-footer");
+            footer.append(el("span", null, "📄 Sources: " + sources.join(", ")));
+            art.append(footer);
+        }
+
+        return art;
+    }
+
+    function show(items, meta){
+        lastItems = items;
+        lastMeta = meta;
+
+        var wrap = byId("resultsWrap");
+        var filtered = items.filter(matchesCategory);
+
+        byId("resultCount").textContent = filtered.length;
+        byId("timeLabel").textContent = meta.elapsed + "s";
+
+        var ql = byId("queryLabel");
+        ql.replaceChildren();
+        if(meta.query){
+            ql.append(
+                document.createTextNode('for "'),
+                el("strong", null, meta.query),
+                document.createTextNode('"')
+            );
+        }
+
+        wrap.replaceChildren();
+
+        if(meta.answer){
+            wrap.append(answerCard(meta.answer, meta.sources));
+        }
+
+        if(!filtered.length){
+            var empty = el("div", "empty-state");
+
+            if(!items.length && !meta.query){
+                empty.append(
+                    el("div", "big", "▣"),
+                    el("h3", null, "No documents in your workspace"),
+                    el("p", null, "Upload documents first, then you can search through them here.")
+                );
+                var link = el("a", null, "+ Upload document");
+                link.href = "documents.html";
+                empty.append(link);
+            } else {
+                empty.append(
+                    el("div", "big", "⌕"),
+                    el("h3", null, "No results found"),
+                    el("p", null, "Try a different search term or clear the filters.")
+                );
+            }
+
+            wrap.append(empty);
+            return;
+        }
+
+        filtered.forEach(function(d, i){
+            wrap.append(resultCard(d, i));
         });
     }
 
-    function escapeRegex(str){
-        return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-    }
+    /* Typing: fast keyword search (no AI call). */
+    async function keywordSearch(q){
+        var id = ++requestId;
+        var start = performance.now();
+        var rows;
 
-    function highlight(text, query){
-        var safe = escapeHtml(text);
-        if(!query) return safe;
-        var q = escapeRegex(query);
-        var re = new RegExp("(" + q + ")", "gi");
-        return safe.replace(re, "<mark>$1</mark>");
-    }
+        try{
+            rows = q
+                ? await api("/api/search?q=" + encodeURIComponent(q))
+                : await api("/api/files");
+        }catch(err){
+            toast(err.message, "danger");
+            return;
+        }
 
-    function scoreDoc(doc, query){
-        if(!query) return null;
-        var q = query.toLowerCase();
-        var text = (
-            (doc.name || "") + " " +
-            (doc.ext || "") + " " +
-            (doc.category || "")
-        ).toLowerCase();
+        if(id !== requestId) return;
 
-        var words = q.split(/\s+/).filter(Boolean);
-        if(words.length === 0) return null;
-
-        var hits = 0;
-        words.forEach(function(w){
-            if(text.indexOf(w) !== -1) hits++;
+        show(rows, {
+            query: q,
+            elapsed: ((performance.now() - start) / 1000).toFixed(2)
         });
-        if(hits === 0) return null;
-
-        var base = Math.round((hits / words.length) * 90);
-        var nameBonus = (doc.name || "").toLowerCase().indexOf(q) !== -1 ? 8 : 0;
-
-        return Math.min(99, base + nameBonus);
     }
 
-    /* ============================================
-       RENDER
-    ============================================ */
-    function render(){
+    /* Submit: AI answer plus the matching documents. */
+    async function aiSearch(q){
+        var id = ++requestId;
         var start = performance.now();
 
-        var docs = getDocuments();
+        byId("resultsWrap").replaceChildren(
+            el("div", "empty-state",
+                "Searching your documents...")
+        );
 
-        /* Add computed fields */
-        docs = docs.map(function(d){
-            return {
-                id: d.id,
-                name: d.name || "Untitled",
-                ext: (d.ext || "").toUpperCase(),
-                size: d.size || 0,
-                uploadedAt: d.uploadedAt || 0,
-                category: getCategory(d.ext)
-            };
-        });
+        var res;
 
-        /* Category filter */
-        var results = docs.slice();
-        if(currentCategory !== "all"){
-            results = results.filter(function(d){
-                if(currentCategory === "policy"){
-                    return d.name.toLowerCase().indexOf("policy") !== -1;
-                }
-                if(currentCategory === "handbook"){
-                    return d.name.toLowerCase().indexOf("handbook") !== -1;
-                }
-                if(currentCategory === "security"){
-                    return d.name.toLowerCase().indexOf("security") !== -1;
-                }
-                if(currentCategory === "report"){
-                    return d.name.toLowerCase().indexOf("report") !== -1;
-                }
-                return true;
-            });
-        }
-
-        /* Search query */
-        if(currentQuery){
-            var q = currentQuery.toLowerCase();
-            results = results.filter(function(d){
-                var text = (
-                    d.name + " " +
-                    d.ext + " " +
-                    d.category
-                ).toLowerCase();
-                var words = q.split(/\s+/).filter(Boolean);
-                return words.every(function(w){ return text.indexOf(w) !== -1; });
-            });
-
-            /* Score and sort */
-            results.forEach(function(d){ d._score = scoreDoc(d, q); });
-            results.sort(function(a,b){ return (b._score || 0) - (a._score || 0); });
-        } else {
-            /* Sort by newest */
-            results.sort(function(a,b){ return (b.uploadedAt || 0) - (a.uploadedAt || 0); });
-        }
-
-        var elapsed = ((performance.now() - start) / 1000).toFixed(2);
-
-        document.getElementById("resultCount").textContent = results.length;
-        document.getElementById("timeLabel").textContent = elapsed + "s";
-
-        /* Query label */
-        var qLabel = document.getElementById("queryLabel");
-        if(currentQuery){
-            qLabel.innerHTML = 'for "<strong>' + escapeHtml(currentQuery) + '</strong>"';
-        } else {
-            qLabel.textContent = "";
-        }
-
-        var wrap = document.getElementById("resultsWrap");
-
-        /* Empty states */
-        if(docs.length === 0){
-            wrap.innerHTML =
-                '<div class="empty-state">' +
-                    '<div class="big">▣</div>' +
-                    '<h3>No documents in your workspace</h3>' +
-                    '<p>Upload documents first, then you can search through them here.</p>' +
-                    '<a href="documents.html">+ Upload document</a>' +
-                '</div>';
+        try{
+            res = await api("/api/ai-search?q=" + encodeURIComponent(q));
+        }catch(err){
+            toast(err.message, "danger");
             return;
         }
 
-        if(results.length === 0){
-            wrap.innerHTML =
-                '<div class="empty-state">' +
-                    '<div class="big">⌕</div>' +
-                    '<h3>No results found</h3>' +
-                    '<p>Try a different search term or clear the filters.</p>' +
-                '</div>';
+        if(id !== requestId) return;
+
+        show(res.results || [], {
+            query: q,
+            elapsed: ((performance.now() - start) / 1000).toFixed(2),
+            answer: res.answer || "",
+            sources: res.sources || []
+        });
+    }
+
+    async function init(){
+        var me;
+        try{
+            me = await api("/api/me");
+        }catch(e){
+            location.replace("/login.html");
             return;
         }
 
-        /* Render results */
-        var html = "";
-        results.forEach(function(d, i){
-            var rel = d._score !== undefined && d._score !== null ? d._score : null;
-            var snippet = buildSnippet(d);
+        var role = me.role || "visitor";
+        var name = me.full_name || (me.email || "User").split("@")[0];
+        var allowed = ROLE_PAGES[role] || ROLE_PAGES.visitor;
 
-            html +=
-                '<article class="result" style="animation-delay:' + (i * 40) + 'ms">' +
-                    '<div class="result-top">' +
-                        '<div class="result-icon ' + iconClass(d.ext) + '">' + (d.ext || "FILE") + '</div>' +
-                        '<div>' +
-                            '<div class="result-title">' + highlight(d.name, currentQuery) + '</div>' +
-                            '<div class="result-path">Uploaded ' + timeAgo(d.uploadedAt) + ' · ' + formatSize(d.size) + '</div>' +
-                        '</div>' +
-                        (rel !== null
-                            ? '<div class="relevance">' + rel + '% match</div>'
-                            : '<div class="relevance">Indexed</div>') +
-                    '</div>' +
-                    '<p class="result-snippet">' + highlight(snippet, currentQuery) + '</p>' +
-                    '<div class="result-footer">' +
-                        '<span>📄 ' + (d.ext || "FILE") + '</span>' +
-                        '<span>🕐 ' + formatDate(d.uploadedAt) + '</span>' +
-                        '<span>👤 ' + escapeHtml(currentUser.name) + '</span>' +
-                    '</div>' +
-                '</article>';
+        document.querySelectorAll(".nav a").forEach(function(link){
+            var page = (link.getAttribute("href") || "").replace(".html", "");
+            if(allowed.indexOf(page) === -1) link.style.display = "none";
         });
-        wrap.innerHTML = html;
-    }
 
-    /* ============================================
-       SEARCH FORM
-    ============================================ */
-    document.getElementById("searchForm").addEventListener("submit", function(e){
-        e.preventDefault();
-        var q = document.getElementById("searchInput").value.trim();
-        currentQuery = q;
+        var initials = name.split(/\s+/).filter(Boolean).slice(0, 2)
+            .map(function(p){ return p.charAt(0); }).join("").toUpperCase() || "U";
 
-        if(q){
-            var wrap = document.getElementById("resultsWrap");
-            wrap.innerHTML = '<div class="loading"><div class="spinner"></div><p>Searching knowledge base...</p></div>';
+        if(byId("sidebarName")) byId("sidebarName").textContent = name;
+        if(byId("sidebarAvatar")) byId("sidebarAvatar").textContent = initials;
+        if(byId("sidebarRole")) byId("sidebarRole").textContent = role.charAt(0).toUpperCase() + role.slice(1) + " account";
 
-            setTimeout(function(){
-                render();
-                toast("Found results for \"" + q + "\"", "success");
-            }, 300);
-        } else {
-            render();
-        }
-    });
-
-    /* Live search as you type */
-    var liveTimer = null;
-    document.getElementById("searchInput").addEventListener("input", function(){
-        currentQuery = this.value.trim();
-        clearTimeout(liveTimer);
-        liveTimer = setTimeout(render, 150);
-    });
-
-    /* ============================================
-       FILTER CHIPS
-    ============================================ */
-    var chips = document.querySelectorAll("#filterChips .chip");
-    chips.forEach(function(chip){
-        chip.addEventListener("click", function(){
-            chips.forEach(function(c){ c.classList.remove("active"); });
-            chip.classList.add("active");
-            currentCategory = chip.getAttribute("data-cat");
-            render();
-            toast("Filter: " + chip.textContent.trim(), "");
-        });
-    });
-
-    /* ============================================
-       TOAST
-    ============================================ */
-    function toast(msg, type){
-        var wrap = document.getElementById("toastWrap");
-        var el = document.createElement("div");
-        el.className = "toast " + (type || "");
-        el.textContent = msg;
-        wrap.appendChild(el);
-        setTimeout(function(){
-            el.style.transition = "opacity .3s ease, transform .3s ease";
-            el.style.opacity = "0";
-            el.style.transform = "translateX(30px)";
-            setTimeout(function(){ el.remove(); }, 300);
-        }, 2200);
-    }
-
-    /* ============================================
-       INIT
-    ============================================ */
-    render();
-
-    /* Listen for storage changes */
-    window.addEventListener("storage", function(e){
-        if(e.key === "securedocs_documents"){
-            render();
-        }
-    });
-    document.addEventListener("visibilitychange", function(){
-        if(!document.hidden) render();
-    });
-
-    /* ⌘K focuses search */
-    document.addEventListener("keydown", function(e){
-        if((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k"){
+        byId("searchForm").addEventListener("submit", function(e){
             e.preventDefault();
-            document.getElementById("searchInput").focus();
-        }
-    });
+            clearTimeout(timer);
+            var q = byId("searchInput").value.trim();
+            if(!q){
+                keywordSearch("");
+                return;
+            }
+            aiSearch(q);
+        });
 
-});
+        byId("searchInput").addEventListener("input", function(){
+            clearTimeout(timer);
+            var q = this.value.trim();
+            timer = setTimeout(function(){ keywordSearch(q); }, 300);
+        });
+
+        document.querySelectorAll("#filterChips .chip").forEach(function(chip){
+            chip.addEventListener("click", function(){
+                document.querySelectorAll("#filterChips .chip").forEach(function(c){
+                    c.classList.remove("active");
+                });
+                chip.classList.add("active");
+                currentCategory = chip.getAttribute("data-cat") || "all";
+                show(lastItems, lastMeta);
+            });
+        });
+
+        keywordSearch("");
+    }
+
+    init();
+})();
+
 </script>
 </body>
 </html>
