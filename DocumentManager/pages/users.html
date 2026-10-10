@@ -423,7 +423,7 @@ transition-duration:.01ms!important;
             <h1>Users.</h1>
             <p>Manage workspace members, roles and access to documents.</p>
         </div>
-        <button class="primary-btn" onclick="openInvite()">+ Invite user</button>
+        <button class="primary-btn" data-onclick="openInvite()">+ Invite user</button>
     </div>
 
     <!-- STATS -->
@@ -468,7 +468,7 @@ transition-duration:.01ms!important;
                 <h2 id="modalTitle">Invite user</h2>
                 <p id="modalDesc">Send an invite to join the workspace.</p>
             </div>
-            <button class="close-x" onclick="closeModal()">✕</button>
+            <button class="close-x" data-onclick="closeModal()">✕</button>
         </div>
 
         <div class="field">
@@ -492,8 +492,8 @@ transition-duration:.01ms!important;
         </div>
 
         <div class="modal-actions">
-            <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
-            <button class="btn btn-primary" id="modalSubmit" onclick="submitModal()">Send invite</button>
+            <button class="btn btn-ghost" data-onclick="closeModal()">Cancel</button>
+            <button class="btn btn-primary" id="modalSubmit" data-onclick="submitModal()">Send invite</button>
         </div>
     </div>
 </div>
@@ -506,14 +506,14 @@ transition-duration:.01ms!important;
                 <h2>Delete user</h2>
                 <p id="deleteDesc">Are you sure you want to remove this user?</p>
             </div>
-            <button class="close-x" onclick="closeDelete()">✕</button>
+            <button class="close-x" data-onclick="closeDelete()">✕</button>
         </div>
         <p style="color:#8b94ae;font-size:12px;line-height:1.7;">
             This action cannot be undone. The user will lose access to all workspace documents immediately.
         </p>
         <div class="modal-actions">
-            <button class="btn btn-ghost" onclick="closeDelete()">Cancel</button>
-            <button class="btn btn-danger" onclick="confirmDelete()">Delete user</button>
+            <button class="btn btn-ghost" data-onclick="closeDelete()">Cancel</button>
+            <button class="btn btn-danger" data-onclick="confirmDelete()">Delete user</button>
         </div>
     </div>
 </div>
@@ -644,8 +644,8 @@ function render(){
                 <td>${u.last}</td>
                 <td>
                     <div class="actions">
-                        <button class="icon-btn" title="Edit" onclick="openEdit(${u.id})">✎</button>
-                        <button class="icon-btn delete" title="Delete" onclick="openDelete(${u.id})">🗑</button>
+                        <button class="icon-btn" title="Edit" data-onclick="openEdit(${u.id})">✎</button>
+                        <button class="icon-btn delete" title="Delete" data-onclick="openDelete(${u.id})">🗑</button>
                     </div>
                 </td>
             </tr>
