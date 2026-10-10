@@ -2078,14 +2078,18 @@ async def security_middleware(
     call_next,
 ):
 
-    if request.method == "OPTIONS":
+    if request.method not in (
+        "GET",
+        "HEAD",
+        "POST",
+        "PUT",
+        "DELETE",
+    ):
 
         response = Response(
-            status_code=405,
-            content="Method Not Allowed",
-            headers={
-                "Allow": "GET, POST, PATCH, DELETE, HEAD",
-            },
+            status_code=404,
+            content="Not found",
+            media_type="text/plain",
         )
 
     else:
@@ -4947,4 +4951,29 @@ def page_from_pages_folder(
 
     return load_page(
         name
+    )
+
+
+# ============================================================
+# CATCH-ALL: unknown paths return a plain 404
+# ============================================================
+
+@app.api_route(
+    "/{path:path}",
+    methods=[
+        "GET",
+        "HEAD",
+        "POST",
+        "PUT",
+        "PATCH",
+        "DELETE",
+    ],
+    include_in_schema=False,
+)
+def not_found(path: str):
+
+    return Response(
+        status_code=404,
+        content="Not found",
+        media_type="text/plain",
     )
