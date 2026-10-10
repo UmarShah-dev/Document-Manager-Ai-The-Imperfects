@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -456,7 +455,7 @@ animation-iteration-count:1!important
             and AI-powered knowledge workspace.
         </p>
 
-        <form id="loginForm" onsubmit="doLogin(); return false;">
+        <form id="loginForm" data-onsubmit="doLogin(); return false;">
 
             <div class="field">
                 <label for="email">Email address</label>
@@ -909,18 +908,3 @@ window.addEventListener(
 
 </body>
 </html>
-```
-
-**Important:** this version intentionally uses:
-
-```javascript
-var API_BASE = "/api";
-```
-
-not `http://localhost:8000/api`, because your live FastAPI Cloud frontend and backend are on the same deployed origin.
-
-After replacing `login.html`, **redeploy**, then test the login. The new flow is:
-
-`POST /api/auth` → cookie created → `GET /api/me` → session verified → `/dashboard.html`.
-
-If `/api/me` still returns `401`, then the problem is definitively in the backend cookie/session handling rather than this login page.
