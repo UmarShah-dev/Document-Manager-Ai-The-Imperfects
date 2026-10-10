@@ -415,11 +415,33 @@ Base.metadata.create_all(
 # DATABASE MIGRATION
 # ============================================================
 
+SQL_IDENTIFIER = re.compile(
+    r"^[A-Za-z_][A-Za-z0-9_]{0,63}$"
+)
+
+SQL_COLUMN_DEFINITION = re.compile(
+    r"^(INTEGER|FLOAT|TEXT|REAL|VARCHAR\(\d+\))"
+    r"( NOT NULL)?"
+    r"( DEFAULT ('[A-Za-z0-9_ .-]*'|[0-9.]+))?$"
+)
+
+
 def ensure_column(
     table,
     column,
     definition,
 ):
+    # Only fixed names and definitions from this file reach this function.
+    # Validate them anyway, so a future caller cannot inject SQL.
+    if (
+        not SQL_IDENTIFIER.match(table)
+        or not SQL_IDENTIFIER.match(column)
+        or not SQL_COLUMN_DEFINITION.match(definition)
+    ):
+        raise ValueError(
+            "Unsafe identifier in ensure_column."
+        )
+
     try:
         inspector = inspect(engine)
 
@@ -430,10 +452,12 @@ def ensure_column(
 
         if column not in columns:
             with engine.begin() as conn:
+                # Identifiers are validated above, so quoting them
+                # is the only remaining change needed.
                 conn.execute(
                     sql_text(
-                        f"ALTER TABLE {table} "
-                        f"ADD COLUMN {column} "
+                        f'ALTER TABLE "{table}" '
+                        f'ADD COLUMN "{column}" '
                         f"{definition}"
                     )
                 )
@@ -3864,18 +3888,23 @@ def audit_logs(
 
     if q.strip():
 
-        term = (
-            "%"
-            + q.strip()
-            + "%"
+        # Escape LIKE wildcards typed by the user, so "%" or "_" match
+        # literally instead of matching everything.
+        escaped = (
+            q.strip()
+            .replace("\\", "\\\\")
+            .replace("%", "\\%")
+            .replace("_", "\\_")
         )
+
+        term = "%" + escaped + "%"
 
         query = query.filter(
             (
-                AuditLog.user_email.ilike(term)
-                | AuditLog.description.ilike(term)
-                | AuditLog.document.ilike(term)
-                | AuditLog.ip.ilike(term)
+                AuditLog.user_email.ilike(term, escape="\\")
+                | AuditLog.description.ilike(term, escape="\\")
+                | AuditLog.document.ilike(term, escape="\\")
+                | AuditLog.ip.ilike(term, escape="\\")
             )
         )
 
