@@ -458,7 +458,7 @@ animation-duration:.01ms!important;animation-iteration-count:1!important;transit
                 <div class="v-meta" id="vMeta">—</div>
             </div>
             <a class="view-download" id="vDownload" download>⬇ <span>Download</span></a>
-            <button class="view-close" onclick="closeView()">✕</button>
+            <button class="view-close" data-onclick="closeView()">✕</button>
         </div>
         <div class="view-body" id="vBody"></div>
     </div>
@@ -729,7 +729,7 @@ animation-duration:.01ms!important;animation-iteration-count:1!important;transit
         await load();
     }
 
-    /* Exposed because the markup has onclick="closeView()" */
+    /* Exposed because the markup has data-onclick="closeView()" */
     window.closeView = closeView;
 
     async function init(){
