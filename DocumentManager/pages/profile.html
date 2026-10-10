@@ -431,7 +431,7 @@ input,select,textarea{max-width:100%;min-width:0}
             <h1>Profile.</h1>
             <p>Manage your personal information and account security.</p>
         </div>
-        <button class="primary-btn" id="saveBtn" onclick="saveProfile()">Save changes</button>
+        <button class="primary-btn" id="saveBtn" data-onclick="saveProfile()">Save changes</button>
     </div>
 
     <!-- HERO -->
@@ -507,15 +507,15 @@ input,select,textarea{max-width:100%;min-width:0}
                     <label>Current password</label>
                     <div class="password-wrap">
                         <input type="password" id="pCurrent" placeholder="Enter current password" autocomplete="current-password">
-                        <span class="toggle-eye" onclick="togglePass('pCurrent', this)">👁</span>
+                        <span class="toggle-eye" data-onclick="togglePass('pCurrent', this)">👁</span>
                     </div>
                 </div>
 
                 <div class="field">
                     <label>New password</label>
                     <div class="password-wrap">
-                        <input type="password" id="pNew" placeholder="Enter new password" autocomplete="new-password" oninput="checkStrength()">
-                        <span class="toggle-eye" onclick="togglePass('pNew', this)">👁</span>
+                        <input type="password" id="pNew" placeholder="Enter new password" autocomplete="new-password" data-oninput="checkStrength()">
+                        <span class="toggle-eye" data-onclick="togglePass('pNew', this)">👁</span>
                     </div>
                     <div class="strength-bar"><div class="strength-fill" id="strengthFill"></div></div>
                     <div class="strength-label">
@@ -528,11 +528,11 @@ input,select,textarea{max-width:100%;min-width:0}
                     <label>Confirm new password</label>
                     <div class="password-wrap">
                         <input type="password" id="pConfirm" placeholder="Confirm new password" autocomplete="new-password">
-                        <span class="toggle-eye" onclick="togglePass('pConfirm', this)">👁</span>
+                        <span class="toggle-eye" data-onclick="togglePass('pConfirm', this)">👁</span>
                     </div>
                 </div>
 
-                <button class="save-pass-btn" id="savePassBtn" onclick="savePassword()">Update password</button>
+                <button class="save-pass-btn" id="savePassBtn" data-onclick="savePassword()">Update password</button>
             </div>
 
         </div>
@@ -551,7 +551,7 @@ input,select,textarea{max-width:100%;min-width:0}
                     Once you delete your account, all of your data will be
                     permanently removed. This action cannot be undone.
                 </p>
-                <button class="danger-btn" onclick="openDelete()">Delete account</button>
+                <button class="danger-btn" data-onclick="openDelete()">Delete account</button>
             </div>
 
         </div>
@@ -570,14 +570,14 @@ input,select,textarea{max-width:100%;min-width:0}
                 <h2>Delete account</h2>
                 <p>This action is permanent and cannot be undone.</p>
             </div>
-            <button class="close-x" onclick="closeDelete()">✕</button>
+            <button class="close-x" data-onclick="closeDelete()">✕</button>
         </div>
         <p style="color:#8b94ae;font-size:12px;line-height:1.7;">
             All of your documents, sessions, and personal data will be permanently removed from the workspace.
         </p>
         <div class="modal-actions">
-            <button class="btn btn-ghost" onclick="closeDelete()">Cancel</button>
-            <button class="btn btn-danger" onclick="confirmDelete()">Yes, delete my account</button>
+            <button class="btn btn-ghost" data-onclick="closeDelete()">Cancel</button>
+            <button class="btn btn-danger" data-onclick="confirmDelete()">Yes, delete my account</button>
         </div>
     </div>
 </div>
