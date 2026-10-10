@@ -120,9 +120,23 @@ ALLOW_SIGNUP = os.getenv(
 # DATABASE
 # ============================================================
 
+# Set SECUREDOCS_DATA_DIR to a PERSISTENT folder (for example a Render disk
+# mounted at /var/data). Without it the SQLite file sits inside the app
+# folder, and hosts with a temporary filesystem wipe it on restart or
+# redeploy. That deletes every uploaded document and account.
+DATA_DIR = os.getenv(
+    "SECUREDOCS_DATA_DIR",
+    str(BASE),
+)
+
+os.makedirs(
+    DATA_DIR,
+    exist_ok=True,
+)
+
 DATABASE_URL = (
     "sqlite:///"
-    + str(BASE / "securedocs.db")
+    + os.path.join(DATA_DIR, "securedocs.db")
 )
 
 engine = create_engine(
@@ -1667,6 +1681,12 @@ GEMINI_API_KEY = os.getenv(
     "GEMINI_API_KEY"
 )
 
+# Without a timeout a slow Gemini request blocks the chat for a long time
+# before the "temporarily unavailable" message appears.
+GEMINI_TIMEOUT_MS = int(
+    os.getenv("GEMINI_TIMEOUT_SECONDS", "20")
+) * 1000
+
 gemini_client = None
 
 if (
@@ -1676,9 +1696,20 @@ if (
 
     try:
 
-        gemini_client = genai.Client(
-            api_key=GEMINI_API_KEY
-        )
+        try:
+
+            gemini_client = genai.Client(
+                api_key=GEMINI_API_KEY,
+                http_options={
+                    "timeout": GEMINI_TIMEOUT_MS
+                },
+            )
+
+        except Exception:
+
+            gemini_client = genai.Client(
+                api_key=GEMINI_API_KEY
+            )
 
         print(
             "Gemini AI: enabled"
@@ -1712,6 +1743,74 @@ GEMINI_MODEL = os.getenv(
     "GEMINI_MODEL",
     "gemini-2.5-flash",
 )
+
+GEMINI_FALLBACK_MODEL = os.getenv(
+    "GEMINI_FALLBACK_MODEL",
+    "gemini-2.0-flash",
+)
+
+
+TRANSIENT_MARKERS = (
+    "429",
+    "500",
+    "503",
+    "504",
+    "UNAVAILABLE",
+    "RESOURCE_EXHAUSTED",
+    "DEADLINE",
+    "TIMEOUT",
+)
+
+
+def gemini_generate(prompt):
+
+    """Call Gemini with one retry on transient errors and a fallback model.
+
+    Raises the last error if every attempt fails, so callers can fall back.
+    """
+
+    models = [GEMINI_MODEL]
+
+    if (
+        GEMINI_FALLBACK_MODEL
+        and GEMINI_FALLBACK_MODEL != GEMINI_MODEL
+    ):
+        models.append(GEMINI_FALLBACK_MODEL)
+
+    last_error = None
+
+    for model in models:
+
+        for attempt in range(2):
+
+            try:
+
+                return gemini_client.models.generate_content(
+                    model=model,
+                    contents=prompt,
+                )
+
+            except Exception as e:
+
+                last_error = e
+
+                print(
+                    f"Gemini request failed "
+                    f"(model={model}, attempt={attempt + 1}):",
+                    repr(e),
+                )
+
+                text = repr(e).upper()
+
+                if not any(
+                    m in text
+                    for m in TRANSIENT_MARKERS
+                ):
+                    break
+
+                time.sleep(1.5)
+
+    raise last_error
 
 
 # ============================================================
@@ -1787,12 +1886,7 @@ ANSWER:
     try:
 
         response = (
-            gemini_client
-            .models
-            .generate_content(
-                model=GEMINI_MODEL,
-                contents=prompt,
-            )
+            gemini_generate(prompt)
         )
 
         result = getattr(
@@ -1897,12 +1991,7 @@ ANSWER:
     try:
 
         response = (
-            gemini_client
-            .models
-            .generate_content(
-                model=GEMINI_MODEL,
-                contents=prompt,
-            )
+            gemini_generate(prompt)
         )
 
         result = getattr(
@@ -1948,7 +2037,7 @@ app.add_middleware(
 
 CSP_BASE = (
     "default-src 'self'; "
-    "script-src 'self' 'unsafe-inline'; "
+    "script-src 'self'; "
     "style-src 'self' 'unsafe-inline'; "
     "img-src 'self' data:; "
     "connect-src 'self'; "
@@ -1995,9 +2084,6 @@ async def security_middleware(
             "Cache-Control":
                 "no-store",
 
-            "Content-Security-Policy":
-                CSP_BASE,
-
             "Permissions-Policy":
                 "camera=(), "
                 "microphone=(), "
@@ -2007,6 +2093,11 @@ async def security_middleware(
                 "max-age=31536000; "
                 "includeSubDomains",
         }
+    )
+
+    response.headers.setdefault(
+        "Content-Security-Policy",
+        CSP_BASE,
     )
 
     return response
@@ -4327,624 +4418,7 @@ window.ready = fetch(
 # EXISTING PAGE JAVASCRIPT
 # ============================================================
 
-PAGE_JS = {
-
-
-"login": r"""
-const $=s=>document.querySelector(s);
-
-const sec=$(".security");
-
-const dot=
-    sec
-        ?sec.querySelector(".security-dot")
-        :null;
-
-function note(m){
-
-    if(!sec)
-        return;
-
-    if(dot){
-
-        sec.replaceChildren(
-            dot,
-            document.createTextNode(m)
-        );
-
-    }else{
-
-        sec.textContent=m;
-    }
-}
-
-async function go(e){
-
-    if(e)
-        e.preventDefault();
-
-    if(e)
-        e.stopPropagation();
-
-    const em=$("#email");
-    const pw=$("#password");
-
-    if(!em || !pw)
-        return;
-
-    if(
-        !em.reportValidity()
-        ||
-        !pw.reportValidity()
-    )
-        return;
-
-    note("Signing in...");
-
-    try{
-
-        const r=await fetch(
-            "/api/auth",
-            {
-                method:"POST",
-
-                credentials:
-                    "same-origin",
-
-                headers:{
-                    "Content-Type":
-                        "application/json"
-                },
-
-                body:JSON.stringify({
-                    email:em.value,
-                    password:pw.value
-                })
-            }
-        );
-
-        const j=await r.json();
-
-        if(!r.ok)
-
-            throw new Error(
-                typeof j.detail==="string"
-                    ?j.detail
-                    :"Could not sign in."
-            );
-
-        note(
-            j.created
-                ?"Account created. Welcome!"
-                :"Signed in. Redirecting..."
-        );
-
-        setTimeout(
-            ()=>{
-                location.href=
-                    "/dashboard.html";
-            },
-            j.created
-                ?900
-                :200
-        );
-
-    }catch(x){
-
-        note(
-            x.message
-            ||
-            "Could not sign in."
-        );
-    }
-}
-
-document.addEventListener(
-    "click",
-    e=>{
-
-        if(
-            e.target.closest(
-                ".login-button"
-            )
-        )
-            go(e);
-
-    },
-    true
-);
-
-document.addEventListener(
-    "submit",
-    go,
-    true
-);
-""",
-
-
-"dashboard": r"""
-(async()=>{
-
-    await window.ready;
-
-    const f =
-        await(
-            await window.api(
-                "/api/files"
-            )
-        ).json();
-
-    const s =
-        await(
-            await window.api(
-                "/api/stats"
-            )
-        ).json();
-
-    const h =
-        document.querySelectorAll(
-            ".stat-card h2"
-        );
-
-    if(h[0])
-        h[0].textContent=s.total;
-
-    if(h[1])
-        h[1].textContent=s.indexed;
-
-    if(h[2])
-        h[2].textContent=s.queries;
-
-    const p =
-        document.querySelector(
-            ".content-grid .panel"
-        );
-
-    if(!p)
-        return;
-
-    const link =
-        p.querySelector(
-            ".panel-header a"
-        );
-
-    if(link)
-        link.href =
-            "documents.html";
-
-    p.querySelectorAll(
-        ".document"
-    ).forEach(
-        x=>x.remove()
-    );
-
-    if(!f.length){
-
-        const e =
-            window.mk(
-                "div",
-                "document"
-            );
-
-        e.append(
-            window.mk(
-                "div",
-                "doc-meta",
-                "No documents yet. "
-                +"Upload your first one."
-            )
-        );
-
-        p.append(e);
-    }
-
-    f.slice(0,3).forEach(
-        d=>p.append(
-            window.docRow(d)
-        )
-    );
-
-})();
-""",
-
-
-"documents": r"""
-const list =
-    window.$(".documents");
-
-let ALL=[];
-
-function draw(items){
-
-    if(!list)
-        return;
-
-    list.replaceChildren();
-
-    if(!items.length){
-
-        const e =
-            window.mk(
-                "div",
-                "document"
-            );
-
-        e.append(
-            window.mk(
-                "div",
-                "doc-meta",
-                "No documents found."
-            )
-        );
-
-        list.append(e);
-
-        return;
-    }
-
-    items.forEach(
-        d=>list.append(
-            window.docRow(
-                d,
-                d.snippet
-            )
-        )
-    );
-}
-
-async function load(){
-
-    await window.ready;
-
-    ALL =
-        await(
-            await window.api(
-                "/api/files"
-            )
-        ).json();
-
-    draw(ALL);
-}
-
-async function send(files){
-
-    await window.ready;
-
-    for(
-        const f of files
-    ){
-
-        const t =
-            window.mk(
-                "div",
-                "document"
-            );
-
-        const l =
-            window.mk(
-                "div",
-                "doc-left"
-            );
-
-        const w =
-            window.mk(
-                "div"
-            );
-
-        l.append(
-            window.mk(
-                "div",
-                "doc-icon",
-                (
-                    f.name
-                    .split(".")
-                    .pop()||""
-                )
-                .toUpperCase()
-                .slice(0,4)
-            )
-        );
-
-        w.append(
-            window.mk(
-                "div",
-                "doc-name",
-                f.name
-            ),
-
-            window.mk(
-                "div",
-                "doc-meta",
-                window.fmt(f.size)
-                +" · Uploading..."
-            )
-        );
-
-        l.append(w);
-
-        t.append(
-            l,
-
-            window.mk(
-                "div",
-                "status",
-                "Uploading"
-            )
-        );
-
-        list.prepend(t);
-
-        try{
-
-            const fd =
-                new FormData();
-
-            fd.append(
-                "file",
-                f
-            );
-
-            await window.api(
-                "/api/upload",
-                {
-                    method:"POST",
-                    body:fd
-                }
-            );
-
-        }catch(x){
-
-            alert(
-                f.name
-                +": "
-                +x.message
-            );
-        }
-    }
-
-    load();
-}
-
-document.addEventListener(
-    "change",
-    e=>{
-
-        if(
-            e.target.id!=="fileInput"
-        )
-            return;
-
-        e.stopPropagation();
-
-        const fs=[
-            ...e.target.files
-        ];
-
-        e.target.value="";
-
-        send(fs);
-
-    },
-    true
-);
-
-const z =
-    window.$(".upload-zone");
-
-if(z){
-
-    z.addEventListener(
-        "dragover",
-        e=>e.preventDefault()
-    );
-
-    z.addEventListener(
-        "drop",
-        e=>{
-
-            e.preventDefault();
-
-            send([
-                ...e.dataTransfer.files
-            ]);
-
-        }
-    );
-}
-
-let timer;
-
-const searchBox =
-    window.$(".search");
-
-if(searchBox){
-
-    searchBox.addEventListener(
-        "input",
-        e=>{
-
-            clearTimeout(timer);
-
-            const v =
-                e.target.value.trim();
-
-            timer=setTimeout(
-                async()=>{
-
-                    if(!v){
-
-                        draw(ALL);
-
-                        return;
-                    }
-
-                    await window.ready;
-
-                    try{
-
-                        draw(
-                            await(
-                                await window.api(
-                                    "/api/search?q="
-                                    +encodeURIComponent(v)
-                                )
-                            ).json()
-                        );
-
-                    }catch(x){}
-                },
-                250
-            );
-        }
-    );
-}
-
-load();
-""",
-
-
-"assistant": r"""
-const msgs =
-    window.$("#messages");
-
-window.ready.then(()=>{
-
-    if(!msgs)
-        return;
-
-    [
-        ...msgs.querySelectorAll(
-            ".message"
-        )
-    ]
-    .slice(1)
-    .forEach(
-        x=>x.remove()
-    );
-});
-
-function add(
-    cls,
-    text,
-    src
-){
-
-    if(!msgs)
-        return;
-
-    const m =
-        window.mk(
-            "div",
-            "message "+cls
-        );
-
-    const b =
-        window.mk(
-            "div",
-            "bubble",
-            text
-        );
-
-    if(
-        src
-        &&
-        src.length
-    ){
-
-        b.append(
-            window.mk(
-                "div",
-                "source",
-                "Source · "
-                +src.join(" · ")
-            )
-        );
-    }
-
-    m.append(b);
-
-    msgs.append(m);
-
-    msgs.scrollTop =
-        msgs.scrollHeight;
-}
-
-document.addEventListener(
-    "submit",
-    async e=>{
-
-        if(
-            e.target.id!=="chatForm"
-        )
-            return;
-
-        e.preventDefault();
-        e.stopPropagation();
-
-        const i =
-            window.$("#chatInput");
-
-        if(!i)
-            return;
-
-        const t =
-            i.value.trim();
-
-        if(!t)
-            return;
-
-        i.value="";
-
-        add(
-            "user",
-            t
-        );
-
-        try{
-
-            await window.ready;
-
-            const response =
-                await window.api(
-                    "/api/chat",
-                    {
-                        method:"POST",
-
-                        headers:{
-                            "Content-Type":
-                                "application/json"
-                        },
-
-                        body:
-                            JSON.stringify({
-                                message:t
-                            })
-                    }
-                );
-
-            const j =
-                await response.json();
-
-            add(
-                "ai",
-                j.answer,
-                j.sources
-            );
-
-        }catch(x){
-
-            add(
-                "ai",
-                x.message
-            );
-        }
-
-    },
-    true
-);
-""",
-
-}
+PAGE_JS = {}
 
 
 # ============================================================
@@ -5023,6 +4497,89 @@ def find_page_file(name: str):
             continue
 
     return None
+
+
+DISPATCH_JS = r"""
+(function () {
+    "use strict";
+
+    /* Runs the page handlers written as data-onclick="fn(args)" etc.
+       No inline JavaScript and no eval, so the Content-Security-Policy
+       can block all inline script. Supported: fn(args), return false,
+       event.stopPropagation(). Arguments: 'text', numbers, true, false,
+       null, this. */
+
+    function splitArgs(text) {
+        var out = [];
+        var cur = "";
+        var quote = null;
+        for (var i = 0; i < text.length; i++) {
+            var c = text.charAt(i);
+            if (quote) {
+                cur += c;
+                if (c === quote) quote = null;
+            } else if (c === "'" || c === "\"") {
+                quote = c;
+                cur += c;
+            } else if (c === ",") {
+                out.push(cur.trim());
+                cur = "";
+            } else {
+                cur += c;
+            }
+        }
+        if (cur.trim()) out.push(cur.trim());
+        return out;
+    }
+
+    function parseArg(token, el) {
+        if (token === "this") return el;
+        if (token === "true") return true;
+        if (token === "false") return false;
+        if (token === "null") return null;
+        if (/^-?\d+(\.\d+)?$/.test(token)) return Number(token);
+        var s = token.match(/^'(.*)'$/) || token.match(/^"(.*)"$/);
+        if (s) return s[1];
+        return undefined;
+    }
+
+    function run(code, el, ev) {
+        code.split(";").forEach(function (raw) {
+            var stmt = raw.trim();
+            if (!stmt) return;
+            if (stmt === "return false") {
+                ev.preventDefault();
+                return;
+            }
+            if (stmt === "event.stopPropagation()") {
+                ev.stopPropagation();
+                return;
+            }
+            var m = stmt.match(/^([A-Za-z_$][\w$]*)\((.*)\)$/);
+            if (!m) return;
+            var fn = window[m[1]];
+            if (typeof fn !== "function") {
+                console.warn("Unknown page handler:", m[1]);
+                return;
+            }
+            fn.apply(window, splitArgs(m[2]).map(function (t) {
+                return parseArg(t, el);
+            }));
+        });
+    }
+
+    ["click", "submit", "input", "change"].forEach(function (type) {
+        document.addEventListener(type, function (ev) {
+            var target = ev.target;
+            if (!(target instanceof Element)) return;
+            var attr = "data-on" + type;
+            var node = target.closest("[" + attr + "]");
+            if (node) run(node.getAttribute(attr), node, ev);
+        });
+    });
+})();
+"""
+
 
 
 def load_page(name: str):
@@ -5143,49 +4700,60 @@ def load_page(name: str):
             status_code=500,
         )
 
+    nonce = secrets.token_urlsafe(16)
+
     js = PAGE_JS.get(
         name,
         "",
     )
 
     if name in PROTECTED:
-
         js = (
             COMMON
             + "\n"
             + js
         )
 
-    if js.strip():
+    # Every inline <script> carries this response's nonce. The browser runs
+    # only scripts with the nonce, so injected script is blocked.
+    html = re.sub(
+        r"<script(?=[\s>])(?![^>]*\ssrc=)",
+        '<script nonce="' + nonce + '"',
+        html,
+        flags=re.I,
+    )
 
-        script = (
-            "\n<script>\n"
-            + js
-            + "\n</script>\n"
+    script = (
+        '\n<script nonce="' + nonce + '">\n'
+        + DISPATCH_JS
+        + "\n"
+        + js
+        + "\n</script>\n"
+    )
+
+    body_position = html.lower().rfind("</body>")
+
+    if body_position != -1:
+        html = (
+            html[:body_position]
+            + script
+            + html[body_position:]
         )
+    else:
+        html += script
 
-        lower_html = html.lower()
-
-        body_position = lower_html.rfind(
-            "</body>"
-        )
-
-        if body_position != -1:
-
-            html = (
-                html[:body_position]
-                + script
-                + html[body_position:]
-            )
-
-        else:
-
-            html += script
-
-    return HTMLResponse(
+    response = HTMLResponse(
         content=html,
         media_type="text/html",
     )
+
+    response.headers["Content-Security-Policy"] = CSP_BASE.replace(
+        "script-src 'self'",
+        "script-src 'self' 'nonce-" + nonce + "'",
+        1,
+    )
+
+    return response
 
 
 # ============================================================
