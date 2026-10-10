@@ -396,8 +396,8 @@ animation-duration:.01ms!important;animation-iteration-count:1!important;transit
             <p>Configure your workspace, security and AI preferences.</p>
         </div>
         <div class="top-actions">
-            <button class="reset-btn" onclick="resetSettings()">Reset</button>
-            <button class="save-btn" id="saveBtn" onclick="saveSettings()">Save changes</button>
+            <button class="reset-btn" data-onclick="resetSettings()">Reset</button>
+            <button class="save-btn" id="saveBtn" data-onclick="saveSettings()">Save changes</button>
         </div>
     </div>
 
@@ -580,7 +580,7 @@ animation-duration:.01ms!important;animation-iteration-count:1!important;transit
                 <label>Primary API key</label>
                 <div class="api-key-row">
                     <input type="text" id="apiKey" value="sk_live_4f8cff_9a27kd83jf92kf82jd02hf" readonly>
-                    <button class="copy-btn" onclick="copyApiKey()">Copy</button>
+                    <button class="copy-btn" data-onclick="copyApiKey()">Copy</button>
                 </div>
             </div>
         </div>
@@ -595,14 +595,14 @@ animation-duration:.01ms!important;animation-iteration-count:1!important;transit
                         <strong>Force logout all sessions</strong>
                         <span>Sign out all users from all devices immediately.</span>
                     </div>
-                    <button class="danger-btn" onclick="forceLogout()">Force logout</button>
+                    <button class="danger-btn" data-onclick="forceLogout()">Force logout</button>
                 </div>
                 <div class="danger-action">
                     <div>
                         <strong>Delete workspace</strong>
                         <span>Permanently delete this workspace and all its data.</span>
                     </div>
-                    <button class="danger-btn" onclick="openDeleteWs()">Delete workspace</button>
+                    <button class="danger-btn" data-onclick="openDeleteWs()">Delete workspace</button>
                 </div>
             </div>
         </div>
@@ -763,7 +763,7 @@ animation-duration:.01ms!important;animation-iteration-count:1!important;transit
                 <h2>Delete workspace</h2>
                 <p>This action is permanent and cannot be undone.</p>
             </div>
-            <button class="close-x" onclick="closeDeleteWs()">✕</button>
+            <button class="close-x" data-onclick="closeDeleteWs()">✕</button>
         </div>
         <p style="color:#8b94ae;font-size:12px;line-height:1.7;">
             All documents, users, audit logs, and workspace data will be permanently removed.
@@ -773,8 +773,8 @@ animation-duration:.01ms!important;animation-iteration-count:1!important;transit
             <input type="text" id="deleteConfirmInput" placeholder="Type DELETE">
         </div>
         <div class="modal-actions">
-            <button class="btn btn-ghost" onclick="closeDeleteWs()">Cancel</button>
-            <button class="btn btn-danger" onclick="confirmDeleteWs()">Delete workspace</button>
+            <button class="btn btn-ghost" data-onclick="closeDeleteWs()">Cancel</button>
+            <button class="btn btn-danger" data-onclick="confirmDeleteWs()">Delete workspace</button>
         </div>
     </div>
 </div>
