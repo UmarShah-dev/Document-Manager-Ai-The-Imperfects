@@ -422,8 +422,8 @@ animation-duration:.01ms!important;animation-iteration-count:1!important;transit
             <p>Define what each role can see and do inside the workspace.</p>
         </div>
         <div class="top-actions">
-            <button class="primary-btn" onclick="openCreate()">+ Create role</button>
-            <button class="save-btn" id="saveBtn" onclick="saveChanges()">Save changes</button>
+            <button class="primary-btn" data-onclick="openCreate()">+ Create role</button>
+            <button class="save-btn" id="saveBtn" data-onclick="saveChanges()">Save changes</button>
         </div>
     </div>
 
@@ -463,7 +463,7 @@ animation-duration:.01ms!important;animation-iteration-count:1!important;transit
                 <h2 id="modalTitle">Create role</h2>
                 <p id="modalDesc">Add a new role to your workspace.</p>
             </div>
-            <button class="close-x" onclick="closeModal()">✕</button>
+            <button class="close-x" data-onclick="closeModal()">✕</button>
         </div>
 
         <div class="field">
@@ -501,8 +501,8 @@ animation-duration:.01ms!important;animation-iteration-count:1!important;transit
         </div>
 
         <div class="modal-actions">
-            <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
-            <button class="btn btn-primary" id="modalSubmit" onclick="submitModal()">Create role</button>
+            <button class="btn btn-ghost" data-onclick="closeModal()">Cancel</button>
+            <button class="btn btn-primary" id="modalSubmit" data-onclick="submitModal()">Create role</button>
         </div>
     </div>
 </div>
@@ -515,14 +515,14 @@ animation-duration:.01ms!important;animation-iteration-count:1!important;transit
                 <h2>Delete role</h2>
                 <p id="deleteDesc">Are you sure you want to remove this role?</p>
             </div>
-            <button class="close-x" onclick="closeDelete()">✕</button>
+            <button class="close-x" data-onclick="closeDelete()">✕</button>
         </div>
         <p style="color:#8b94ae;font-size:12px;line-height:1.7;">
             Users with this role will lose their permissions. This action cannot be undone.
         </p>
         <div class="modal-actions">
-            <button class="btn btn-ghost" onclick="closeDelete()">Cancel</button>
-            <button class="btn btn-danger" onclick="confirmDelete()">Delete role</button>
+            <button class="btn btn-ghost" data-onclick="closeDelete()">Cancel</button>
+            <button class="btn btn-danger" data-onclick="confirmDelete()">Delete role</button>
         </div>
     </div>
 </div>
@@ -642,8 +642,8 @@ function renderRoles(){
                     '</div>' +
                     '<p class="role-desc">' + r.desc + '</p>' +
                     '<div class="role-actions">' +
-                        '<button class="role-btn" onclick="event.stopPropagation();openEdit(\'' + r.id + '\')">✎ Edit</button>' +
-                        '<button class="role-btn danger" onclick="event.stopPropagation();openDelete(\'' + r.id + '\')">🗑</button>' +
+                        '<button class="role-btn" data-onclick="event.stopPropagation();openEdit(\'' + r.id + '\')">✎ Edit</button>' +
+                        '<button class="role-btn danger" data-onclick="event.stopPropagation();openDelete(\'' + r.id + '\')">🗑</button>' +
                     '</div>' +
                 '</div>';
     }).join("");
