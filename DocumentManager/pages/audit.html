@@ -196,7 +196,7 @@ background:linear-gradient(180deg,var(--blue),var(--violet))}
         </div>
         <div class="top-actions">
             <div class="status-pill"><span class="status-dot"></span>Live monitoring</div>
-            <button class="export-btn" onclick="exportCSV()">↓ Export CSV</button>
+            <button class="export-btn" data-onclick="exportCSV()">↓ Export CSV</button>
         </div>
     </div>
 
@@ -222,7 +222,7 @@ background:linear-gradient(180deg,var(--blue),var(--violet))}
     <div class="log-wrap" id="logWrap"></div>
 
     <div class="load-more-wrap" id="loadMoreWrap" style="display:none;">
-        <button class="load-more" id="loadMoreBtn" onclick="loadMore()">Load more events</button>
+        <button class="load-more" id="loadMoreBtn" data-onclick="loadMore()">Load more events</button>
     </div>
 </main>
 
